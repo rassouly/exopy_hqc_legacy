@@ -1,16 +1,29 @@
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Views of the tasks operating on numpy.arrays.
+
+"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from enaml.layout.api import grid
 from enaml.widgets.api import (GroupBox, Label, Field, ObjectCombo, Splitter,
                                SplitItem, Container)
 
-from hqc_meas.utils.widgets.qt_line_completer import QtLineCompleter
-from hqc_meas.tasks.tools.string_evaluation import EVALUATER_TOOLTIP
+from ecpy.utils.widgets.qt_completers import QtLineCompleter
+from ecpy.tasks.api import EVALUATER_TOOLTIP, BaseTaskView
 
-enamldef ArrayExtremaView(GroupBox): view:
+enamldef ArrayExtremaView(BaseTaskView): view:
+    """Widget for the array extrema task.
 
-    attr task
+    """
 
-    title << task.task_name
-    padding = (0,5,5,5)
     constraints << [grid([arr_lab, col_lab, mod_lab],
                          [arr_val, col_val, mod_val]),
                     arr_val.width == 2*col_val.width]
@@ -20,7 +33,7 @@ enamldef ArrayExtremaView(GroupBox): view:
     QtLineCompleter: arr_val:
         hug_width = 'ignore'
         text := task.target_array
-        entries_updater << task.accessible_database_entries
+        entries_updater << task.list_accessible_database_entries
         tool_tip = EVALUATER_TOOLTIP
 
     Label: col_lab:
@@ -35,11 +48,11 @@ enamldef ArrayExtremaView(GroupBox): view:
         items = list(task.get_member('mode').items)
         selected := task.mode
 
-enamldef ArrayFindValueView(GroupBox): view:
 
-    attr task
-    title << task.task_name
-    padding = (0,5,5,5)
+enamldef ArrayFindValueView(BaseTaskView): view:
+    """Widget for the find value in array task.
+
+    """
 
     Splitter:
         SplitItem:
@@ -49,7 +62,7 @@ enamldef ArrayFindValueView(GroupBox): view:
                 QtLineCompleter: arr_val:
                     hug_width = 'ignore'
                     text := task.target_array
-                    entries_updater << task.accessible_database_entries
+                    entries_updater << task.list_accessible_database_entries
                     tool_tip = EVALUATER_TOOLTIP
 
         SplitItem:
@@ -66,8 +79,5 @@ enamldef ArrayFindValueView(GroupBox): view:
                 QtLineCompleter: val_val:
                     hug_width = 'ignore'
                     text := task.value
-                    entries_updater << task.accessible_database_entries
+                    entries_updater << task.list_accessible_database_entries
                     tool_tip = EVALUATER_TOOLTIP
-
-TASK_VIEW_MAPPING = {'ArrayExtremaTask' : ArrayExtremaView,
-                     'ArrayFindValueTask' : ArrayFindValueView}

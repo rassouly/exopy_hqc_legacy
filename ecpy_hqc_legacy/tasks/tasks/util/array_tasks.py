@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : hqc_meas/tasks/tasks_util/array_tasks.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
-"""
-"""
-import logging
-from atom.api import (Enum, Str, set_default)
-import numpy as np
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Tasks to operate on numpy.arrays.
 
-from ..base_tasks import SimpleTask
+"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+import numpy as np
+from future.utils import raise_from
+from atom.api import (Enum, Unicode, set_default)
+from ecpy.tasks.api import SimpleTask
 
 
 class ArrayExtremaTask(SimpleTask):
@@ -20,15 +25,15 @@ class ArrayExtremaTask(SimpleTask):
 
     """
     #: Name of the target in the database.
-    target_array = Str().tag(pref=True)
+    target_array = Unicode().tag(pref=True, feval=True)
 
     #: Name of the column into which the extrema should be looked for.
-    column_name = Str().tag(pref=True)
+    column_name = Unicode().tag(pref=True)
 
     #: Flag indicating which extremum shiul be lookd for.
     mode = Enum('Max', 'Min', 'Max & min').tag(pref=True)
 
-    task_database_entries = set_default({'max_ind': 0, 'max_value': 1.0})
+    database_entries = set_default({'max_ind': 0, 'max_value': 1.0})
 
     wait = set_default({'activated': True})  # Wait on all pools by default.
 
@@ -36,7 +41,7 @@ class ArrayExtremaTask(SimpleTask):
         """ Find extrema of database array and store index/value pairs.
 
         """
-        array = self.get_from_database(self.target_array[1:-1])
+        array = self.format_and_eval_string(self.target_array)
         if self.column_name:
             array = array[self.column_name]
         if self.mode == 'Max' or self.mode == 'Max & min':
@@ -54,54 +59,48 @@ class ArrayExtremaTask(SimpleTask):
         """ Check the target array can be found and has the right column.
 
         """
-        test = True
-        traceback = {}
+        test, traceback = super(ArrayExtremaTask, self).check(*args, **kwargs)
 
-        array_entry = self.target_array[1:-1]
-        try:
-            array = self.get_from_database(array_entry)
-        except KeyError:
-            traceback[self.task_path + '/' + self.task_name] = \
-                '''Invalid entry name for the target array'''
-            return False, traceback
+        if not test:
+            return test, traceback
+
+        array = self.format_and_eval_string(self.target_array)
+        err_path = self.get_error_path()
 
         if self.column_name:
             if array.dtype.names:
-                if self.column_name not in array.dtype.names:
-                    traceback[self.task_path + '/' + self.task_name] = \
-                        'No column named {} in array.'.format(self.column_name)
-                    return test, traceback
+                names = array.dtype.names
+                if self.column_name not in names:
+                    msg = 'No column named {} in array. (column are : {})'
+                    traceback[err_path] = msg.format(self.column_name, names)
+                    return False, traceback
             else:
-                test = False
-                traceback[self.task_path + '/' + self.task_name] = \
-                    'Array has no named columns'
-                return test, traceback
+                traceback[err_path] = 'Array has no named columns'
+                return False, traceback
 
         else:
             if array.dtype.names:
-                test = False
-                mess = 'Must provide a column name for rec arrays.'
-                traceback[self.task_path + '/' + self.task_name] = mess
-                return test, traceback
+                msg = 'The target array has names columns : {}. Choose one'
+                traceback[err_path] = msg.format(array.dtype.names)
+                return False, traceback
             elif len(array.shape) > 1:
-                test = False
-                mess = 'Must use 1d array when using non rec-arrays.'
-                traceback[self.task_path + '/' + self.task_name] = mess
-                return test, traceback
+                msg = 'Must use 1d array when using non record arrays.'
+                traceback[err_path] = msg
+                return False, traceback
 
         return test, traceback
 
-    def _observe_mode(self, change):
+    def _post_setattr_mode(self, old, new):
         """ Update the database entries according to the mode.
 
         """
-        if change['value'] == 'Max':
-            self.task_database_entries = {'max_ind': 0, 'max_value': 2.0}
-        elif change['value'] == 'Min':
-            self.task_database_entries = {'min_ind': 0, 'min_value': 1.0}
+        if new == 'Max':
+            self.database_entries = {'max_ind': 0, 'max_value': 2.0}
+        elif new == 'Min':
+            self.database_entries = {'min_ind': 0, 'min_value': 1.0}
         else:
-            self.task_database_entries = {'max_ind': 0, 'max_value': 2.0,
-                                          'min_ind': 0, 'min_value': 1.0}
+            self.database_entries = {'max_ind': 0, 'max_value': 2.0,
+                                     'min_ind': 0, 'min_value': 1.0}
 
 
 class ArrayFindValueTask(SimpleTask):
@@ -111,15 +110,15 @@ class ArrayFindValueTask(SimpleTask):
 
     """
     #: Name of the target in the database.
-    target_array = Str().tag(pref=True)
+    target_array = Unicode().tag(pref=True, feval=True)
 
     #: Name of the column into which the extrema should be looked for.
-    column_name = Str().tag(pref=True)
+    column_name = Unicode().tag(pref=True)
 
     #: Value which should be looked for in the array.
-    value = Str().tag(pref=True)
+    value = Unicode().tag(pref=True, feval=True)
 
-    task_database_entries = set_default({'index': 0})
+    database_entries = set_default({'index': 0})
 
     wait = set_default({'activated': True})  # Wait on all pools by default.
 
@@ -127,7 +126,7 @@ class ArrayFindValueTask(SimpleTask):
         """ Find index of value array and store index in database.
 
         """
-        array = self.get_from_database(self.target_array[1:-1])
+        array = self.format_and_eval_string(self.target_array)
         if self.column_name:
             array = array[self.column_name]
 
@@ -135,60 +134,45 @@ class ArrayFindValueTask(SimpleTask):
 
         try:
             ind = np.where(np.abs(array - val) < 1e-12)[0][0]
-        except IndexError:
-            logger = logging.getLogger()
-            logger.error('Could not find {} in array {} ({})'.format(val,
-                         self.target_array, array))
+        except IndexError as e:
+            msg = 'Could not find {} in array {} ({})'
+            raise_from(ValueError(msg.format(val, self.target_array, array)),
+                       e)
         self.write_in_database('index', ind)
 
     def check(self, *args, **kwargs):
         """ Check the target array can be found and has the right column.
 
         """
-        test = True
-        traceback = {}
-        err_path = self.task_path + '/' + self.task_name
+        test, traceback = super(ArrayFindValueTask, self).check(*args,
+                                                                **kwargs)
 
-        try:
-            self.format_and_eval_string(self.value)
-        except Exception as e:
-            traceback[err_path + '-value'] = \
-                '''Failed to eval value formula : {}'''.format(e)
-            test = False
+        if not test:
+            return test, traceback
 
-        array_entry = self.target_array[1:-1]
-        try:
-            array = self.get_from_database(array_entry)
-        except KeyError:
-            traceback[err_path + '-array'] = \
-                '''Invalid entry name for the target array'''
-            return False, traceback
+        err_path = self.get_error_path()
+
+        array = self.format_and_eval_string(self.target_array)
 
         if self.column_name:
             if array.dtype.names:
-                if self.column_name not in array.dtype.names:
-                    traceback[err_path + '-column'] = \
-                        'No column named {} in array.'.format(self.column_name)
-                    return test, traceback
+                names = array.dtype.names
+                if self.column_name not in names:
+                    msg = 'No column named {} in array. (column are : {})'
+                    traceback[err_path] = msg.format(self.column_name, names)
+                    return False, traceback
             else:
-                test = False
-                traceback[err_path + '-column'] = \
-                    'Array has no named columns'
-                return test, traceback
+                traceback[err_path] = 'Array has no named columns'
+                return False, traceback
 
         else:
             if array.dtype.names:
-                test = False
-                mess = 'Must provide a column name for rec arrays.'
-                traceback[err_path + '-column'] = mess
-                return test, traceback
+                msg = 'The target array has names columns : {}. Choose one'
+                traceback[err_path] = msg.format(array.dtype.names)
+                return False, traceback
             elif len(array.shape) > 1:
-                test = False
-                mess = 'Must use 1d array when using non rec-arrays.'
-                traceback[err_path + '-dim'] = mess
-                return test, traceback
+                msg = 'Must use 1d array when using non record arrays.'
+                traceback[err_path] = msg
+                return False, traceback
 
         return test, traceback
-
-
-KNOWN_PY_TASKS = [ArrayExtremaTask, ArrayFindValueTask]

@@ -1,364 +1,369 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : test_array_tasks.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Test the tasks operating on numpy.arrays.
+
 """
-"""
-from nose.tools import (assert_equal, assert_true, assert_false, assert_in,
-                        assert_not_in)
-from nose.plugins.attrib import attr
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from multiprocessing import Event
-from enaml.workbench.api import Workbench
-import numpy as np
 
-from hqc_meas.tasks.api import RootTask
-from hqc_meas.tasks.tasks_util.array_tasks import (ArrayExtremaTask,
-                                                   ArrayFindValueTask)
-
+import pytest
 import enaml
+import numpy as np
+from ecpy.tasks.api import RootTask
+from ecpy.testing.util import show_and_close_widget
+
+from ecpy_hqc_legacy.tasks.tasks.util.array_tasks import (ArrayExtremaTask,
+                                                          ArrayFindValueTask)
+
 with enaml.imports():
-    from enaml.workbench.core.core_manifest import CoreManifest
-    from hqc_meas.utils.state.manifest import StateManifest
-    from hqc_meas.utils.preferences.manifest import PreferencesManifest
-    from hqc_meas.tasks.manager.manifest import TaskManagerManifest
-
-    from hqc_meas.tasks.tasks_util.views.array_views\
+    from ecpy_hqc_legacy.tasks.tasks.util.views.array_views\
         import ArrayExtremaView, ArrayFindValueView
-
-from ...util import process_app_events, close_all_windows
 
 
 class TestArrayExtremaTask(object):
 
     def setup(self):
         self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = ArrayExtremaTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        array = np.zeros((5,), dtype=[('var1', 'f8'), ('var2', 'f8')])
+        self.task = ArrayExtremaTask(name='Test')
+        self.root.add_child_task(0, self.task)
+        array = np.zeros((5,), dtype={'names': ['var1', 'var2'],
+                                      'formats': ['f8', 'f8']})
         array['var1'][1] = -1
         array['var1'][3] = 1
         self.root.write_in_database('array', array)
 
     def test_mode_observation(self):
-        # Check database is correctly updated when the mode change.
+        """Check that the database is correctly updated when the mode change.
+
+        """
         self.task.mode = 'Min'
 
-        assert_equal(self.task.get_from_database('Test_min_ind'), 0)
-        assert_equal(self.task.get_from_database('Test_min_value'), 1.0)
-        aux = self.task.accessible_database_entries()
-        assert_not_in('Test_max_ind', aux)
-        assert_not_in('Test_max_value', aux)
+        assert self.task.get_from_database('Test_min_ind') == 0
+        assert self.task.get_from_database('Test_min_value') == 1.0
+        aux = self.task.list_accessible_database_entries()
+        assert 'Test_max_ind' not in aux
+        assert 'Test_max_value' not in aux
 
         self.task.mode = 'Max'
 
-        assert_equal(self.task.get_from_database('Test_max_ind'), 0)
-        assert_equal(self.task.get_from_database('Test_max_value'), 2.0)
-        aux = self.task.accessible_database_entries()
-        assert_not_in('Test_min_ind', aux)
-        assert_not_in('Test_min_value', aux)
+        assert self.task.get_from_database('Test_max_ind') == 0
+        assert self.task.get_from_database('Test_max_value') == 2.0
+        aux = self.task.list_accessible_database_entries()
+        assert 'Test_min_ind' not in aux
+        assert 'Test_min_value' not in aux
 
         self.task.mode = 'Max & min'
 
-        assert_equal(self.task.get_from_database('Test_min_ind'), 0)
-        assert_equal(self.task.get_from_database('Test_min_value'), 1.0)
-        assert_equal(self.task.get_from_database('Test_max_ind'), 0)
-        assert_equal(self.task.get_from_database('Test_max_value'), 2.0)
+        assert self.task.get_from_database('Test_min_ind') == 0
+        assert self.task.get_from_database('Test_min_value') == 1.0
+        assert self.task.get_from_database('Test_max_ind') == 0
+        assert self.task.get_from_database('Test_max_value') == 2.0
 
     def test_check1(self):
-        # Simply test that everything is ok if the array exists in the database
+        """Simply test that everything is ok if the array exists in the
+        database.
+
+        """
         self.root.write_in_database('array', np.zeros((5,)))
-        self.task.target_array = '{Root_array}'
+        self.task.target_array = '{array}'
 
         test, traceback = self.task.check()
-        assert_true(test)
-        assert_false(traceback)
+        assert test
+        assert not traceback
 
     def test_check2(self):
-        # Simply test that everything is ok if the array exists in the database
-        # and the column name is ok.
-        self.task.target_array = '{Root_array}'
+        """Simply test that everything is ok if the array exists in the
+        database and the column name is ok.
+
+        """
+        self.task.target_array = '{array}'
         self.task.column_name = 'var1'
 
         test, traceback = self.task.check()
-        assert_true(test)
-        assert_false(traceback)
+        assert test
+        assert not traceback
 
     def test_check3(self):
-        # Test handling a wrong array name.
-        self.task.target_array = '*{Root_array}'
+        """Test handling a wrong array name.
+
+        """
+        self.task.target_array = '*{array}'
         self.task.column_name = 'var3'
 
         test, traceback = self.task.check()
-        assert_false(test)
-        assert_equal(len(traceback), 1)
-        assert_in('root/Test', traceback)
+        assert not test
+        assert len(traceback) == 1
+        assert 'root/Test-target_array' in traceback
 
     def test_check4(self):
-        # Test handling an array without names when a name is given.
+        """Test handling an array without names when a name is given.
+
+        """
         self.root.write_in_database('array', np.zeros((5,)))
-        self.task.target_array = '{Root_array}'
+        self.task.target_array = '{array}'
         self.task.column_name = 'var1'
 
         test, traceback = self.task.check()
-        assert_false(test)
-        assert_equal(len(traceback), 1)
-        assert_in('root/Test', traceback)
+        assert not test
+        assert len(traceback) == 1
+        assert 'root/Test' in traceback
 
     def test_check5(self):
-        # Test handling an array with names when no name is given.
-        self.task.target_array = '{Root_array}'
+        """Test handling an array with names when no name is given.
+
+        """
+        self.task.target_array = '{array}'
 
         test, traceback = self.task.check()
-        assert_false(test)
-        assert_equal(len(traceback), 1)
-        assert_in('root/Test', traceback)
+        assert not test
+        assert len(traceback) == 1
+        assert 'root/Test' in traceback
 
     def test_check6(self):
-        # Test handling a wrong column name.
-        self.task.target_array = '{Root_array}'
+        """Test handling a wrong column name.
+
+        """
+        self.task.target_array = '{array}'
         self.task.column_name = 'var3'
 
         test, traceback = self.task.check()
-        assert_true(test)
-        assert_equal(len(traceback), 1)
-        assert_in('root/Test', traceback)
+        assert not test
+        assert len(traceback) == 1
+        assert 'root/Test' in traceback
 
     def test_check7(self):
-        # Test handling a 2d array without names.
-        self.task.target_array = '{Root_array}'
+        """Test handling a 2d array without names.
+
+        """
+        self.task.target_array = '{array}'
 
         array = np.zeros((5, 5))
         self.root.write_in_database('array', array)
 
         test, traceback = self.task.check()
-        assert_false(test)
-        assert_equal(len(traceback), 1)
-        assert_in('root/Test', traceback)
+        assert not test
+        assert len(traceback) == 1
+        assert 'root/Test' in traceback
 
     def test_perform1(self):
-        # Test performing when mode is 'Max'.
+        """Test performing when mode is 'Max'.
+
+        """
         self.task.mode = 'Max'
-        self.task.target_array = '{Root_array}'
+        self.task.target_array = '{array}'
         self.task.column_name = 'var1'
-        self.root.task_database.prepare_for_running()
+        self.root.prepare()
 
         self.task.perform()
 
-        assert_equal(self.task.get_from_database('Test_max_ind'), 3)
-        assert_equal(self.task.get_from_database('Test_max_value'), 1.0)
+        assert self.task.get_from_database('Test_max_ind') == 3
+        assert self.task.get_from_database('Test_max_value') == 1.0
 
     def test_perform2(self):
-        # Test performing when mode is 'Min'.
+        """Test performing when mode is 'Min'.
+
+        """
         self.task.mode = 'Min'
-        self.task.target_array = '{Root_array}'
+        self.task.target_array = '{array}'
         self.task.column_name = 'var1'
-        self.root.task_database.prepare_for_running()
+        self.root.prepare()
 
         self.task.perform()
 
-        assert_equal(self.task.get_from_database('Test_min_ind'), 1)
-        assert_equal(self.task.get_from_database('Test_min_value'), -1.0)
+        assert self.task.get_from_database('Test_min_ind') == 1
+        assert self.task.get_from_database('Test_min_value') == -1.0
 
     def test_perform3(self):
-        # Test performing when mode is 'Max & min'.
+        """Test performing when mode is 'Max & min'.
+
+        """
         self.task.mode = 'Max & min'
-        self.task.target_array = '{Root_array}'
+        self.task.target_array = '{array}'
         self.task.column_name = 'var1'
-        self.root.task_database.prepare_for_running()
+        self.root.prepare()
 
         self.task.perform()
 
-        assert_equal(self.task.get_from_database('Test_max_ind'), 3)
-        assert_equal(self.task.get_from_database('Test_max_value'), 1.0)
-        assert_equal(self.task.get_from_database('Test_min_ind'), 1)
-        assert_equal(self.task.get_from_database('Test_min_value'), -1.0)
+        assert self.task.get_from_database('Test_max_ind') == 3
+        assert self.task.get_from_database('Test_max_value') == 1.0
+        assert self.task.get_from_database('Test_min_ind') == 1
+        assert self.task.get_from_database('Test_min_value') == -1.0
 
     def test_perform4(self):
-        # Test performing when no column name is given.
+        """Test performing when no column name is given.
+
+        """
         self.root.write_in_database('array', np.zeros((5,)))
         self.task.mode = 'Max'
-        self.task.target_array = '{Root_array}'
-        self.root.task_database.prepare_for_running()
+        self.task.target_array = '{array}'
+        self.root.prepare()
 
         self.task.perform()
 
-        assert_equal(self.task.get_from_database('Test_max_ind'), 0)
-        assert_equal(self.task.get_from_database('Test_max_value'), 0.0)
+        assert self.task.get_from_database('Test_max_ind') == 0
+        assert self.task.get_from_database('Test_max_value') == 0.0
 
 
-@attr('ui')
-class TestArrayExtremaView(object):
+@pytest.mark.ui
+def test_array_extrema_view(windows):
+    """Test the array extrema view.
 
-    def setup(self):
-        self.workbench = Workbench()
-        self.workbench.register(CoreManifest())
-        self.workbench.register(StateManifest())
-        self.workbench.register(PreferencesManifest())
-        self.workbench.register(TaskManagerManifest())
+    """
+    root = RootTask(should_stop=Event(), should_pause=Event())
+    task = ArrayExtremaTask(name='Test')
+    root.children.append(task)
 
-        self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = ArrayExtremaTask(task_name='Test')
-        self.root.children_task.append(self.task)
-
-    def teardown(self):
-        close_all_windows()
-
-        self.workbench.unregister(u'hqc_meas.task_manager')
-        self.workbench.unregister(u'hqc_meas.preferences')
-        self.workbench.unregister(u'hqc_meas.state')
-        self.workbench.unregister(u'enaml.workbench.core')
-
-    def test_view(self):
-        # Intantiate a view with no selected interface and select one after
-        window = enaml.widgets.api.Window()
-        view = ArrayExtremaView(window, task=self.task)
-        window.show()
-
-        process_app_events()
+    show_and_close_widget(ArrayExtremaView(task=task))
 
 
 class TestArrayFindValueTask(object):
 
     def setup(self):
         self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = ArrayFindValueTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        array = np.zeros((5,), dtype=[('var1', 'f8'), ('var2', 'f8')])
+        self.task = ArrayFindValueTask(name='Test')
+        self.root.add_child_task(0, self.task)
+        array = np.zeros((5,), dtype={'names': ['var1', 'var2'],
+                                      'formats': ['f8', 'f8']})
         array['var1'][1] = -1.5
         array['var1'][3] = 1.6359
         array['var1'][4] = 1.6359
         self.root.write_in_database('array', array)
 
     def test_check1(self):
-        # Simply test that everything is ok if the array exists in the database
-        # and value can be evaluated.
+        """Simply test that everything is ok if the array exists in the
+        database and value can be evaluated.
+
+        """
         self.root.write_in_database('array', np.zeros((5,)))
-        self.task.target_array = '{Root_array}'
+        self.task.target_array = '{array}'
         self.task.value = '1.6359'
 
         test, traceback = self.task.check()
-        assert_true(test)
-        assert_false(traceback)
+        assert test
+        assert not traceback
 
     def test_check2(self):
-        # Simply test that everything is ok if the array exists in the database
-        # the column name is ok, and value can be evaluated.
-        self.task.target_array = '{Root_array}'
+        """Simply test that everything is ok if the array exists in the
+        database the column name is ok, and value can be evaluated.
+
+        """
+        self.task.target_array = '{array}'
         self.task.column_name = 'var1'
         self.task.value = '1.6359'
 
         test, traceback = self.task.check()
-        assert_true(test)
-        assert_false(traceback)
+        assert test
+        assert not traceback
 
     def test_check3(self):
-        # Test handling a wrong array name.
-        self.task.target_array = '*{Root_array}'
+        """Test handling a wrong array name.
+
+        """
+        self.task.target_array = '*{array}'
         self.task.column_name = 'var3'
         self.task.value = '1.6359'
 
         test, traceback = self.task.check()
-        assert_false(test)
-        assert_equal(len(traceback), 1)
-        assert_in('root/Test-array', traceback)
+        assert not test
+        assert len(traceback) == 1
+        assert 'root/Test-target_array' in traceback
 
     def test_check4(self):
-        # Test handling an array without names when a name is given.
+        """Test handling an array without names when a name is given.
+
+        """
         self.root.write_in_database('array', np.zeros((5,)))
-        self.task.target_array = '{Root_array}'
+        self.task.target_array = '{array}'
         self.task.column_name = 'var1'
         self.task.value = '1.6359'
 
         test, traceback = self.task.check()
-        assert_false(test)
-        assert_equal(len(traceback), 1)
-        assert_in('root/Test-column', traceback)
+        assert not test
+        assert len(traceback) == 1
+        assert 'root/Test' in traceback
 
     def test_check5(self):
-        # Test handling an array with names when no name is given.
-        self.task.target_array = '{Root_array}'
+        """Test handling an array with names when no name is given.
+
+        """
+        self.task.target_array = '{array}'
         self.task.value = '1.6359'
 
         test, traceback = self.task.check()
-        assert_false(test)
-        assert_equal(len(traceback), 1)
-        assert_in('root/Test-column', traceback)
+        assert not test
+        assert len(traceback) == 1
+        assert 'root/Test' in traceback
 
     def test_check6(self):
-        # Test handling a wrong column name.
-        self.task.target_array = '{Root_array}'
+        """Test handling a wrong column name.
+
+        """
+        self.task.target_array = '{array}'
         self.task.column_name = 'var3'
         self.task.value = '1.6359'
 
         test, traceback = self.task.check()
-        assert_true(test)
-        assert_equal(len(traceback), 1)
-        assert_in('root/Test-column', traceback)
+        assert not test
+        assert len(traceback) == 1
+        assert 'root/Test' in traceback
 
     def test_check7(self):
-        # Test handling a wrong value.
-        self.task.target_array = '{Root_array}'
+        """Test handling a wrong value.
+
+        """
+        self.task.target_array = '{array}'
         self.task.column_name = 'var1'
         self.task.value = '*1.6359'
 
         test, traceback = self.task.check()
-        assert_false(test)
-        assert_equal(len(traceback), 1)
-        assert_in('root/Test-value', traceback)
+        assert not test
+        assert len(traceback) == 1
+        assert 'root/Test-value' in traceback
 
     def test_check8(self):
-        # Test handling a 2d array value.
-        self.task.target_array = '{Root_array}'
+        """Test handling a 2d array value.
+
+        """
+        self.task.target_array = '{array}'
         self.task.value = '1.6359'
 
         array = np.zeros((5, 5))
         self.root.write_in_database('array', array)
 
         test, traceback = self.task.check()
-        assert_false(test)
-        assert_equal(len(traceback), 1)
-        assert_in('root/Test-dim', traceback)
+        assert not test
+        assert len(traceback) == 1
+        assert 'root/Test' in traceback
 
     def test_perform1(self):
-        # Test performing when mode is 'Max'.
+        """Test performing.
+
+        """
         self.task.value = '1.6359'
-        self.task.target_array = '{Root_array}'
+        self.task.target_array = '{array}'
         self.task.column_name = 'var1'
-        self.root.task_database.prepare_for_running()
+        self.root.prepare()
 
         self.task.perform()
 
-        assert_equal(self.task.get_from_database('Test_index'), 3)
+        assert self.task.get_from_database('Test_index') == 3
 
 
-@attr('ui')
-class TestArrayFindValueView(object):
+@pytest.mark.ui
+def test_array_find_value_view(windows):
+    """Test the array extrema view.
 
-    def setup(self):
-        self.workbench = Workbench()
-        self.workbench.register(CoreManifest())
-        self.workbench.register(StateManifest())
-        self.workbench.register(PreferencesManifest())
-        self.workbench.register(TaskManagerManifest())
+    """
+    root = RootTask(should_stop=Event(), should_pause=Event())
+    task = ArrayFindValueTask(name='Test')
+    root.children.append(task)
 
-        self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = ArrayFindValueTask(task_name='Test')
-        self.root.children_task.append(self.task)
-
-    def teardown(self):
-        close_all_windows()
-
-        self.workbench.unregister(u'hqc_meas.task_manager')
-        self.workbench.unregister(u'hqc_meas.preferences')
-        self.workbench.unregister(u'hqc_meas.state')
-        self.workbench.unregister(u'enaml.workbench.core')
-
-    def test_view(self):
-        # Intantiate a view with no selected interface and select one after
-        window = enaml.widgets.api.Window()
-        view = ArrayFindValueView(window, task=self.task)
-        window.show()
-
-        process_app_events()
+    show_and_close_widget(ArrayFindValueView(task=task))

@@ -32,9 +32,9 @@ setup(
     zip_safe=False,
     packages=find_packages(exclude=['tests', 'tests.*']),
     package_data={'': ['*.enaml']},
-    requires=['ecpy'],
-    install_requires=['ecpy'],
+    requires=['ecpy', 'pyvisa'],
+    install_requires=['ecpy', 'pyvisa'],
     entry_points={
         'ecpy_package_extension':
-        'ecpy_ext_demo = ecpy_hqc_legacy:list_manifests'}
+        'ecpy_hqc_legacy = ecpy_hqc_legacy:list_manifests'}
 )

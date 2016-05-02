@@ -12,11 +12,4 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
-import sys
-
-# Try to run against an installed version otherwise add path to sys.path
-try:
-    import ecpy_hqc_legacy
-    del ecpy_hqc_legacy
-except ImportError:
-    sys.path.append('..')
+pytest_plugins = str('ecpy.testing.fixtures'),
