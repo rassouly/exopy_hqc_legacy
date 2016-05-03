@@ -1,21 +1,30 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : save_tasks.py
-# author : Matthieu Dartiailh & Sébastien Jezouin
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Tasks to used to load a file in memory.
+
 """
-"""
-from atom.api import (Tuple, ContainerList, Str, Enum, Value,
-                      Bool, Int, observe, set_default, Unicode)
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 import os
 import errno
-import numpy
-import h5py
 import logging
 from inspect import cleandoc
+from collections import OrderedDict
+from traceback import format_exc
 
-from ..base_tasks import SimpleTask
+import numpy
+import h5py
+from atom.api import Unicode, Enum, Value, Bool, Int, Typed, List, set_default
+
+from ecpy.tasks.api import SimpleTask
+from ecpy.utils.atom_util import ordered_dict_from_pref, ordered_dict_to_pref
 
 
 class SaveTask(SimpleTask):
@@ -33,7 +42,7 @@ class SaveTask(SimpleTask):
     saving_target = Enum('File', 'Array', 'File and array').tag(pref=True)
 
     #: Folder in which to save the data.
-    folder = Unicode().tag(pref=True)
+    folder = Unicode('{default_path}').tag(pref=True)
 
     #: Name of the file in which to write the data.
     filename = Unicode().tag(pref=True)
@@ -45,13 +54,13 @@ class SaveTask(SimpleTask):
     file_mode = Enum('New', 'Add')
 
     #: Header to write at the top of the file.
-    header = Str().tag(pref=True)
+    header = Unicode().tag(pref=True)
 
     #: Numpy array in which data are stored (Array mode)
     array = Value()  # Array
 
     #: Size of the data to be saved. (Evaluated at runtime)
-    array_size = Str().tag(pref=True)
+    array_size = Unicode().tag(pref=True)
 
     #: Computed size of the data (post evaluation)
     array_length = Int()
@@ -59,13 +68,12 @@ class SaveTask(SimpleTask):
     #: Index of the current line.
     line_index = Int(0)
 
-    #: List of values to be saved store as (label, value).
-    saved_values = ContainerList(Tuple()).tag(pref=True)
+    #: Values to save as an ordered dictionary.
+    saved_values = Typed(OrderedDict, ()).tag(pref=(ordered_dict_to_pref,
+                                                    ordered_dict_from_pref))
 
     #: Flag indicating whether or not initialisation has been performed.
     initialized = Bool(False)
-
-    task_database_entries = set_default({'file': None})
 
     wait = set_default({'activated': True})  # Wait on all pools by default.
 
@@ -97,32 +105,33 @@ class SaveTask(SimpleTask):
                 except IOError as e:
                     log = logging.getLogger()
                     mes = cleandoc('''In {}, failed to open the specified
-                                    file {}'''.format(self.task_name, e))
+                                    file {}'''.format(self.name, e))
                     log.error(mes)
-                    self.root_task.should_stop.set()
+                    self.root.should_stop.set()
 
-                self.root_task.files[full_path] = self.file_object
+                self.root.resources['files'][full_path] = self.file_object
                 if self.header:
                     h = self.format_string(self.header)
                     for line in h.split('\n'):
                         self.file_object.write('# ' + line + '\n')
-                labels = [s[0] for s in self.saved_values]
+                labels = [self.format_string(s) for s in self.saved_values]
                 self.file_object.write('\t'.join(labels) + '\n')
                 self.file_object.flush()
 
             if self.saving_target != 'File':
                 # TODO add more flexibilty on the dtype (possible complex
                 # values)
-                array_type = numpy.dtype([(str(s[0]), 'f8')
-                                          for s in self.saved_values])
-                self.array = numpy.empty((self.array_length),
-                                         dtype=array_type)
+                dtype = numpy.dtype({'names': [self.format_string(s)
+                                               for s in self.saved_values],
+                                     'formats': ['f8']*len(self.saved_values)})
+                self.array = numpy.empty((self.array_length,),
+                                         dtype=dtype)
                 self.write_in_database('array', self.array)
             self.initialized = True
 
         # Writing
-        values = [self.format_and_eval_string(s[1])
-                  for s in self.saved_values]
+        values = tuple(self.format_and_eval_string(s)
+                       for s in self.saved_values.values())
         if self.saving_target != 'Array':
             self.file_object.write('\t'.join([str(val)
                                               for val in values]) + '\n')
@@ -139,10 +148,12 @@ class SaveTask(SimpleTask):
             self.initialized = False
 
     def check(self, *args, **kwargs):
+        """Check that the provided parameters make sense.
+
         """
-        """
-        err_path = self.task_path + '/' + self.task_name
-        traceback = {}
+        err_path = self.get_error_path()
+        test, traceback = super(SaveTask, self).check(*args, **kwargs)
+
         if self.saving_target != 'Array':
             try:
                 full_folder_path = self.format_string(self.folder)
@@ -196,33 +207,45 @@ class SaveTask(SimpleTask):
             traceback[err_path] = 'A size for the array must be provided.'
             return False, traceback
 
-        test = True
-        for i, s in enumerate(self.saved_values):
+        labels = list()
+        for i, (l, v) in enumerate(self.saved_values.items()):
             try:
-                self.format_and_eval_string(s[1])
-            except Exception as e:
-                traceback[err_path + '-entry' + str(i)] = \
-                    'Failed to evaluate entry {}: {}'.format(s[0], e)
+                labels.append(self.format_string(l))
+            except Exception:
+                traceback[err_path + '-label_' + str(i)] = \
+                    'Failed to evaluate label {}:\n{}'.format(l, format_exc())
                 test = False
+            try:
+                self.format_and_eval_string(v)
+            except Exception:
+                traceback[err_path + '-entry_' + str(i)] = \
+                    'Failed to evaluate entry {}:\n{}'.format(v, format_exc())
+                test = False
+
+        if not test:
+            return test, traceback
+
+        if len(set(labels)) != len(self.saved_values):
+            traceback[err_path] = "All labels must be different."
+            return False, traceback
 
         if self.saving_target != 'File':
             data = [numpy.array([0.0, 1.0]) for s in self.saved_values]
-            names = str(','.join([s[0] for s in self.saved_values]))
+            names = str(','.join([s for s in labels]))
             final_arr = numpy.rec.fromarrays(data, names=names)
 
             self.write_in_database('array', final_arr)
 
         return test, traceback
 
-    @observe('saving_target')
-    def _update_database_entries(self, change):
+    def _post_setattr_saving_target(self, old, new):
+        """Add the array in the database if using it.
+
         """
-        """
-        new = change['value']
         if new != 'File':
-            self.task_database_entries = {'array': numpy.array([1.0])}
+            self.database_entries = {'array': numpy.array([1.0])}
         else:
-            self.task_database_entries = {}
+            self.database_entries = {}
 
 
 class SaveFileTask(SimpleTask):
@@ -237,19 +260,20 @@ class SaveFileTask(SimpleTask):
 
     """
     #: Folder in which to save the data.
-    folder = Unicode('{default_path}').tag(pref=True)
+    folder = Unicode('{default_path}').tag(pref=True, fmt=True)
 
     #: Name of the file in which to write the data.
-    filename = Unicode().tag(pref=True)
+    filename = Unicode().tag(pref=True, fmt=True)
 
     #: Currently opened file object. (File mode)
     file_object = Value()
 
     #: Header to write at the top of the file.
-    header = Str().tag(pref=True)
+    header = Unicode().tag(pref=True, fmt=True)
 
-    #: List of values to be saved store as (label, value).
-    saved_values = ContainerList(Tuple()).tag(pref=True)
+    #: Values to save as an ordered dictionary.
+    saved_values = Typed(OrderedDict, ()).tag(pref=(ordered_dict_to_pref,
+                                                    ordered_dict_from_pref))
 
     #: Flag indicating whether or not initialisation has been performed.
     initialized = Bool(False)
@@ -257,7 +281,7 @@ class SaveFileTask(SimpleTask):
     #: Column indices identified as arrays.
     array_values = Value()
 
-    task_database_entries = set_default({'file': None})
+    database_entries = set_default({'file': None})
 
     wait = set_default({'activated': True})  # Wait on all pools by default.
 
@@ -273,14 +297,13 @@ class SaveFileTask(SimpleTask):
             full_path = os.path.join(full_folder_path, filename)
             try:
                 self.file_object = open(full_path, 'wb')
-            except IOError as e:
+            except IOError:
                 log = logging.getLogger()
-                mes = cleandoc('''In {}, failed to open the specified
-                                file {}'''.format(self.task_name, e))
-                log.error(mes)
-                self.root_task.should_stop.set()
+                msg = "In {}, failed to open the specified file."
+                log.exception(msg.format(self.name))
+                self.root.should_stop.set()
 
-            self.root_task.files[full_path] = self.file_object
+            self.root.resources['files'][full_path] = self.file_object
 
             if self.header:
                 h = self.format_string(self.header)
@@ -289,17 +312,18 @@ class SaveFileTask(SimpleTask):
 
             labels = []
             self.array_values = set()
-            for i, s in enumerate(self.saved_values):
-                value = self.format_and_eval_string(s[1])
+            for i, (l, v) in enumerate(self.saved_values.items()):
+                label = self.format_string(l)
+                value = self.format_and_eval_string(v)
                 if isinstance(value, numpy.ndarray):
                     names = value.dtype.names
                     self.array_values.add(i)
                     if names:
-                        labels.extend([s[0] + '_' + m for m in names])
+                        labels.extend([label + '_' + m for m in names])
                     else:
-                        labels.append(s[0])
+                        labels.append(label)
                 else:
-                    labels.append(s[0])
+                    labels.append(label)
             self.file_object.write('\t'.join(labels) + '\n')
             self.file_object.flush()
 
@@ -307,28 +331,25 @@ class SaveFileTask(SimpleTask):
 
         lengths = set()
         values = []
-        for i, s in enumerate(self.saved_values):
-            value = self.format_and_eval_string(s[1])
+        for i, v in enumerate(self.saved_values.values()):
+            value = self.format_and_eval_string(v)
             values.append(value)
             if i in self.array_values:
                 lengths.add(value.shape[0])
                 if len(value.shape) > 1:
                     log = logging.getLogger()
-                    mes = cleandoc('''In {}, impossible to save arrays exceeding
-                                    one dimension. Save file in HDF5 format. 
-                                    '''.format(self.task_name))
-                    log.error(mes)
-                    self.root_task.should_stop.set()
+                    msg = ("In {}, impossible to save arrays exceeding one "
+                           "dimension. Save file in HDF5 format.")
+                    log.error(msg.format(self.name))
+                    self.root.should_stop.set()
 
         if lengths:
             if len(lengths) > 1:
                 log = logging.getLogger()
-                mes = cleandoc('''In {}, impossible to save simultaneously
-                                arrays of different sizes.
-                                Save file in HDF5 format. 
-                                '''.format(self.task_name))
-                log.error(mes)
-                self.root_task.should_stop.set()
+                msg = ("In {}, impossible to save simultaneously arrays of "
+                       "different sizes. Save file in HDF5 format.")
+                log.error(msg.format(self.name))
+                self.root.should_stop.set()
             else:
                 length = lengths.pop()
 
@@ -351,23 +372,16 @@ class SaveFileTask(SimpleTask):
             self.file_object.flush()
 
     def check(self, *args, **kwargs):
+        """Check tha given parameters are meaningful
+
         """
-        """
-        err_path = self.task_path + '/' + self.task_name
-        traceback = {}
+        err_path = self.get_error_path()
+        test, traceback = super(SaveFileTask, self).check(*args, **kwargs)
         try:
             full_folder_path = self.format_string(self.folder)
-        except Exception as e:
-            mess = 'Failed to format the folder path: {}'
-            traceback[err_path] = mess.format(e)
-            return False, traceback
-
-        try:
             filename = self.format_string(self.filename)
-        except Exception as e:
-            mess = 'Failed to format the filename: {}'
-            traceback[err_path] = mess.format(e)
-            return False, traceback
+        except Exception:
+            return test, traceback
 
         full_path = os.path.join(full_folder_path, filename)
 
@@ -388,28 +402,36 @@ class SaveFileTask(SimpleTask):
             traceback[err_path] = mess.format(e)
             return False, traceback
 
-        try:
-            self.format_string(self.header)
-        except Exception as e:
-            mess = 'Failed to format the header: {}'
-            traceback[err_path] = mess.format(e)
-            return False, traceback
-
-        test = True
-        for i, s in enumerate(self.saved_values):
+        labels = set()
+        for i, (l, v) in enumerate(self.saved_values.items()):
             try:
-                self.format_and_eval_string(s[1])
-            except Exception as e:
-                traceback[err_path + '-entry' + str(i)] = \
-                    'Failed to evaluate entry {}: {}'.format(s[0], e)
+                labels.add(self.format_string(l))
+            except Exception:
+                traceback[err_path + '-label_' + str(i)] = \
+                    'Failed to evaluate label {}:\n{}'.format(l, format_exc())
+                test = False
+            try:
+                self.format_and_eval_string(v)
+            except Exception:
+                traceback[err_path + '-entry_' + str(i)] = \
+                    'Failed to evaluate entry {}:\n{}'.format(v, format_exc())
                 test = False
 
+        if not test:
+            return test, traceback
+
+        if len(labels) != len(self.saved_values):
+            traceback[err_path] = "All labels must be different."
+            return False, traceback
+
         return test, traceback
-        
+
+
 class _HDF5File(h5py.File):
-    """ 
-        Resize the datasets before closing the file
-        Sets the compression with a boolean
+    """Resize the datasets before closing the file
+
+    Sets the compression with a boolean
+
     """
 
     def close(self):
@@ -421,11 +443,13 @@ class _HDF5File(h5py.File):
 
     def create_dataset(self, name, shape, maximumshape, datatype, compress):
         f = super(_HDF5File, self)
-        if compress:
-            f.create_dataset(name, shape, maxshape=maximumshape, dtype=datatype, compression='gzip')
+        if compress != 'None':
+            f.create_dataset(name, shape, maxshape=maximumshape,
+                             dtype=datatype, compression=compress)
         else:
-            f.create_dataset(name, shape, maxshape=maximumshape, dtype=datatype)
-            
+            f.create_dataset(name, shape, maxshape=maximumshape,
+                             dtype=datatype)
+
 
 class SaveFileHDF5Task(SimpleTask):
     """ Save the specified entries in a HDF5 file.
@@ -434,33 +458,35 @@ class SaveFileHDF5Task(SimpleTask):
 
     """
     #: Folder in which to save the data.
-    folder = Unicode('{default_path}').tag(pref=True)
+    folder = Unicode('{default_path}').tag(pref=True, fmt=True)
 
     #: Name of the file in which to write the data.
-    filename = Unicode().tag(pref=True)
+    filename = Unicode().tag(pref=True, fmt=True)
 
     #: Currently opened file object. (File mode)
     file_object = Value()
 
     #: Header to write at the top of the file.
-    header = Str().tag(pref=True)
+    header = Unicode().tag(pref=True, fmt=True)
 
-    #: List of values to be saved store as (label, value).
-    saved_values = ContainerList(Tuple()).tag(pref=True)
-    
-    #: data type (float16, float32, etc.)
+    #: Values to save as an ordered dictionary.
+    saved_values = Typed(OrderedDict, ()).tag(pref=(ordered_dict_to_pref,
+                                                    ordered_dict_from_pref))
+
+    #: Data type (float16, float32, etc.)
     datatype = Enum('float16', 'float32', 'float64').tag(pref=True)
-    
-    #: gzip compression of the data in the HDF5 file
-    compression = Bool(False).tag(pref=True)
 
-    #: estimation of the number of calls of this task during the measure. This helps h5py to chunk the file appropriately
-    callsEstimation = Str('1').tag(pref=True)
+    #: Compression type of the data in the HDF5 file
+    compression = Enum('None', 'gzip').tag(pref=True)
+
+    #: Estimation of the number of calls of this task during the measure.
+    #: This helps h5py to chunk the file appropriately
+    calls_estimation = Unicode('1').tag(pref=True, feval=True)
 
     #: Flag indicating whether or not initialisation has been performed.
     initialized = Bool(False)
 
-    task_database_entries = set_default({'file': None})
+    database_entries = set_default({'file': None})
 
     wait = set_default({'activated': True})  # Wait on all pools by default.
 
@@ -469,93 +495,90 @@ class SaveFileHDF5Task(SimpleTask):
 
         """
 
-        callsEstimation = self.format_and_eval_string(self.callsEstimation)        
-        
+        calls_estimation = self.format_and_eval_string(self.calls_estimation)
+
         # Initialisation.
         if not self.initialized:
 
+            self._formatted_labels = []
             full_folder_path = self.format_string(self.folder)
             filename = self.format_string(self.filename)
             full_path = os.path.join(full_folder_path, filename)
             try:
                 self.file_object = _HDF5File(full_path, 'w')
-            except IOError as e:
+            except IOError:
                 log = logging.getLogger()
-                mes = cleandoc('''In {}, failed to open the specified
-                                file {}'''.format(self.task_name, e))
-                log.error(mes)
-                self.root_task.should_stop.set()
+                msg = "In {}, failed to open the specified file."
+                log.exception(msg.format(self.name))
+                self.root.should_stop.set()
 
-            self.root_task.files[full_path] = self.file_object
+            self.root.resources['files'][full_path] = self.file_object
 
             f = self.file_object
-            for s in self.saved_values:
-                value = self.format_and_eval_string(s[1])
+            for l, v in self.saved_values.items():
+                label = self.format_string(l)
+                self._formatted_labels.append(label)
+                value = self.format_and_eval_string(v)
                 if isinstance(value, numpy.ndarray):
                     names = value.dtype.names
                     if names:
                         for m in names:
-                            f.create_dataset(s[0] + '_' + m, 
-                                             (callsEstimation, ) + value.shape,
+                            f.create_dataset(label + '_' + m,
+                                             (calls_estimation,) + value.shape,
                                              (None, ) + value.shape,
-                                             self.format_string(self.datatype),
-                                             self.compression )
+                                             self.datatype,
+                                             self.compression)
                     else:
-                        f.create_dataset(s[0], 
-                                         (callsEstimation, ) + value.shape,
+                        f.create_dataset(label,
+                                         (calls_estimation,) + value.shape,
                                          (None, ) + value.shape,
-                                         self.format_string(self.datatype),
-                                         self.compression )
+                                         self.datatype,
+                                         self.compression)
                 else:
-                    f.create_dataset(s[0], (callsEstimation, ), (None, ), self.format_string(self.datatype), self.compression)
+                    f.create_dataset(label, (calls_estimation,), (None,),
+                                     self.datatype, self.compression)
             f.attrs['header'] = self.format_string(self.header)
-            f.attrs['countCalls'] = 0
+            f.attrs['count_calls'] = 0
             f.flush()
 
             self.initialized = True
-        
+
         f = self.file_object
-        countCalls = f.attrs['countCalls']
-        
-        if not (countCalls % callsEstimation):
+        count_calls = f.attrs['count_calls']
+
+        if not (count_calls % calls_estimation):
             for dataset in f.keys():
                 oldshape = f[dataset].shape
-                newshape = (oldshape[0] + callsEstimation, ) + oldshape[1:]
+                newshape = (oldshape[0] + calls_estimation, ) + oldshape[1:]
                 f[dataset].resize(newshape)
-        
-        for s in self.saved_values:
-            value = self.format_and_eval_string(s[1])
+
+        labels = self._formatted_labels
+        for i, v in enumerate(self.saved_values.values()):
+            value = self.format_and_eval_string(v)
             if isinstance(value, numpy.ndarray):
                 names = value.dtype.names
                 if names:
                     for m in names:
-                        f[s[0] + '_' + m][countCalls] = value[m]
+                        f[labels[i] + '_' + m][count_calls] = value[m]
                 else:
-                    f[s[0]][countCalls] = value
+                    f[labels[i]][count_calls] = value
             else:
-                f[s[0]][countCalls] = value
-                
-        f.attrs['countCalls'] = countCalls + 1
+                f[labels[i]][count_calls] = value
+
+        f.attrs['count_calls'] = count_calls + 1
         f.flush()
 
     def check(self, *args, **kwargs):
+        """Check that all teh parameters are correct.
+
         """
-        """
-        err_path = self.task_path + '/' + self.task_name
-        traceback = {}
+        err_path = self.get_error_path
+        test, traceback = super(SaveFileTask, self).check(*args, **kwargs)
         try:
             full_folder_path = self.format_string(self.folder)
-        except Exception as e:
-            mess = 'Failed to format the folder path: {}'
-            traceback[err_path] = mess.format(e)
-            return False, traceback
-
-        try:
             filename = self.format_string(self.filename)
-        except Exception as e:
-            mess = 'Failed to format the filename: {}'
-            traceback[err_path] = mess.format(e)
-            return False, traceback
+        except Exception:
+            return test, traceback
 
         full_path = os.path.join(full_folder_path, filename)
 
@@ -576,28 +599,32 @@ class SaveFileHDF5Task(SimpleTask):
             traceback[err_path] = mess.format(e)
             return False, traceback
 
-        try:
-            self.format_string(self.header)
-        except Exception as e:
-            mess = 'Failed to format the header: {}'
-            traceback[err_path] = mess.format(e)
-            return False, traceback
-        
-        values_name = [s[0] for s in self.saved_values]
-        if len(values_name) != len(set(values_name)):
-            traceback[err_path] = \
-                    cleandoc('''All labels must be different.''')
-            return False, traceback
-            
-        test = True
-        for i, s in enumerate(self.saved_values):
+        labels = set()
+        for i, (l, v) in enumerate(self.saved_values.items()):
             try:
-                self.format_and_eval_string(s[1])
-            except Exception as e:
-                traceback[err_path + '-entry' + str(i)] = \
-                    'Failed to evaluate entry {}: {}'.format(s[0], e)
-                test = False            
+                labels.add(self.format_string(l))
+            except Exception:
+                traceback[err_path + '-label_' + str(i)] = \
+                    'Failed to evaluate label {}:\n{}'.format(l, format_exc())
+                test = False
+            try:
+                self.format_and_eval_string(v)
+            except Exception:
+                traceback[err_path + '-entry_' + str(i)] = \
+                    'Failed to evaluate entry {}:\n{}'.format(v, format_exc())
+                test = False
+
+        if not test:
+            return test, traceback
+
+        if len(labels) != len(self.saved_values):
+            traceback[err_path] = "All labels must be different."
+            return False, traceback
+
         return test, traceback
+
+    #: List of the formatted names of the entries.
+    _formatted_labels = List()
 
 
 class SaveArrayTask(SimpleTask):
@@ -608,16 +635,16 @@ class SaveArrayTask(SimpleTask):
     """
 
     #: Folder in which to save the data.
-    folder = Unicode().tag(pref=True)
+    folder = Unicode().tag(pref=True, fmt=True)
 
     #: Name of the file in which to write the data.
-    filename = Str().tag(pref=True)
+    filename = Unicode().tag(pref=True, fmt=True)
 
     #: Header to write at the top of the file.
-    header = Str().tag(pref=True)
+    header = Unicode().tag(pref=True, fmt=True)
 
     #: Name of the array to save in the database.
-    target_array = Str().tag(pref=True)
+    target_array = Unicode().tag(pref=True, feval=True)
 
     #: Flag indicating whether to save as csv or .npy.
     mode = Enum('Text file', 'Binary file').tag(pref=True)
@@ -649,10 +676,9 @@ class SaveArrayTask(SimpleTask):
             try:
                 file_object = open(full_path, 'wb')
             except IOError:
-                mes = cleandoc('''In {}, failed to open the specified
-                                file'''.format(self.task_name))
+                msg = "In {}, failed to open the specified file"
                 log = logging.getLogger()
-                log.error(mes)
+                log.exception(msg.format(self.name))
                 raise
 
             if self.header:
@@ -671,48 +697,39 @@ class SaveArrayTask(SimpleTask):
                 file_object = open(full_path, 'wb')
                 file_object.close()
             except IOError:
-                mes = cleandoc(''''In {}, failed to open the specified
-                                file'''.format(self.task_name))
+                msg = "In {}, failed to open the specified file."
                 log = logging.getLogger()
-                log.error(mes)
+                log.exception(msg.format(self.name))
 
-                self.root_task.should_stop.set()
+                self.root.should_stop.set()
                 return
 
             numpy.save(full_path, array_to_save)
 
     def check(self, *args, **kwargs):
-        """ Check folder path and filename.
+        """Check folder path and filename.
 
         """
-        traceback = {}
-        err_path = self.task_path + '/' + self.task_name
-        try:
-            full_folder_path = self.format_string(self.folder)
-        except Exception as e:
-            traceback[err_path] = \
-                'Failed to format the folder path: {}'.format(e)
-            return False, traceback
+        err_path = self.get_error_path()
+        test, traceback = super(SaveArrayTask, self).check(*args, **kwargs)
 
         if self.mode == 'Binary file':
             if len(self.filename) > 3 and self.filename[-4] == '.'\
                     and self.filename[-3:] != 'npy':
                 self.filename = self.filename[:-4] + '.npy'
-                mes = cleandoc("""The extension of the file will be
-                                replaced by '.npy' in task
-                                {}""".format(self.task_name))
-                traceback[err_path + '-file_ext'] = mes
+                msg = ("The extension of the file will be replaced by '.npy' "
+                       "in task {}").format(self.name)
+                traceback[err_path + '-file_ext'] = msg
 
             if self.header:
                 traceback[err_path + '-header'] =\
                     'Cannot write a header when saving in binary mode.'
 
         try:
+            full_folder_path = self.format_string(self.folder)
             filename = self.format_string(self.filename)
-        except Exception as e:
-            traceback[err_path] = \
-                'Failed to format the filename: {}'.format(e)
-            return False, traceback
+        except Exception:
+            return test, traceback
 
         full_path = os.path.join(full_folder_path, filename)
 
@@ -734,17 +751,8 @@ class SaveArrayTask(SimpleTask):
             return False, traceback
 
         try:
-            self.format_string(self.header)
-        except Exception as e:
-            mess = 'Failed to format the header: {}'
-            traceback[err_path] = mess.format(e)
-            return False, traceback
-
-        try:
             array = self.format_and_eval_string(self.target_array)
-        except Exception as e:
-            traceback[err_path] = \
-                'Failed to evaluate target_array : {}'.format(e)
+        except Exception:
             return False, traceback
 
         if not isinstance(array, numpy.ndarray):
@@ -753,5 +761,3 @@ class SaveArrayTask(SimpleTask):
             return False, traceback
 
         return True, traceback
-
-KNOWN_PY_TASKS = [SaveTask, SaveFileTask, SaveFileHDF5Task, SaveArrayTask]
