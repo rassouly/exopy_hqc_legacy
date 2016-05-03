@@ -1,25 +1,32 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : load_tasks.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Tasks to used to load a file in memory.
+
 """
-"""
-from atom.api import (Bool, Str, Unicode, List, set_default)
-import numpy as np
-from inspect import cleandoc
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 import os
 
-from ..base_tasks import SimpleTask
-from ..task_interface import InterfaceableTaskMixin, TaskInterface
+import numpy as np
+from atom.api import (Bool, Unicode, List, set_default)
+from past.builtins import basestring
+
+from ecpy.tasks.api import SimpleTask, InterfaceableTaskMixin, TaskInterface
 
 
 def _make_array(names, dtypes='f8'):
     if isinstance(dtypes, basestring):
         dtypes = [dtypes for i in range(len(names))]
 
-    dtype = [(name, dtypes[i]) for i, name in enumerate(names)]
+    dtype = {'names': names, 'formats': dtypes}
+    print(dtype)
     return np.ones((5,), dtype=dtype)
 
 
@@ -28,76 +35,61 @@ class LoadArrayTask(InterfaceableTaskMixin, SimpleTask):
 
     """
     #: Folder from which to load the data.
-    folder = Unicode().tag(pref=True)
+    folder = Unicode().tag(pref=True, fmt=True)
 
     #: Name of the file from which to load the data.
-    filename = Unicode().tag(pref=True)
+    filename = Unicode().tag(pref=True, fmt=True)
 
     #: Kind of file to load.
-    selected_format = Str().tag(pref=True)
+    selected_format = Unicode().tag(pref=True)
 
-    task_database_entries = set_default({'array': _make_array(['var1',
-                                                               'var2'])})
+    database_entries = set_default({'array': _make_array(['var1', 'var2'])})
 
     def check(self, *args, **kwargs):
-        """
+        """Check that the provided path and filename make sense.
+
         """
         test, traceback = super(LoadArrayTask, self).check(*args, **kwargs)
-        err_path = self.task_path + '/' + self.task_name
-
-        try:
-            full_folder_path = self.format_string(self.folder)
-        except Exception as e:
-            mess = 'Failed to format the folder path: {}'
-            traceback[err_path + '-folder'] = mess.format(e)
-            test = False
-
-        try:
-            filename = self.format_string(self.filename)
-        except Exception as e:
-            mess = 'Failed to format the filename: {}'
-            traceback[err_path + '-filename'] = mess.format(e)
-            test = False
+        err_path = self.get_error_path()
 
         if not test:
             return test, traceback
 
+        full_folder_path = self.format_string(self.folder)
+        filename = self.format_string(self.filename)
         full_path = os.path.join(full_folder_path, filename)
 
         if not os.path.isfile(full_path):
-            traceback[err_path + '-file'] = \
-                cleandoc('''File does not exist, be sure that your measurez
-                will create before this task is executed.''')
+            msg = ('File does not exist, be sure that your measure  will '
+                   'create it before this task is executed.')
+            traceback[err_path + '-file'] = msg
 
         return test, traceback
 
 
-KNOWN_PY_TASKS = [LoadArrayTask]
-
-
 class CSVLoadInterface(TaskInterface):
-    """
+    """Interface used to load CSV files.
+
     """
     #: Delimiter used in the file to load.
-    delimiter = Str('\t').tag(pref=True)
+    delimiter = Unicode('\t').tag(pref=True)
 
     #: Character used to signal a comment.
-    comments = Str('#').tag(pref=True)
+    comments = Unicode('#').tag(pref=True)
 
     #: Flag indicating whether or not to use the first row as column names.
     names = Bool(True).tag(pref=True)
 
     #: The users can provide the names which will be available in its file
     #: if the file cannot be found when checks are run.
-    c_names = List(Str()).tag(pref=True)
+    c_names = List(Unicode()).tag(pref=True)
 
     #: Class attr used in the UI.
     file_formats = ['CSV']
 
-    has_view = True
-
     def perform(self):
-        """
+        """Load a file stored in csv format.
+
         """
         task = self.task
         folder = task.format_string(task.folder)
@@ -119,7 +111,9 @@ class CSVLoadInterface(TaskInterface):
         task.write_in_database('array', data)
 
     def check(self, *args, **kwargs):
-        """
+        """Try to find the names of the columns to add the array in the
+        database.
+
         """
         task = self.task
         if self.c_names:
@@ -146,11 +140,9 @@ class CSVLoadInterface(TaskInterface):
 
         return True, {}
 
-    def _observe_c_names(self, change):
-        """ Observer keeping in sync the c_names and the array in the database.
+    def _post_setattr_c_names(self, old, new):
+        """Keep the c_names  in sync with the array in the database.
 
         """
-        if change['value']:
-            self.task.write_in_database('array', _make_array(change['value']))
-
-INTERFACES = {'LoadArrayTask': [CSVLoadInterface]}
+        if new:
+            self.task.write_in_database('array', _make_array(new))
