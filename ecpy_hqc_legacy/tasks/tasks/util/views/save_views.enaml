@@ -6,7 +6,7 @@
 #
 # The full license is in the file LICENCE, distributed with this software.
 # -----------------------------------------------------------------------------
-"""View of the task used to save data in memory.
+"""View of the task used to save data.
 
 """
 from __future__ import (division, unicode_literals, print_function,
@@ -62,7 +62,7 @@ enamldef SavedValueView(Container):
     constraints = [hbox(k, v)]
     padding = 1
 
-    QtLineCompleter: v:
+    QtLineCompleter: k:
         text := model.key
         entries_updater = model.task.list_accessible_database_entries
         tool_tip = (('The labels are evaluated only once when creating the '

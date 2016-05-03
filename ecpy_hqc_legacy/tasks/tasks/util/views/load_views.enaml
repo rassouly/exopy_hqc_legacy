@@ -49,14 +49,15 @@ class BaseLoadView(BaseTaskView):
                                               {'task': self.task.task_id})
 
         file_formats = []
-        interfaces = {}
+        f_interfaces = {}
         # Get the file formats and map them to their interface.
         for i_infos in infos.interfaces.values():
             formats = i_infos.cls.file_formats
             file_formats.extend(formats)
-            interfaces.update({d: i_infos for d in formats})
+            f_interfaces.update({f: i_infos.cls for f in formats})
         self.file_formats = file_formats
-        self._interfaces = interfaces
+        self._interfaces = infos.interfaces
+        self._f_interfaces = f_interfaces
 
         if self.task.interface:
             self._insert_interface_views(self.task.interface)
@@ -73,15 +74,18 @@ class BaseLoadView(BaseTaskView):
 
     # --- Private API ---------------------------------------------------------
 
-    #: Map between driver and interface.
-    _interfaces = Dict(Str())
+    #: Mapping between interface id and its associated infos.
+    _interfaces = Dict()
+
+    #: Mapping between formats and interfaces
+    _f_interfaces = Dict()
 
     def _update_interface(self, change):
         """Update the interface when the selected format change.
 
         """
         f_format = change['value']
-        interface = self._interfaces[f_format].cls
+        interface = self._f_interfaces[f_format]
 
         if not isinstance(self.task.interface, interface):
             # Destroy the views associated with the ancient interface.
@@ -100,10 +104,10 @@ class BaseLoadView(BaseTaskView):
         """Insert the views associated with the selected interface.
 
         """
-        i_infos = self._interfaces[interface.interface_id]
+        i_infos = self._interfaces[interface.interface_id[0]]
         if i_infos.views:
             i_views = [v(self, interface=self.task.interface)
-                       for v in views[i_c_name]]
+                       for v in i_infos.views]
             # TODO handle more complex insertions.
             if hasattr(i_views[0], 'index'):
                 self.insert_children(i_views[0].index, i_views)

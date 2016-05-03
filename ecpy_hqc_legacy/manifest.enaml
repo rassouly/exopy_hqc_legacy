@@ -1,0 +1,56 @@
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""The manifest contributing the extensions to the main application.
+
+"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+from enaml.workbench.api import PluginManifest, Extension
+from ecpy.tasks.api import Tasks, Task, Interface
+
+
+enamldef HqcLegacyManifest(PluginManifest):
+    """The manifest declaring the extension points to the Ecpy.
+
+    """
+    id = 'ecpy_hqc_legacy'
+
+    Extension:
+        point = 'ecpy.tasks.declarations'
+        Tasks:
+            path = 'ecpy_hqc_legacy.tasks.tasks'
+            Tasks:
+                path = 'util'
+                group = 'util'
+                Task:
+                    task = 'array_tasks:ArrayExtremaTask'
+                    view = 'views.array_views:ArrayExtremaView'
+                Task:
+                    task = 'array_tasks:ArrayFindValueTask'
+                    view = 'views.array_views:ArrayFindValueView'
+                Task:
+                    task = 'load_tasks:LoadArrayTask'
+                    view = 'views.load_views:LoadArrayView'
+                    Interface:
+                        interface = 'load_tasks:CSVLoadInterface'
+                        views = ['views.load_views:CSVLoadInterfaceView']
+                Task:
+                    task = 'save_tasks:SaveTask'
+                    view = 'views.save_views:SaveView'
+                Task:
+                    task = 'save_tasks:SaveFileTask'
+                    view = 'views.save_views:SaveFileView'
+                Task:
+                    task = 'save_tasks:SaveFileHDF5Task'
+                    view = 'views.save_views:SaveFileHDF5View'
+                Task:
+                    task = 'save_tasks:SaveArrayTask'
+                    view = 'views.save_views:SaveArrayView'
+

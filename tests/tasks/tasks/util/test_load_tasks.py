@@ -20,12 +20,13 @@ import enaml
 import numpy as np
 
 from ecpy.tasks.api import RootTask
-from ecpy.testing.util import show_widget, process_app_events
+from ecpy.testing.util import show_widget
 from ecpy_hqc_legacy.tasks.tasks.util.load_tasks import (LoadArrayTask,
                                                          CSVLoadInterface)
 
 with enaml.imports():
     from ecpy_hqc_legacy.tasks.tasks.util.views.load_views import LoadArrayView
+    from ecpy_hqc_legacy.manifest import HqcLegacyManifest
 
 pytest_plugins = str('ecpy.testing.tasks.fixtures'),
 
@@ -111,26 +112,31 @@ class TestLoadArrayView(object):
         self.task = LoadArrayTask(name='Test')
         self.root.add_child_task(0, self.task)
 
-    def test_view(self, windows, root_view):
+    def test_view(self, windows, root_view, task_workbench,
+                  process_and_sleep):
         """Intantiate a view with no selected interface and select one after
 
         """
+        task_workbench.register(HqcLegacyManifest())
         view = LoadArrayView(task=self.task, root=root_view)
         win = show_widget(view)
+        process_and_sleep()
 
         assert self.task.interface is None
 
         assert 'CSV' in view.file_formats
         self.task.selected_format = 'CSV'
-        process_app_events()
+        process_and_sleep()
         assert isinstance(self.task.interface, CSVLoadInterface)
 
         win.close()
 
-    def test_view2(self, windows, root_view):
+    def test_view2(self, windows, root_view, task_workbench,
+                   process_and_sleep):
         """Intantiate a view with a selected interface.
 
         """
+        task_workbench.register(HqcLegacyManifest())
         interface = CSVLoadInterface()
         self.task.interface = interface
         self.task.selected_format = 'CSV'
@@ -140,7 +146,7 @@ class TestLoadArrayView(object):
         view = LoadArrayView(task=self.task, root=root_view)
         win = show_widget(view)
 
-        process_app_events()
+        process_and_sleep()
 
         assert self.task.interface is interface
         win.close()
