@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : driver_tools.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
 """
 This module defines base tools for writing instrument drivers.
 
@@ -28,10 +30,14 @@ the VISA library.
         resolved by attempting again to send a message.
 
 """
-from textwrap import fill
-from inspect import cleandoc
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 import inspect
+from inspect import cleandoc
+from textwrap import fill
 from functools import wraps
+from traceback import format_exc
 
 
 class InstrError(Exception):
@@ -122,11 +128,11 @@ def secure_communication(max_iter=2):
                     return method(self, *args, **kwargs)
 
                 # Catch all the exception specified by the driver
-                except self.secure_com_except as e:
+                except self.secure_com_except:
                     if i == max_iter:
                         raise
                     else:
-                        print e
+                        print(format_exc())
                         self.reopen_connection()
                         i += 1
 

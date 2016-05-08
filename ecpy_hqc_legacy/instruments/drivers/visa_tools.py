@@ -1,15 +1,30 @@
 # -*- coding: utf-8 -*-
-# TODO this is compatible with PyVisa 1.5 but does not use the new recommended
-# API
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Base classes for instrument relying on the VISA protocol.
+
+"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+from future.utils import raise_with_traceback
+
 try:
-    from pyvisa.visa import Instrument, VisaIOError, VisaTypeError
-except Exception:
-    from pyvisa.legacy.visa import Instrument, VisaIOError
-    from pyvisa.errors import VisaTypeError
+    from pyvisa.highlevel import ResourceManager
+    from pyvisa import errors
+except ImportError:
+    msg = 'The PyVISA library is necessary to use the visa backend.'
+    raise_with_traceback(ImportError(msg))
 
 from .driver_tools import BaseInstrument, InstrIOError
 
 
+# XXX fix propeties name clashes
 class VisaInstrument(BaseInstrument):
     """Base class for drivers using the VISA library to communicate
 
@@ -71,7 +86,7 @@ class VisaInstrument(BaseInstrument):
     read_raw()
 
     """
-    secure_com_except = (InstrIOError, VisaIOError)
+    secure_com_except = (InstrIOError, errors.VisaIOError)
 
     def __init__(self, connection_info, caching_allowed=True,
                  caching_permissions={}, auto_open=True):
@@ -91,16 +106,19 @@ class VisaInstrument(BaseInstrument):
             self.open_connection()
 
     def open_connection(self, **para):
-        """Open the connection to the instr using the `connection_str`
+        """Open the connection to the instr using the `connection_str`.
+
         """
+        rm = ResourceManager()
         try:
-            self._driver = Instrument(self.connection_str, **para)
-        except VisaIOError as er:
+            self._driver = rm.open_resource(self.connection_str, **para)
+        except errors.VisaIOError as er:
             self._driver = None
             raise InstrIOError(str(er))
 
     def close_connection(self):
-        """Close the connection to the instr
+        """Close the connection to the instr.
+
         """
         if self._driver:
             self._driver.close()
@@ -157,7 +175,7 @@ class VisaInstrument(BaseInstrument):
         Simply call the `ask` method of the `Instrument` object stored in
         the attribute `_driver`
         """
-        return self._driver.ask(message)
+        return self._driver.query(message)
 
     def ask_for_values(self, message, format=None):
         """Send the specified message to the instrument and convert its answer
@@ -166,7 +184,7 @@ class VisaInstrument(BaseInstrument):
         Simply call the `ask_for_values` method of the `Instrument` object
         stored in the attribute `_driver`
         """
-        return self._driver.ask_for_values(message, format)
+        return self._driver.query_for_values(message, format)
 
     def clear(self):
         """Resets the device (highly bus dependent).
@@ -252,6 +270,3 @@ class VisaInstrument(BaseInstrument):
     chunk_size = property(_chunk_size, _set_chunk_size)
     """Conveninence to set/get the `chunk_size` attribute of the `Instrument`
     object"""
-
-DRIVER_PACKAGES = ['visa']
-DRIVER_TYPES = {'Visa': VisaInstrument}

@@ -1,13 +1,17 @@
-# =============================================================================
-# module : driver_tools.py
-# author : Pierre Heidmann
-# license : MIT license
-#= =============================================================================
-"""
-Created on Tue Jun 24 17:45:04 2014
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Base classes for instrument relying on a custom dll for communication.
 
-@author: Pierre Heidmann and Matthieu Dartiailh
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 import ctypes
 import time
 from contextlib import contextmanager
@@ -88,6 +92,3 @@ class DllLibrary(object):
             yield
         finally:
             self.lock.release()
-
-DRIVER_PACKAGES = ['dll']
-DRIVER_TYPES = {'Dll': DllInstrument}
