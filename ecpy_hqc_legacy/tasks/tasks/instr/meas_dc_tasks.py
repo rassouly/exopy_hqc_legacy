@@ -1,13 +1,20 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : meas_dc_tasks.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Task to measure DC properties.
+
 """
-"""
-from atom.api import Float, set_default
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from time import sleep
+
+from atom.api import Float, set_default
 
 from hqc_meas.tasks.api import InstrumentTask
 
@@ -22,20 +29,15 @@ class MeasDCVoltageTask(InstrumentTask):
     # Time to wait before the measurement.
     wait_time = Float().tag(pref=True)
 
-    driver_list = ['Agilent34410A', 'Keithley2000']
-    task_database_entries = set_default({'voltage': 1.0})
+    database_entries = set_default({'voltage': 1.0})
 
     wait = set_default({'activated': True, 'wait': ['instr']})
 
     def perform(self):
-        """
-        """
-        if not self.driver:
-            self.start_driver()
+        """Wait and read the DC voltage.
 
+        """
         sleep(self.wait_time)
 
         value = self.driver.read_voltage_dc()
         self.write_in_database('voltage', value)
-
-KNOWN_PY_TASKS = [MeasDCVoltageTask]

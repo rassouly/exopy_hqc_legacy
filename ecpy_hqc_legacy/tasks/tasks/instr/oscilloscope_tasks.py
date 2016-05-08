@@ -1,48 +1,50 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : oscilloscope_tasks.py
-# author : Benjamin Huard
-# license : MIT license
-# =============================================================================
-"""
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Task to apply a magnetic field.
 
 """
-from atom.api import (Str, Bool, set_default, Enum)
-from inspect import cleandoc
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 import numpy as np
-
-from hqc_meas.tasks.api import InstrumentTask
+from atom.api import (Unicode, Bool, set_default, Enum)
+from ecpy.tasks.api import InstrumentTask
 
 
 class OscilloGetTraceTask(InstrumentTask):
     """ Get the trace displayed on the oscilloscope.
 
     """
+    #: Trace to collect from the oscilloscope
     trace = Enum('1', '2', '3', '4', 'TA', 'TB', 'TC', 'TD').tag(pref=True)
 
-    average_nb = Str().tag(pref=True)
+    #: Number of time the instrument should average.
+    average_nb = Unicode().tag(pref=True, feval=True)
 
+    #: Should hid=gh resolution be used.
     highres = Bool(True).tag(pref=True)
 
-    driver_list = ['LeCroy64Xi']
-    task_database_entries = set_default({'trace_data': np.array([1.0]),
-                                         'oscillo_config': ''})
+    database_entries = set_default({'trace_data': np.array([1.0]),
+                                    'oscillo_config': ''})
 
     def perform(self):
+        """Get the data from the instrument.
+
         """
-        """
-        if not self.driver:
-            self.start_driver()
+        if self.driver.owner != self.name:
+            self.driver.owner = self.name
 
-        if self.driver.owner != self.task_name:
-            self.driver.owner = self.task_name
+        channel = self.driver.get_channel(self.trace)
+        data = channel.read_data_complete(self.highres)
 
-        data = self.driver.get_channel(self.trace). \
-            read_data_complete(self.highres)
-
-        oscillo_config = 'Coupling {}, Average number {}'. \
-            format(self.driver.get_channel(self.trace).sweep,
-                   data['VERT_COUPLING'])
+        msg = 'Coupling {}, Average number {}'
+        oscillo_config = msg. format(channel.sweep, data['VERT_COUPLING'])
         self.write_in_database('oscillo_config', oscillo_config)
 
         # if the TrigArray lentgh is null, it's a simple single sweep waveform
@@ -56,22 +58,3 @@ class OscilloGetTraceTask(InstrumentTask):
                                      data['Volt_Value_array']],
                                     names=['Time (s)', 'Voltage (V)'])
             self.write_in_database('trace_data', )
-
-    def check(self, *args, **kwargs):
-        """
-        """
-        test, traceback = super(OscilloGetTraceTask, self).check(*args,
-                                                                 **kwargs)
-        if self.average_nb:
-            try:
-                val = self.format_and_eval_string(self.average_nb)
-                self.write_in_database('Average number', val)
-            except Exception as e:
-                test = False
-                traceback[self.task_path + '/' + self.task_name + '-avgnb'] = \
-                    cleandoc('''Failed to eval the avg nb field formula
-                        {}: {}'''.format(self.average_nb, e))
-
-        return test, traceback
-
-KNOWN_PY_TASKS = [OscilloGetTraceTask]

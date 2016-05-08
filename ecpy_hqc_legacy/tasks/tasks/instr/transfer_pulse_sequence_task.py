@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : transfer_pulse_sequence_task.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Task to transfer a sequence on an AWG.
+
 """
-"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from traceback import format_exc
 from inspect import cleandoc
-from atom.api import (Value, Str, Bool, Unicode, Dict)
+from atom.api import (Value, Bool, Unicode, Dict)
 
 from hqc_meas.tasks.api import (InstrumentTask, InterfaceableTaskMixin,
                                 InstrTaskInterface)
@@ -71,18 +77,16 @@ class TransferPulseSequenceTask(InterfaceableTaskMixin, InstrumentTask):
             self.sequence.external_vars[k] = self.format_and_eval_string(v)
         return self.sequence.compile_sequence()
 
-    def answer(self, members, callables):
-        """Overriden method to take into account the presence of the sequence.
+    def traverse(self, depth=-1):
+        """Reimplemented to also yield the sequence
 
         """
-        infos = super(TransferPulseSequenceTask, self).answer(members,
-                                                              callables)
-        if not self.sequence_path:
-            if 'sequence_path' in infos:
-                del infos['sequence_path']
-            infos = [infos, self.sequence.walk(members, callables)]
+        infos = super(TransferPulseSequenceTask, self).traverse(depth)
 
-        return infos
+        for i in infos:
+            yield i
+
+        yield self.sequence
 
     def register_preferences(self):
         """Handle the sequence specific registering in the preferences.
@@ -101,6 +105,7 @@ class TransferPulseSequenceTask(InterfaceableTaskMixin, InstrumentTask):
 
     update_preferences_from_members = register_preferences
 
+    # XXX rework once ecpy_pulses is more advanced
     @classmethod
     def build_from_config(cls, config, dependencies):
         """Rebuild the task and the sequence from a config file.
@@ -124,9 +129,6 @@ class TransferPulseSequenceTask(InterfaceableTaskMixin, InstrumentTask):
         return task
 
 
-KNOWN_PY_TASKS = [TransferPulseSequenceTask]
-
-
 class AWGTransferInterface(InstrTaskInterface):
     """Interface for the AWG, handling naming the transfered sequences and
     selecting it.
@@ -134,8 +136,8 @@ class AWGTransferInterface(InstrTaskInterface):
     """
     #: Generic name to use for the sequence (the number of the channel will be
     #: appended automatically).
-    sequence_name = Str().tag(pref=True)
-    
+    sequence_name = Unicode().tag(pref=True)
+
     #: Flag indicating whether or not initialisation has been performed.
     initialized = Bool(False)
 
@@ -143,19 +145,13 @@ class AWGTransferInterface(InstrTaskInterface):
     #: execution after transfert.
     select_after_transfer = Bool(True).tag(pref=True)
 
-    driver_list = ['AWG5014B']
-
-    has_view = True
-
-    interface_database_entries = {'sequence_name': ''}
+    database_entries = {'sequence_name': ''}
 
     def perform(self):
         """Compile and transfer the sequence into the AWG.
 
         """
         task = self.task
-        if not task.driver:
-            task.start_driver()
 
         seq_name = self.sequence_name if self.sequence_name else 'Sequence'
         res, seqs = task.compile_sequence()
@@ -189,7 +185,3 @@ class AWGTransferInterface(InstrTaskInterface):
 
         """
         return context.__class__.__name__ == 'AWGContext'
- 
-
-
-INTERFACES = {'TransferPulseSequenceTask': [AWGTransferInterface]}

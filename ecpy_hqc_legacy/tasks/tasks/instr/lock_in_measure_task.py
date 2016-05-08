@@ -1,16 +1,22 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : lock_in_measure_task.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Task to perform a lock-in measurement.
+
 """
-"""
-from atom.api import (Enum, Float, set_default)
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
 
 from time import sleep
 
-from hqc_meas.tasks.api import InstrumentTask
+from atom.api import (Enum, Float, set_default)
+
+from ecpy.tasks.api import InstrumentTask
 
 
 class LockInMeasureTask(InstrumentTask):
@@ -19,24 +25,20 @@ class LockInMeasureTask(InstrumentTask):
     Wait for any parallel operationbefore execution.
 
     """
-    # Value to retrieve.
-    mode = Enum('X', 'Y', 'X&Y', 'Amp', 'Phase',
-                'Amp&Phase').tag(pref=True)
+    #: Value to retrieve.
+    mode = Enum('X', 'Y', 'X&Y', 'Amp', 'Phase', 'Amp&Phase').tag(pref=True)
 
-    # Time to wait before performing the measurement.
+    #: Time to wait before performing the measurement.
     waiting_time = Float().tag(pref=True)
 
-    driver_list = ['SR7265-LI', 'SR7270-LI', 'SR830']
-    task_database_entries = set_default({'x': 1.0})
+    database_entries = set_default({'x': 1.0})
 
     wait = set_default({'activated': True, 'wait': ['instr']})
 
     def perform(self):
-        """
-        """
-        if not self.driver:
-            self.start_driver()
+        """Wait and query the last value in the instrument buffer.
 
+        """
         sleep(self.waiting_time)
 
         if self.mode == 'X':
@@ -60,7 +62,7 @@ class LockInMeasureTask(InstrumentTask):
             self.write_in_database('amplitude', amplitude)
             self.write_in_database('phase', phase)
 
-    def _observe_mode(self, change):
+    def _post_setattr_mode(self, change):
         """ Update the database entries acording to the mode.
 
         """
@@ -77,5 +79,3 @@ class LockInMeasureTask(InstrumentTask):
             self.task_database_entries = {'phase': 1.0}
         elif new == 'Amp&Phase':
             self.task_database_entries = {'amplitude': 1.0, 'phase': 1.0}
-
-KNOWN_PY_TASKS = [LockInMeasureTask]

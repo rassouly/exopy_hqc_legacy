@@ -1,19 +1,23 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : hqc_meas/tasks/task_instr/set_dc_voltage_task.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Task to set the parameters of microwave sources..
+
 """
-"""
-from atom.api import (Float, Value, Str, Int, set_default)
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
 
 import time
-import logging
-from inspect import cleandoc
 
-from hqc_meas.tasks.api import (InstrumentTask, InstrTaskInterface,
-                                InterfaceableTaskMixin)
+from atom.api import (Float, Value, Unicode, Int, set_default)
+
+from ecpy.tasks.api import (InstrumentTask, InstrTaskInterface,
+                            InterfaceableTaskMixin)
 
 
 class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
@@ -24,7 +28,7 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
 
     """
     #: Target value for the source (dynamically evaluated)
-    target_value = Str().tag(pref=True)
+    target_value = Unicode().tag(pref=True, feval='Skip_empty')
 
     #: Largest allowed step when changing the output of the instr.
     back_step = Float().tag(pref=True)
@@ -36,42 +40,19 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
     delay = Float(0.01).tag(pref=True)
 
     parallel = set_default({'activated': True, 'pool': 'instr'})
-    loopable = True
-    task_database_entries = set_default({'voltage': 0.01})
-
-    driver_list = ['YokogawaGS200', 'Yokogawa7651']
-
-    def check(self, *args, **kwargs):
-        """
-        """
-        test, traceback = super(SetDCVoltageTask, self).check(*args, **kwargs)
-        if self.target_value:
-            try:
-                val = self.format_and_eval_string(self.target_value)
-                self.write_in_database('voltage', val)
-            except Exception as e:
-                test = False
-                traceback[self.task_path + '/' + self.task_name + '-volt'] = \
-                    cleandoc('''Failed to eval the target value formula
-                        {} : '''.format(self.target_value, e))
-
-        return test, traceback
+    database_entries = set_default({'voltage': 0.01})
 
     def i_perform(self, value=None):
-        """
-        """
-        if not self.driver:
-            self.start_driver()
+        """Default interface.
 
+        """
         if self.driver.owner != self.task_name:
             self.driver.owner = self.task_name
             if hasattr(self.driver, 'function') and\
                     self.driver.function != 'VOLT':
-                log = logging.getLogger()
-                mes = cleandoc('''Instrument assigned to task {} is not
-                    configured to output a voltage'''.format(self.task_name))
-                log.fatal(mes)
-                self.root_task.should_stop.set()
+                msg = ('Instrument assigned to task {} is not configured to '
+                       'output a voltage')
+                raise ValueError(msg.format(self.name))
 
         setter = lambda value: setattr(self.driver, 'voltage', value)
         current_value = getattr(self.driver, 'voltage')
@@ -95,8 +76,8 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
             value = self.format_and_eval_string(self.target_value)
 
         if self.safe_max and self.safe_max < abs(value):
-            raise ValueError(cleandoc('''Requested voltage {} exceeds safe max
-                                      : '''.format(value)))
+            msg = 'Requested voltage {} exceeds safe max : {}'
+            raise ValueError(msg.format(value, self.safe_max))
 
         last_value = current_value
 
@@ -133,16 +114,10 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
         self.write_in_database('voltage', last_value)
 
 
-KNOWN_PY_TASKS = [SetDCVoltageTask]
-
-
 class MultiChannelVoltageSourceInterface(InstrTaskInterface):
-    """
-    """
-    has_view = True
+    """Interface for multiple outputs sources.
 
-    driver_list = ['TinyBilt']
-
+    """
     #: Id of the channel to use.
     channel = Int(1).tag(pref=True)
 
@@ -150,12 +125,10 @@ class MultiChannelVoltageSourceInterface(InstrTaskInterface):
     channel_driver = Value()
 
     def perform(self, value=None):
-        """
+        """Set the specified voltage.
+
         """
         task = self.task
-        if not task.driver:
-            task.start_driver()
-
         if not self.channel_driver:
             self.channel_driver = task.driver.get_channel(self.channel)
 
@@ -163,17 +136,18 @@ class MultiChannelVoltageSourceInterface(InstrTaskInterface):
             self.channel_driver.owner = task.task_name
             if hasattr(self.channel_driver, 'function') and\
                     self.channel_driver.function != 'VOLT':
-                log = logging.getLogger()
-                mes = cleandoc('''Instrument assigned to task {} is not
-                    configured to output a voltage'''.format(task.task_name))
-                log.fatal(mes)
-                task.root_task.should_stop.set()
+                msg = ('Instrument output assigned to task {} is not '
+                       'configured to output a voltage')
+                raise ValueError(msg.format(self.name))
 
         setter = lambda value: setattr(self.channel_driver, 'voltage', value)
         current_value = getattr(self.channel_driver, 'voltage')
 
         task.smooth_set(value, setter, current_value)
 
+    # XXX rework
+    # could add a context manager to the instrument task to simplify that kind
+    # of tests.
     def check(self, *args, **kwargs):
         if kwargs.get('test_instr'):
             task = self.task
@@ -213,5 +187,3 @@ class MultiChannelVoltageSourceInterface(InstrTaskInterface):
 
         else:
             return True, {}
-
-INTERFACES = {'SetDCVoltageTask': [MultiChannelVoltageSourceInterface]}

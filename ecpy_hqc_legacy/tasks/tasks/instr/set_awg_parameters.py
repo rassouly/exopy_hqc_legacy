@@ -1,48 +1,54 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : set_awg_parameters.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Tasks to set the parameters of arbitrary waveform generators.
+
 """
-"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from traceback import format_exc
 from ast import literal_eval
 from itertools import chain
-from atom.api import (Str, Int, List, Dict)
+from atom.api import (Unicode, Int, List, Dict)
 
-from hqc_meas.utils.atom_util import HasPrefAtom, tagged_members
-from hqc_meas.tasks.api import (InstrumentTask, InterfaceableTaskMixin,
-                                InstrTaskInterface)
+from ecpy.utils.atom_util import HasPrefAtom, tagged_members
+from ecpy.tasks.api import (InstrumentTask, InterfaceableTaskMixin,
+                            InstrTaskInterface)
 
 
 class AnalogicalParameters(HasPrefAtom):
     """Parameters for one analogical port of the channel.
 
     """
-    parameter1 = Str().tag(pref=True, check=True)
+    parameter1 = Unicode().tag(pref=True, check=True)
 
-    parameter2 = Str().tag(pref=True, check=True)
+    parameter2 = Unicode().tag(pref=True, check=True)
 
-    parameter3 = Str().tag(pref=True, check=True)
+    parameter3 = Unicode().tag(pref=True, check=True)
 
 
 class LogicalParameters(HasPrefAtom):
     """Parameters for one logical port of the channel.
 
     """
-    parameter1 = Str().tag(pref=True, check=True)
+    parameter1 = Unicode().tag(pref=True, check=True)
 
-    parameter2 = Str().tag(pref=True, check=True)
+    parameter2 = Unicode().tag(pref=True, check=True)
 
-    parameter3 = Str().tag(pref=True, check=True)
+    parameter3 = Unicode().tag(pref=True, check=True)
 
 
 class AWGChannelParameters(HasPrefAtom):
     """Parameters for one channel of the AWG.
 
     """
-    active = Str().tag(pref=True, check=True)
+    active = Unicode().tag(pref=True, check=True)
 
     analogical = Int().tag(pref=True)
 
@@ -68,6 +74,12 @@ class AWGChannelParameters(HasPrefAtom):
         traceback = {}
         i = 0
         kind = 'Analogical{}_'
+        try:
+            task.format_and_eval_string(self.active)
+        except Exception:
+            mess = 'Failed to eval active : {}'
+            traceback['Channel'] = mess.format(format_exc())
+
         for p in chain(self.analogicals, self.logicals):
             if i == self.analogical:
                 kind = 'Logical{}_'
@@ -128,9 +140,11 @@ class SetAWGParametersTask(InterfaceableTaskMixin, InstrumentTask):
         """
         test, traceback = super(SetAWGParametersTask,
                                 self).check(*args, **kwargs)
+        err_path = self.get_error_path()
         for id, ch in self._channels.items():
             res, tr = ch.check(self)
-            aux = {'Ch{}_{}'.format(id, err): val for err, val in tr.items()}
+            aux = {err_path + 'Ch{}_{}'.format(id, err): val
+                   for err, val in tr.items()}
             traceback.update(aux)
             test &= res
 
@@ -180,8 +194,6 @@ class SetAWGParametersTask(InterfaceableTaskMixin, InstrumentTask):
 
             self._channels = channels
 
-KNOWN_PY_TASKS = [SetAWGParametersTask]
-
 
 class AWGParasInterface(InstrTaskInterface):
     """
@@ -202,10 +214,6 @@ class TektroAWGParasInterface(AWGParasInterface):
     channels_ids = [1, 2, 3, 4]
 
     channels_specs = {1: (2, 1), 2: (2, 1), 3: (2, 1), 4: (2, 1)}
-
-    driver_list = ['AWG5014B']
-
-    has_view = True
 
     def perform(self):
         """Set all channels parameters.
@@ -257,5 +265,3 @@ class TektroAWGParasInterface(AWGParasInterface):
             if logical2.parameter3:
                 de = task.format_and_eval_string(logical2.parameter3)
                 ch_dr.marker2_delay = de
-
-INTERFACES = {'SetAWGParametersTask': [TektroAWGParasInterface]}

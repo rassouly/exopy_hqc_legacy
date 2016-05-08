@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : apply_mag_field_task.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
-"""
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Task to apply a magnetic field.
 
 """
-from atom.api import (Str, Float, Bool, set_default)
-from inspect import cleandoc
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
 
-from hqc_meas.tasks.api import InstrumentTask
+from atom.api import (Unicode, Float, Bool, set_default)
+
+from epy.tasks.api import InstrumentTask
 
 
 class ApplyMagFieldTask(InstrumentTask):
@@ -18,7 +22,7 @@ class ApplyMagFieldTask(InstrumentTask):
 
     """
     # Target magnetic field (dynamically evaluated)
-    target_field = Str().tag(pref=True)
+    target_field = Unicode().tag(pref=True, feval='Skip_empty')
 
     # Rate at which to sweep the field.
     rate = Float(0.01).tag(pref=True)
@@ -31,18 +35,13 @@ class ApplyMagFieldTask(InstrumentTask):
     post_switch_wait = Float(30.0).tag(pref=True)
 
     parallel = set_default({'activated': True, 'pool': 'instr'})
-    task_database_entries = set_default({'Bfield': 0.01})
-
-    driver_list = ['IPS12010', 'CryomagCS4']
-    loopable = True
+    database_entries = set_default({'Bfield': 0.01})
 
     def perform(self, target_value=None):
-        """
-        """
-        if not self.driver:
-            self.start_driver()
+        """Apply the specified magnetic field.
 
-        if (self.driver.owner != self.task_name or
+        """
+        if (self.driver.owner != self.name or
                 not self.driver.check_connection()):
             self.driver.owner = self.task_name
             self.driver.make_ready()
@@ -52,21 +51,3 @@ class ApplyMagFieldTask(InstrumentTask):
         self.driver.go_to_field(target_value, self.rate, self.auto_stop_heater,
                                 self.post_switch_wait)
         self.write_in_database('Bfield', target_value)
-
-    def check(self, *args, **kwargs):
-        """
-        """
-        test, traceback = super(ApplyMagFieldTask, self).check(*args, **kwargs)
-        if self.target_field:
-            try:
-                val = self.format_and_eval_string(self.target_field)
-                self.write_in_database('Bfield', val)
-            except Exception as e:
-                test = False
-                traceback[self.task_path + '/' + self.task_name + '-field'] = \
-                    cleandoc('''Failed to eval the target field formula
-                        {}: {}'''.format(self.target_field, e))
-
-        return test, traceback
-
-KNOWN_PY_TASKS = [ApplyMagFieldTask]

@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : rf_tasks.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
-"""
-"""
-from atom.api import (Str, Bool, set_default, Enum)
-from inspect import cleandoc
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Tasks to set the parameters of microwave sources..
 
-from hqc_meas.tasks.api import (InstrumentTask, InterfaceableTaskMixin)
+"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+from atom.api import (Unicode, Bool, set_default, Enum)
+
+from ecpy.tasks.api import (InstrumentTask, InterfaceableTaskMixin)
 
 CONVERSION_FACTORS = {'GHz': {'Hz': 1e9, 'kHz': 1e6, 'MHz': 1e3, 'GHz': 1},
                       'MHz': {'Hz': 1e6, 'kHz': 1e3, 'MHz': 1, 'GHz': 1e-3},
@@ -22,7 +27,7 @@ class SetRFFrequencyTask(InterfaceableTaskMixin, InstrumentTask):
 
     """
     # Target frequency (dynamically evaluated)
-    frequency = Str().tag(pref=True)
+    frequency = Unicode().tag(pref=True, feval=True)
 
     # Unit of the frequency
     unit = Enum('GHz', 'MHz', 'kHz', 'Hz').tag(pref=True)
@@ -30,37 +35,24 @@ class SetRFFrequencyTask(InterfaceableTaskMixin, InstrumentTask):
     # Whether to start the source if its output is off.
     auto_start = Bool(False).tag(pref=True)
 
-    task_database_entries = set_default({'frequency': 1.0, 'unit': 'GHz'})
-    loopable = True
-    driver_list = ['AgilentE8257D', 'AnritsuMG3694', 'LabBrickLMS103']
+    database_entries = set_default({'frequency': 1.0, 'unit': 'GHz'})
 
     def check(self, *args, **kwargs):
-        """
+        """Add the unit into the database.
+
         """
         test, traceback = super(SetRFFrequencyTask, self).check(*args,
                                                                 **kwargs)
-        if self.frequency:
-            try:
-                freq = self.format_and_eval_string(self.frequency)
-                self.write_in_database('frequency', freq)
-            except Exception as e:
-                test = False
-                traceback[self.task_path + '/' + self.task_name + '-freq'] = \
-                    cleandoc('''Failed to eval the frequency
-                        formula {}: {}'''.format(self.frequency, e))
-
         self.write_in_database('unit', self.unit)
 
         return test, traceback
 
     def i_perform(self, frequency=None):
-        """
+        """Default interface for simple sources.
 
         """
-        if not self.driver:
-            self.start_driver()
-            if self.auto_start:
-                self.driver.output = 'On'
+        if self.auto_start:
+            self.driver.output = 'On'
 
         if frequency is None:
             frequency = self.format_and_eval_string(self.frequency)
@@ -93,39 +85,19 @@ class SetRFPowerTask(InterfaceableTaskMixin, InstrumentTask):
 
     """
     # Target power (dynamically evaluated)
-    power = Str().tag(pref=True)
+    power = Unicode().tag(pref=True, feval=True)
 
     # Whether to start the source if its output is off.
     auto_start = Bool(False).tag(pref=True)
 
-    task_database_entries = set_default({'power': -10})
-    loopable = True
-    driver_list = ['AgilentE8257D','AnritsuMG3694','LabBrickLMS103']
-
-    def check(self, *args, **kwargs):
-        """
-        """
-        test, traceback = super(SetRFPowerTask, self).check(*args,
-                                                            **kwargs)
-        if self.power:
-            try:
-                power = self.format_and_eval_string(self.power)
-                self.write_in_database('power', power)
-            except Exception as e:
-                test = False
-                traceback[self.task_path + '/' + self.task_name + '-power'] = \
-                    'Failed to eval the power {}: {}'.format(self.power, e)
-
-        return test, traceback
+    database_entries = set_default({'power': -10})
 
     def i_perform(self, power=None):
         """
 
         """
-        if not self.driver:
-            self.start_driver()
-            if self.auto_start:
-                self.driver.output = 'On'
+        if self.auto_start:
+            self.driver.output = 'On'
 
         if power is None:
             power = self.format_and_eval_string(self.power)
@@ -139,41 +111,33 @@ class SetRFOnOffTask(InterfaceableTaskMixin, InstrumentTask):
 
     """
     # Desired state of the output, runtime value can be 0 or 1.
-    switch = Str('Off').tag(pref=True)
+    switch = Unicode('Off').tag(pref=True, feval='Skip_empty')
 
-    task_database_entries = set_default({'output': 0})
-    loopable = True
-    driver_list = ['AgilentE8257D','AnritsuMG3694','LabBrickLMS103']
+    database_entries = set_default({'output': 0})
 
     def check(self, *args, **kwargs):
-        """
+        """Validate the value of the of the switch.
+
         """
         test, traceback = super(SetRFOnOffTask, self).check(*args, **kwargs)
 
-        if self.switch:
+        if test and self.switch:
             try:
                 switch = self.format_and_eval_string(self.switch)
-                self.write_in_database('output', switch)
-            except Exception as e:
-                mess = 'Failed to eval the output state {}: {}'
-                traceback[self.task_path + '/' + self.task_name + '-switch'] =\
-                    mess.format(self.switch, e)
+            except Exception:
                 return False, traceback
 
             if switch not in ('Off', 'On', 0, 1):
                 test = False
-                traceback[self.task_path + '/' + self.task_name + '-switch'] =\
+                traceback[self.get_error_path() + '-switch'] =\
                     '{} is not an acceptable value.'.format(self.switch)
 
         return test, traceback
 
     def i_perform(self, switch=None):
-        """
+        """Default interface behavior.
 
         """
-        if not self.driver:
-            self.start_driver()
-
         if switch is None:
             switch = self.format_and_eval_string(self.switch)
 
@@ -183,7 +147,3 @@ class SetRFOnOffTask(InterfaceableTaskMixin, InstrumentTask):
         else:
             self.driver.output = 'Off'
             self.write_in_database('output', 0)
-
-
-KNOWN_PY_TASKS = [SetRFFrequencyTask, SetRFPowerTask,
-                  SetRFOnOffTask]

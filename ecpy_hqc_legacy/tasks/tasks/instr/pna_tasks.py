@@ -1,23 +1,29 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : pna_tasks.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Task perform measurements with A VNA.
+
 """
-"""
-from atom.api import (Str, Int, Bool, Enum, set_default, Tuple,
-                              ContainerList, Value)
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+from atom.api import (Unicode, Int, Bool, Enum, set_default, Tuple,
+                      Dcit, Value)
 
 import time
 import re
 from inspect import cleandoc
 import numpy as np
 
-from hqc_meas.tasks.api import InstrumentTask, InstrTaskInterface
-from hqc_meas.instruments.driver_tools import InstrIOError
+from ecpy.tasks.api import InstrumentTask, InstrTaskInterface
+from ecpy.instruments.api import InstrIOError
 
-
+# XXX fix to use new system
 def check_channels_presence(task, channels, *args, **kwargs):
     """ Check that all the channels are correctly defined on the PNA.
 
@@ -25,6 +31,7 @@ def check_channels_presence(task, channels, *args, **kwargs):
     if kwargs.get('test_instr'):
         run_time = task.root_task.run_time
         traceback = {}
+        p_id, d_id, c_id, s_id = task.selected_instrument
         if task.selected_profile and run_time:
             config = run_time['profiles'].get(task.selected_profile)
             if not config:
@@ -33,12 +40,12 @@ def check_channels_presence(task, channels, *args, **kwargs):
             return False, traceback
 
         if run_time and task.selected_driver in run_time['drivers']:
-            driver_class = run_time['drivers'][task.selected_driver]
+            driver_cls, starter = run_time['drivers'][task.selected_driver]
         else:
             return False, traceback
 
         try:
-            instr = driver_class(config)
+            instr = starter.initialize(driver_cls, config)
         except InstrIOError:
             return False, traceback
 
