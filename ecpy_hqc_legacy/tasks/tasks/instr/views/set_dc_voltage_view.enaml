@@ -1,37 +1,41 @@
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Views for the microwave sources related tasks.
+
+"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+from textwrap import fill
+
 from enaml.core.api import Conditional, Include
 from enaml.widgets.api import (GroupBox, Label, Field, ObjectCombo, CheckBox)
 from enaml.stdlib.fields import FloatField, IntField
 from enaml.layout.api import factory
 
-from inspect import cleandoc
-from textwrap import fill
-
-from hqc_meas.utils.widgets.qt_line_completer import QtLineCompleter
-from hqc_meas.utils.layouts import auto_grid_layout
-from hqc_meas.tasks.views.base_instr_view import BaseInstrumentView
-from hqc_meas.tasks.tools.string_evaluation import EVALUATER_TOOLTIP
+from ecpy.tasks.api import InstrView, EVALUATER_TOOLTIP
+from ecpy.utils.widgets.qt_completers import QtLineCompleter
+from ecpy_hqc_legacy.utils.layouts import auto_grid_layout
+from ..base_instr_view import InstrView
 
 
-enamldef SetDcVoltageView(BaseInstrumentView): view:
+enamldef SetDcVoltageView(InstrView): view:
+    """View for the SetDCVoltageTask.
 
-    attr in_loop : bool = False
-    title << task.task_name
+    """
+    #: Attribute used to determine whether this view is displayed as the child
+    #: of a LoopTask
+    attr in_loop << task.parent.task_id== 'ecpy.LoopTask'
     constraints = [factory(auto_grid_layout),
                    (step.width == step_val.width) | 'weak',
                    (step_val.width == safe_val.width),
                    (step_val.width == delay_val.width)]
-
-    Label: sel_driv:
-        text = 'Driver'
-    ObjectCombo: sel_val:
-        items << sorted(drivers)
-        selected := task.selected_driver
-
-    Label: sel_prof:
-        text = 'Instr'
-    ObjectCombo: prof_val:
-        items << sorted(profiles)
-        selected := task.selected_profile
 
     Conditional:
         condition = not in_loop
@@ -61,20 +65,19 @@ enamldef SetDcVoltageView(BaseInstrumentView): view:
         resist_width = 'ignore'
         value := task.delay
 
-TASK_VIEW_MAPPING = {'SetDCVoltageTask' : SetDcVoltageView}
-
 
 enamldef MultiChannelVoltageSourceILabel(Label):
+    """Label for the multi channel interface.
 
+    """
     attr interface
-    attr index = 4
+    attr index = 3
     text = 'Channel'
 
-enamldef MultiChannelVoltageSourceIChannel(IntField):
 
+enamldef MultiChannelVoltageSourceIChannel(IntField):
+    """Value for the multi channel interface.
+
+    """
     attr interface
     value := interface.channel
-
-INTERFACE_VIEW_MAPPING = {'MultiChannelVoltageSourceInterface':
-                          [MultiChannelVoltageSourceILabel,
-                           MultiChannelVoltageSourceIChannel]}

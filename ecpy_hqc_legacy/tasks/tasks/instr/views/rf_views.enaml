@@ -1,42 +1,38 @@
 # -*- coding: utf-8 -*-
-#==============================================================================
-# module : rf_source_views.py
-# author : Matthieu Dartiailh
-# license : MIT license
-#==============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Views for the microwave sources related tasks.
+
+"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from enaml.core.api import Conditional
 from enaml.widgets.api import (GroupBox, Label, Field, ObjectCombo, CheckBox)
 from enaml.stdlib.fields import FloatField
 from enaml.layout.api import factory
 
-from inspect import cleandoc
 from textwrap import fill
 
-from hqc_meas.utils.widgets.qt_line_completer import QtLineCompleter
-from hqc_meas.utils.layouts import auto_grid_layout
-from hqc_meas.tasks.views.base_instr_view import BaseInstrumentView
-from hqc_meas.tasks.tools.string_evaluation import EVALUATER_TOOLTIP
+from ecpy.tasks.api import InstrView, EVALUATER_TOOLTIP
+from ecpy.utils.widgets.qt_completers import QtLineCompleter
+from ecpy_hqc_legacy.utils.layouts import auto_grid_layout
+from ..base_instr_view import InstrView
 
 
-enamldef RFFrequencyView(BaseInstrumentView): view:
+enamldef RFFrequencyView(InstrView): view:
+    """View for the RFFrequencyTask.
 
-    attr in_loop : bool = False
-    title << task.task_name
-    constraints = [factory(auto_grid_layout)] if not in_loop\
-                   else [factory(auto_grid_layout),
-                         driv.width == prof.width]
-
-    Label:
-        text = 'Driver'
-    ObjectCombo: driv:
-        items << sorted(drivers)
-        selected := task.selected_driver
-
-    Label:
-        text = 'Instr'
-    ObjectCombo: prof:
-        items << sorted(profiles)
-        selected := task.selected_profile
+    """
+    #: Attribute used to determine whether this view is displayed as the child
+    #: of a LoopTask
+    attr in_loop << task.parent.task_id== 'ecpy.LoopTask'
+    constraints << [factory(auto_grid_layout)]]
 
     Conditional:
         condition = not in_loop
@@ -58,29 +54,19 @@ enamldef RFFrequencyView(BaseInstrumentView): view:
         text = 'Autostart'
     CheckBox: auto_val:
         checked := task.auto_start
-        tool_tip = fill(cleandoc('''Should the source be turned on
-                         automatically before the measurement starts ?'''),60)
+        tool_tip = fill("Should the source be turned on automatically before "
+                        "the measurement starts ?"), 60)
 
 
-enamldef RFPowerView(BaseInstrumentView): view:
+enamldef RFPowerView(InstrView): view:
+    """View for the RFPowerTask.
 
-    attr in_loop : bool = False
-    title << task.task_name
-    constraints = [factory(auto_grid_layout)] if not in_loop\
-                   else [factory(auto_grid_layout),
-                         driv.width == prof.width]
+    """
 
-    Label:
-        text = 'Driver'
-    ObjectCombo: driv:
-        items << sorted(drivers)
-        selected := task.selected_driver
-
-    Label:
-        text = 'Instr'
-    ObjectCombo: prof:
-        items << sorted(profiles)
-        selected := task.selected_profile
+    #: Attribute used to determine whether this view is displayed as the child
+    #: of a LoopTask
+    attr in_loop << task.parent.task_id== 'ecpy.LoopTask'
+    constraints << [factory(auto_grid_layout)]]
 
     Conditional:
         condition = not in_loop
@@ -96,29 +82,19 @@ enamldef RFPowerView(BaseInstrumentView): view:
         text = 'Autostart'
     CheckBox: auto_val:
         checked := task.auto_start
-        tool_tip = fill(cleandoc('''Should the source be turned on
-                         automatically before the measurement starts ?'''),60)
+        tool_tip = fill("Should the source be turned on automatically before "
+                        "the measurement starts ?"), 60)
 
 
-enamldef RFSetOnOffView(BaseInstrumentView): view:
+enamldef RFSetOnOffView(InstrView): view:
+    """View for the RFSetOnOffTask.
 
-    attr in_loop : bool = False
+    """
+    #: Attribute used to determine whether this view is displayed as the child
+    #: of a LoopTask
+    attr in_loop << task.parent.task_id== 'ecpy.LoopTask'
 
-    title << task.task_name
-    constraints = [factory(auto_grid_layout),
-                   driv.width == prof.width]
-
-    Label:
-        text = 'Driver'
-    ObjectCombo: driv:
-        items << sorted(drivers)
-        selected := task.selected_driver
-
-    Label:
-        text = 'Instr'
-    ObjectCombo: prof:
-        items << sorted(profiles)
-        selected := task.selected_profile
+    constraints = [factory(auto_grid_layout)]
 
     Conditional:
         condition = not in_loop
@@ -129,7 +105,3 @@ enamldef RFSetOnOffView(BaseInstrumentView): view:
             text := task.switch
             entries_updater << task.accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
-
-TASK_VIEW_MAPPING = {'SetRFFrequencyTask': RFFrequencyView,
-                     'SetRFPowerTask': RFPowerView,
-                     'SetRFOnOffTask': RFSetOnOffView}
