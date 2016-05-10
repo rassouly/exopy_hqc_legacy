@@ -71,3 +71,24 @@ enamldef HqcLegacyManifest(PluginManifest):
                     view = 'views.meas_dc_views:MeasDCVoltView'
                     instruments = ['ecpy_hqc_legacy.Keithley2000',
                                    'ecpy_hqc_legacy.Agilent34410A']
+                Task:
+                    task = 'rf_tasks:SetRFFrequencyTask'
+                    view = 'views.rf_views:RFFrequencyView'
+                    instruments = ['ecpy_hqc_legacy.AgilentE8257D',
+                                   'ecpy_hqc_legacy.AnritsuMG3694',
+                                   'ecpy_hqc_legacy.LabBrickLMS103']
+                    metadata = {'loopable': True}
+                Task:
+                    task = 'rf_tasks:SetRFPowerTask'
+                    view = 'views.rf_views:RFPowerView'
+                    instruments = ['ecpy_hqc_legacy.AgilentE8257D',
+                                   'ecpy_hqc_legacy.AnritsuMG3694',
+                                   'ecpy_hqc_legacy.LabBrickLMS103']
+                    metadata = {'loopable': True}
+                Task:
+                    task = 'rf_tasks:SetRFOnOffTask'
+                    view = 'views.rf_views:RFSetOnOffView'
+                    instruments = ['ecpy_hqc_legacy.AgilentE8257D',
+                                   'ecpy_hqc_legacy.AnritsuMG3694',
+                                   'ecpy_hqc_legacy.LabBrickLMS103']
+                    metadata = {'loopable': True}

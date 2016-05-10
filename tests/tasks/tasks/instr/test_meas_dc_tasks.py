@@ -60,7 +60,7 @@ class TestSetDCVoltageTask(object):
 
 @pytest.mark.ui
 def test_meas_dc_voltage_view(windows, root_view, task_workbench):
-    """Test ApplyMagFieldView widget outisde of a LoopTask.
+    """Test MeasDCVoltView widget outisde of a LoopTask.
 
     """
     task = MeasDCVoltageTask(name='Test')

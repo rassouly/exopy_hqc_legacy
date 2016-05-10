@@ -164,7 +164,7 @@ class TestLockInMeasureTask(object):
 
 @pytest.mark.ui
 def test_lock_in_meas_view1(windows, root_view, task_workbench):
-    """Test ApplyMagFieldView widget outisde of a LoopTask.
+    """Test LockInMeasView widget outisde of a LoopTask.
 
     """
     task = LockInMeasureTask(name='Test')

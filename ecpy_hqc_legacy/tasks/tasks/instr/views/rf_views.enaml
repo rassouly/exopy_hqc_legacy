@@ -19,29 +19,30 @@ from enaml.layout.api import factory
 
 from textwrap import fill
 
-from ecpy.tasks.api import InstrView, EVALUATER_TOOLTIP
+from ecpy.tasks.api import InstrTaskView, EVALUATER_TOOLTIP
 from ecpy.utils.widgets.qt_completers import QtLineCompleter
 from ecpy_hqc_legacy.utils.layouts import auto_grid_layout
-from ..base_instr_view import InstrView
+from ...base_instr_view import InstrView
 
 
 enamldef RFFrequencyView(InstrView): view:
     """View for the RFFrequencyTask.
 
     """
-    #: Attribute used to determine whether this view is displayed as the child
-    #: of a LoopTask
-    attr in_loop << task.parent.task_id== 'ecpy.LoopTask'
-    constraints << [factory(auto_grid_layout)]]
+    #: Attribute set by the parent view if the task is embedded inside a
+    #: LoopTask
+    attr in_loop : bool = False
+
+    constraints << [factory(auto_grid_layout)]
 
     Conditional:
-        condition = not in_loop
+        condition << not in_loop
         Label:
             text = 'Frequency'
         QtLineCompleter:
             hug_width = 'ignore'
             text := task.frequency
-            entries_updater << task.accessible_database_entries
+            entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
 
     Label:
@@ -55,7 +56,7 @@ enamldef RFFrequencyView(InstrView): view:
     CheckBox: auto_val:
         checked := task.auto_start
         tool_tip = fill("Should the source be turned on automatically before "
-                        "the measurement starts ?"), 60)
+                        "the measurement starts ?", 60)
 
 
 enamldef RFPowerView(InstrView): view:
@@ -63,19 +64,20 @@ enamldef RFPowerView(InstrView): view:
 
     """
 
-    #: Attribute used to determine whether this view is displayed as the child
-    #: of a LoopTask
-    attr in_loop << task.parent.task_id== 'ecpy.LoopTask'
-    constraints << [factory(auto_grid_layout)]]
+    #: Attribute set by the parent view if the task is embedded inside a
+    #: LoopTask
+    attr in_loop : bool = False
+
+    constraints << [factory(auto_grid_layout)]
 
     Conditional:
-        condition = not in_loop
+        condition << not in_loop
         Label:
             text = 'Power (dBm)'
         QtLineCompleter:
             hug_width = 'ignore'
             text := task.power
-            entries_updater << task.accessible_database_entries
+            entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
 
     Label: auto_lab:
@@ -83,25 +85,25 @@ enamldef RFPowerView(InstrView): view:
     CheckBox: auto_val:
         checked := task.auto_start
         tool_tip = fill("Should the source be turned on automatically before "
-                        "the measurement starts ?"), 60)
+                        "the measurement starts ?", 60)
 
 
 enamldef RFSetOnOffView(InstrView): view:
     """View for the RFSetOnOffTask.
 
     """
-    #: Attribute used to determine whether this view is displayed as the child
-    #: of a LoopTask
-    attr in_loop << task.parent.task_id== 'ecpy.LoopTask'
+    #: Attribute set by the parent view if the task is embedded inside a
+    #: LoopTask
+    attr in_loop : bool = False
 
     constraints = [factory(auto_grid_layout)]
 
     Conditional:
-        condition = not in_loop
+        condition << not in_loop
         Label:
             text = 'Output'
         QtLineCompleter:
             hug_width = 'ignore'
             text := task.switch
-            entries_updater << task.accessible_database_entries
+            entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
