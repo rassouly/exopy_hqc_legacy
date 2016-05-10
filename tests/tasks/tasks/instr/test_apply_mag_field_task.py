@@ -24,12 +24,11 @@ from ecpy_hqc_legacy.tasks.tasks.instr.apply_mag_field_task\
     import ApplyMagFieldTask
 
 with enaml.imports():
+    from ecpy.tasks.tasks.logic.views.loop_view import LoopView
     from ecpy_hqc_legacy.tasks.tasks.instr.views.apply_mag_field_view\
         import ApplyMagFieldView
 
 from .instr_helper import InstrHelper, InstrHelperStarter, PROFILES, DRIVERS
-
-pytest_plugins = str('ecpy.testing.tasks.fixtures'),
 
 
 class TestApplyMagFieldTask(object):
@@ -119,4 +118,5 @@ def test_apply_mag_field_view2(windows, root_view, task_workbench):
     task = ApplyMagFieldTask(name='Test')
     loop = LoopTask(name='r', task=task)
     root_view.task.add_child_task(0, loop)
-    show_and_close_widget(ApplyMagFieldView(task=task, root=root_view))
+    # XXX check for absence of target field
+    show_and_close_widget(LoopView(task=loop, root=root_view))
