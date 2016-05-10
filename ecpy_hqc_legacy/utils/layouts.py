@@ -20,8 +20,8 @@ def auto_grid_layout(self):
 
     """
     children = self.widgets()
-    labels = [children[0]]*2 + children[3::2]
-    widgets = children[1:3] + children[4::2]
+    labels = children[::2]
+    widgets = children[1::2]
     n_labels = len(labels)
     n_widgets = len(widgets)
     if n_labels != n_widgets:
