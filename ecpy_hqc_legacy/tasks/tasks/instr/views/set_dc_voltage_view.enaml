@@ -6,7 +6,7 @@
 #
 # The full license is in the file LICENCE, distributed with this software.
 # -----------------------------------------------------------------------------
-"""Views for the microwave sources related tasks.
+"""Views for the DC sources related tasks.
 
 """
 from __future__ import (division, unicode_literals, print_function,
@@ -19,19 +19,20 @@ from enaml.widgets.api import (GroupBox, Label, Field, ObjectCombo, CheckBox)
 from enaml.stdlib.fields import FloatField, IntField
 from enaml.layout.api import factory
 
-from ecpy.tasks.api import InstrView, EVALUATER_TOOLTIP
+from ecpy.tasks.api import EVALUATER_TOOLTIP
 from ecpy.utils.widgets.qt_completers import QtLineCompleter
 from ecpy_hqc_legacy.utils.layouts import auto_grid_layout
-from ..base_instr_view import InstrView
+from ...base_instr_view import InstrView
 
 
 enamldef SetDcVoltageView(InstrView): view:
     """View for the SetDCVoltageTask.
 
     """
-    #: Attribute used to determine whether this view is displayed as the child
-    #: of a LoopTask
-    attr in_loop << task.parent.task_id== 'ecpy.LoopTask'
+    #: Attribute set by the parent view if the task is embedded inside a
+    #: LoopTask
+    attr in_loop : bool = False
+
     constraints = [factory(auto_grid_layout),
                    (step.width == step_val.width) | 'weak',
                    (step_val.width == safe_val.width),
@@ -44,7 +45,7 @@ enamldef SetDcVoltageView(InstrView): view:
         QtLineCompleter:
             hug_width = 'ignore'
             text := task.target_value
-            entries_updater << task.accessible_database_entries
+            entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
 
     Label: step:
@@ -71,6 +72,7 @@ enamldef MultiChannelVoltageSourceILabel(Label):
 
     """
     attr interface
+    attr root
     attr index = 3
     text = 'Channel'
 
@@ -80,4 +82,5 @@ enamldef MultiChannelVoltageSourceIChannel(IntField):
 
     """
     attr interface
+    attr root
     value := interface.channel

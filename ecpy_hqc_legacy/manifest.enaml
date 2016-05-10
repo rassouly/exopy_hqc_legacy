@@ -92,3 +92,17 @@ enamldef HqcLegacyManifest(PluginManifest):
                                    'ecpy_hqc_legacy.AnritsuMG3694',
                                    'ecpy_hqc_legacy.LabBrickLMS103']
                     metadata = {'loopable': True}
+                Task:
+                    task = 'set_dc_voltage_task:SetDCVoltageTask'
+                    view = 'views.set_dc_voltage_view:SetDcVoltageView'
+                    instruments = ['ecpy_hqc_legacy.YokogawaGS200',
+                                   'ecpy_hqc_legacy.Yogogawa7651']
+                    metadata = {'loopable': True}
+                    Interface:
+                        interface = ('set_dc_voltage_task:'
+                                     'MultiChannelVoltageSourceInterface')
+                        views = ['views.set_dc_voltage_view:'
+                                 'MultiChannelVoltageSourceILabel',
+                                 'views.set_dc_voltage_view:'
+                                 'MultiChannelVoltageSourceIChannel']
+                        instruments = ['ecpy_hqc_legacy.TinyBilt']

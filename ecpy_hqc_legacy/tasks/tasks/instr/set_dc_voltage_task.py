@@ -16,7 +16,7 @@ import time
 
 from atom.api import (Float, Value, Unicode, Int, set_default)
 
-from ecpy.tasks.api import (InstrumentTask, InstrTaskInterface,
+from ecpy.tasks.api import (InstrumentTask, TaskInterface,
                             InterfaceableTaskMixin)
 
 
@@ -46,8 +46,8 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
         """Default interface.
 
         """
-        if self.driver.owner != self.task_name:
-            self.driver.owner = self.task_name
+        if self.driver.owner != self.name:
+            self.driver.owner = self.name
             if hasattr(self.driver, 'function') and\
                     self.driver.function != 'VOLT':
                 msg = ('Instrument assigned to task {} is not configured to '
@@ -97,7 +97,7 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
                 step = -self.back_step
 
         if abs(value-last_value) > abs(step):
-            while not self.root_task.should_stop.is_set():
+            while not self.root.should_stop.is_set():
                 # Avoid the accumulation of rounding errors
                 last_value = round(last_value + step, 9)
                 setter(last_value)
@@ -106,7 +106,7 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
                 else:
                     break
 
-        if not self.root_task.should_stop.is_set():
+        if not self.root.should_stop.is_set():
             setter(value)
             self.write_in_database('voltage', value)
             return
@@ -114,7 +114,7 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
         self.write_in_database('voltage', last_value)
 
 
-class MultiChannelVoltageSourceInterface(InstrTaskInterface):
+class MultiChannelVoltageSourceInterface(TaskInterface):
     """Interface for multiple outputs sources.
 
     """
@@ -132,8 +132,8 @@ class MultiChannelVoltageSourceInterface(InstrTaskInterface):
         if not self.channel_driver:
             self.channel_driver = task.driver.get_channel(self.channel)
 
-        if self.channel_driver.owner != task.task_name:
-            self.channel_driver.owner = task.task_name
+        if self.channel_driver.owner != task.name:
+            self.channel_driver.owner = task.name
             if hasattr(self.channel_driver, 'function') and\
                     self.channel_driver.function != 'VOLT':
                 msg = ('Instrument output assigned to task {} is not '
@@ -145,40 +145,16 @@ class MultiChannelVoltageSourceInterface(InstrTaskInterface):
 
         task.smooth_set(value, setter, current_value)
 
-    # XXX rework
-    # could add a context manager to the instrument task to simplify that kind
-    # of tests.
     def check(self, *args, **kwargs):
         if kwargs.get('test_instr'):
             task = self.task
-            run_time = task.root_task.run_time
             traceback = {}
-            config = None
-
-            if task.selected_profile:
-                if 'profiles' in run_time:
-                    # Here use get to avoid errors if we were not granted the
-                    # use of the profile. In that case config won't be used.
-                    config = run_time['profiles'].get(task.selected_profile)
-            else:
-                return False, traceback
-
-            if run_time and task.selected_driver in run_time['drivers']:
-                driver_class = run_time['drivers'][task.selected_driver]
-            else:
-                return False, traceback
-
-            if not config:
-                return True, traceback
-
-            try:
-                instr = driver_class(config)
-                if self.channel not in instr.defined_channels:
-                    key = task.task_path + '/' + task.task_name + '_interface'
+            with task.test_driver() as d:
+                if d is None:
+                    return True, {}
+                if self.channel not in d.defined_channels:
+                    key = task.get_error_path() + '_interface'
                     traceback[key] = 'Missing channel {}'.format(self.channel)
-                instr.close_connection()
-            except Exception:
-                return False, traceback
 
             if traceback:
                 return False, traceback

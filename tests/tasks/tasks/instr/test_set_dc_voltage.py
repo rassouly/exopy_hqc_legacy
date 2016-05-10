@@ -1,240 +1,210 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : test_set_dc_voltage.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Tests for the ApplyMagFieldTask
+
 """
-"""
-from nose.tools import (assert_equal, assert_true, assert_false, assert_in,
-                        assert_is_instance, assert_is)
-from nose.plugins.attrib import attr
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from multiprocessing import Event
-from enaml.workbench.api import Workbench
 
-from hqc_meas.tasks.api import RootTask
-from hqc_meas.tasks.tasks_instr.set_dc_voltage_task\
-    import (SetDCVoltageTask,
-            MultiChannelVoltageSourceInterface)
-
+import pytest
 import enaml
-with enaml.imports():
-    from enaml.workbench.core.core_manifest import CoreManifest
-    from hqc_meas.utils.state.manifest import StateManifest
-    from hqc_meas.utils.preferences.manifest import PreferencesManifest
-    from hqc_meas.tasks.manager.manifest import TaskManagerManifest
-    from hqc_meas.instruments.manager.manifest import InstrManagerManifest
 
-    from hqc_meas.tasks.tasks_instr.views.set_dc_voltage_view\
+from ecpy.tasks.api import RootTask
+from ecpy.tasks.tasks.logic.loop_task import LoopTask
+from ecpy.testing.util import show_and_close_widget
+from ecpy_hqc_legacy.tasks.tasks.instr.set_dc_voltage_task\
+    import (SetDCVoltageTask, MultiChannelVoltageSourceInterface)
+
+with enaml.imports():
+    from ecpy.tasks.tasks.logic.views.loop_view import LoopView
+    from ecpy_hqc_legacy.tasks.tasks.instr.views.set_dc_voltage_view\
         import SetDcVoltageView
 
-from ...util import process_app_events, close_all_windows
-from .instr_helper import InstrHelper
+from .instr_helper import InstrHelper, InstrHelperStarter, PROFILES, DRIVERS
 
 
 class TestSetDCVoltageTask(object):
 
     def setup(self):
         self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = SetDCVoltageTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
-
+        self.task = SetDCVoltageTask(name='Test')
         self.task.back_step = 0.1
         self.task.delay = 0.1
+        self.root.add_child_task(0, self.task)
+
+        self.root.run_time[DRIVERS] = {'Test': (InstrHelper,
+                                                InstrHelperStarter())}
+        self.root.run_time[PROFILES] =\
+            {'Test1': {'connections': {'C': {'owner': []}},
+                       'settings': {'S': {'check_connection': [True]}}
+                       }
+             }
 
         # This is set simply to make sure the test of InstrTask pass.
-        self.task.selected_driver = 'Test'
-        self.task.selected_profile = 'Test1'
+        self.task.selected_instrument = ('Test1', 'Test', 'C', 'S')
 
     def test_check_base_interface1(self):
-        # Simply test that everything is ok if voltage can be evaluated.
+        """Simply test that everything is ok if voltage can be evaluated.
+
+        """
         self.task.target_value = '1.0'
 
         test, traceback = self.task.check(test_instr=True)
-        assert_true(test)
-        assert_false(traceback)
+        assert test
+        assert not traceback
 
     def test_check_base_interface2(self):
-        # Check handling a wrong voltage.
+        """Check handling a wrong voltage.
+
+        """
         self.task.target_value = '*1.0*'
 
         test, traceback = self.task.check(test_instr=True)
-        assert_false(test)
-        assert_equal(len(traceback), 1)
+        assert not test
+        assert len(traceback) == 1
 
     def test_check_multichannel_interface1(self):
-        # Check the multichannel specific tests, passing.
+        """Check the multichannel specific tests, passing.
+
+        """
         interface = MultiChannelVoltageSourceInterface(task=self.task)
         interface.channel = 1
         self.task.interface = interface
         self.task.target_value = '1.0'
 
-        profile = {'Test1': ({'defined_channels': [[1]]},
-                             {})}
-        self.root.run_time['profiles'] = profile
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'defined_channels': [[1]]}
 
         test, traceback = self.task.check(test_instr=True)
-        assert_true(test)
-        assert_false(traceback)
+        assert test
+        assert not traceback
 
     def test_check_multichannel_interface2(self):
-        # Check the multichannel specific tests, failing = driver.
+        """Check the multichannel specific tests, failing = driver.
+
+        """
         interface = MultiChannelVoltageSourceInterface(task=self.task)
         interface.channel = 1
         self.task.interface = interface
         self.task.target_value = '1.0'
 
-        self.root.run_time['drivers'] = {}
-        profile = {'Test1': ({'defined_channels': [[1]]},
-                             {})}
-        self.root.run_time['profiles'] = profile
+        self.root.run_time[DRIVERS] = {}
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'defined_channels': [[1]]}
 
         test, traceback = self.task.check(test_instr=True)
-        assert_false(test)
-        assert_equal(len(traceback), 1)
+        assert not test
+        assert len(traceback) == 1
 
     def test_check_multichannel_interface3(self):
-        # Check the multichannel specific tests, failing =profile.
+        """Check the multichannel specific tests, failing = profile.
+
+        """
         interface = MultiChannelVoltageSourceInterface(task=self.task)
         interface.channel = 1
         self.task.interface = interface
         self.task.target_value = '1.0'
-        self.task.selected_profile = ''
-
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
+        self.task.selected_instrument = ()
 
         test, traceback = self.task.check()
-        assert_false(test)
-        assert_equal(len(traceback), 1)
+        assert not test
+        assert len(traceback) == 1
 
     def test_check_multichannel_interface4(self):
-        # Check the multichannel specific tests, failing = channel.
+        """Check the multichannel specific tests, failing = channel.
+
+        """
         interface = MultiChannelVoltageSourceInterface(task=self.task)
         interface.channel = 2
         self.task.interface = interface
         self.task.target_value = '1.0'
 
-        profile = {'Test1': ({'defined_channels': [[1]]},
-                             {})}
-        self.root.run_time['profiles'] = profile
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'defined_channels': [[1]]}
 
         test, traceback = self.task.check(test_instr=True)
-        assert_false(test)
-        assert_equal(len(traceback), 1)
+        assert not test
+        assert len(traceback) == 1
 
     def test_smooth_set_stopping(self):
-        self.root.run_time['profiles'] = {'Test1': ({'voltage': [0.0],
-                                                     'funtion': ['VOLT'],
-                                                     'owner': [None]}, {})}
+        """Test stopping in the middle of a smooth stepping.
 
-        self.root.task_database.prepare_for_running()
+        """
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'voltage': [0.0], 'funtion': ['VOLT'], 'owner': [None]}
+
+        self.root.prepare()
         self.root.should_stop.set()
 
         setter = lambda value: setattr(self.driver, 'voltage', value)
 
         self.task.smooth_set(1.0, setter, 0.0)
-        assert_equal(self.root.get_from_database('Test_voltage'), 0.0)
+        assert self.root.get_from_database('Test_voltage') == 0.0
 
     def test_perform_base_interface(self):
-        # Test also that a target which is not a multiple of the back step
-        # is correctly handled.
+        """Test also that a target which is not a multiple of the back step
+        is correctly handled.
+
+        """
         self.task.target_value = '0.05'
 
-        self.root.run_time['profiles'] = {'Test1': ({'voltage': [0.0],
-                                                     'funtion': ['VOLT'],
-                                                     'owner': [None]}, {})}
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'voltage': [0.0], 'funtion': ['VOLT'], 'owner': [None]}
 
-        self.root.task_database.prepare_for_running()
+        self.root.prepare()
 
         self.task.perform()
-        assert_equal(self.root.get_from_database('Test_voltage'), 0.05)
+        assert self.root.get_from_database('Test_voltage') == 0.05
         self.task.target_value = '1.06'
         self.task.perform()
-        assert_equal(self.root.get_from_database('Test_voltage'), 1.06)
+        assert self.root.get_from_database('Test_voltage') == 1.06
 
     def test_perform_multichannel_interface(self):
+        """Test using the interface for the setting.
+
+        """
         interface = MultiChannelVoltageSourceInterface(task=self.task)
         interface.channel = 1
         self.task.interface = interface
         self.task.target_value = '1.0'
 
-        profile = {'Test1': ({'voltage': [0.0],
-                              'funtion': ['VOLT'],
-                              'owner': [None]},
-                             {'get_channel': lambda x, i: x}
-                             )}
-        self.root.run_time['profiles'] = profile
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'voltage': [0.0], 'funtion': ['VOLT'], 'owner': [None]}
+        s = self.root.run_time[PROFILES]['Test1']['settings']
+        s['S'] = {'get_channel': lambda x, i: x}
 
-        self.root.task_database.prepare_for_running()
-
+        self.root.prepare()
         self.task.perform()
-        assert_equal(self.root.get_from_database('Test_voltage'), 1.0)
+        assert self.root.get_from_database('Test_voltage') == 1.0
 
 
-@attr('ui')
-class TestSetDCVoltageView(object):
+@pytest.mark.ui
+def test_set_dc_voltage_view(windows, root_view, task_workbench):
+    """Test RFPowerView widget outisde of a LoopTask.
 
-    def setup(self):
-        self.workbench = Workbench()
-        self.workbench.register(CoreManifest())
-        self.workbench.register(StateManifest())
-        self.workbench.register(PreferencesManifest())
-        self.workbench.register(InstrManagerManifest())
-        self.workbench.register(TaskManagerManifest())
+    """
+    task = SetDCVoltageTask(name='Test')
+    root_view.task.add_child_task(0, task)
+    show_and_close_widget(SetDcVoltageView(task=task, root=root_view))
 
-        self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = SetDCVoltageTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
 
-        self.task.back_step = 0.1
-        self.task.delay = 0.1
+@pytest.mark.ui
+def test_rf_power_view2(windows, root_view, task_workbench):
+    """Test RFPowerView widget inside of a LoopTask.
 
-    def teardown(self):
-        close_all_windows()
-
-        self.workbench.unregister(u'hqc_meas.task_manager')
-        self.workbench.unregister(u'hqc_meas.instr_manager')
-        self.workbench.unregister(u'hqc_meas.preferences')
-        self.workbench.unregister(u'hqc_meas.state')
-        self.workbench.unregister(u'enaml.workbench.core')
-
-    def test_view1(self):
-        # Intantiate a view with no selected interface and select one after
-        window = enaml.widgets.api.Window()
-        core = self.workbench.get_plugin('enaml.workbench.core')
-        view = SetDcVoltageView(window, task=self.task, core=core)
-        window.show()
-
-        process_app_events()
-
-        assert_in('YokogawaGS200', view.drivers)
-        self.task.selected_driver = 'YokogawaGS200'
-        process_app_events()
-        assert_is(self.task.interface, None)
-
-        assert_in('TinyBilt', view.drivers)
-        self.task.selected_driver = 'TinyBilt'
-        process_app_events()
-        assert_is_instance(self.task.interface,
-                           MultiChannelVoltageSourceInterface)
-
-    def test_view2(self):
-        # Intantiate a view with a selected interface.
-        interface = MultiChannelVoltageSourceInterface(task=self.task)
-        self.task.interface = interface
-        self.task.target_value = '1.0'
-        self.task.selected_driver = 'TinyBilt'
-
-        interface = self.task.interface
-
-        window = enaml.widgets.api.Window()
-        core = self.workbench.get_plugin('enaml.workbench.core')
-        SetDcVoltageView(window, task=self.task, core=core)
-        window.show()
-
-        process_app_events()
-
-        assert_is(self.task.interface, interface)
+    """
+    task = SetDCVoltageTask(name='Test')
+    interface = MultiChannelVoltageSourceInterface(task=task)
+    task.interface = interface
+    loop = LoopTask(name='r', task=task)
+    root_view.task.add_child_task(0, loop)
+    # XXX check for absence of target field
+    show_and_close_widget(LoopView(task=loop, root=root_view))
