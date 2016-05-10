@@ -1,11 +1,26 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : instr_helper.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Helpers to mock instruments
+
+"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from types import MethodType
-from hqc_meas.instruments.driver_tools import BaseInstrument
+from future.utils import with_metaclass
+
+from ecpy_hqc_legacy.instruments.drivers.driver_tools import BaseInstrument
+
+
+PROFILES = 'ecpy.instruments.profiles'
+
+DRIVERS = 'ecpy.instruments.drivers'
 
 
 class HelperMeta(type):
@@ -17,7 +32,7 @@ class HelperMeta(type):
         return (cls, object, BaseInstrument)
 
 
-class InstrHelper(object):
+class InstrHelper(with_metaclass(HelperMeta, object)):
     """ False driver used for testing purposes.
 
     Parameters
@@ -30,9 +45,7 @@ class InstrHelper(object):
         list.
 
     """
-    __metaclass__ = HelperMeta
-
-    def __init__(self, (attrs, callables)):
+    def __init__(self, attrs, callables):
         _attrs = {}
         for entry, val in attrs.items():
             if isinstance(val, list):
@@ -45,14 +58,17 @@ class InstrHelper(object):
         # Dynamical method binding to instance.
         for entry, call in callables.iteritems():
             if callable(call):
-                call.__name__ = entry
+                call.__name__ = str(entry)
                 object.__setattr__(self, entry, MethodType(call, self))
             else:
                 call_meth = lambda *args, **kwargs: call[::-1].pop()
-                call_meth.__name__ = entry
+                call_meth.__name__ = str(entry)
                 object.__setattr__(self, entry, MethodType(call_meth, self))
 
     def __getattr__(self, name):
+        """Mock attribute access.
+
+        """
         _attrs = self._attrs
         if name in _attrs:
             if isinstance(_attrs[name], list):
@@ -68,6 +84,9 @@ class InstrHelper(object):
             raise AttributeError('{} has no attr {}'.format(self, name))
 
     def __setattr__(self, name, value):
+        """Mock attribute setting.
+
+        """
         _attrs = self._attrs
         if name in _attrs:
             if isinstance(_attrs[name], list):
@@ -82,3 +101,26 @@ class InstrHelper(object):
         """
         """
         pass
+
+
+class InstrHelperStarter(object):
+    """Dummy starter for instrument objects.
+
+    """
+    def initialize(self, cls, connection, settings):
+        """simply create an instance.
+
+        """
+        return cls(connection, settings)
+
+    def finalize(self, instr):
+        """Close the dummy connection.
+
+        """
+        instr.close_connection()
+
+    def check_infos(self, cls, connection, settings):
+        """Always validate.
+
+        """
+        return True, ''

@@ -1,134 +1,122 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : test_apply_mag_field_task.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Tests for the ApplyMagFieldTask
+
 """
-"""
-from nose.tools import (assert_equal, assert_true, assert_false, assert_in)
-from nose.plugins.attrib import attr
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from multiprocessing import Event
-from enaml.workbench.api import Workbench
 
-from hqc_meas.tasks.api import RootTask
-from hqc_meas.tasks.tasks_instr.apply_mag_field_task import ApplyMagFieldTask
-
+import pytest
 import enaml
-with enaml.imports():
-    from enaml.workbench.core.core_manifest import CoreManifest
-    from hqc_meas.utils.state.manifest import StateManifest
-    from hqc_meas.utils.preferences.manifest import PreferencesManifest
-    from hqc_meas.tasks.manager.manifest import TaskManagerManifest
-    from hqc_meas.instruments.manager.manifest import InstrManagerManifest
 
-    from hqc_meas.tasks.tasks_instr.views.apply_mag_field_view\
+from ecpy.tasks.api import RootTask
+from ecpy.tasks.tasks.logic.loop_task import LoopTask
+from ecpy.testing.util import show_and_close_widget
+from ecpy_hqc_legacy.tasks.tasks.instr.apply_mag_field_task\
+    import ApplyMagFieldTask
+
+with enaml.imports():
+    from ecpy_hqc_legacy.tasks.tasks.instr.views.apply_mag_field_view\
         import ApplyMagFieldView
 
-from ...util import process_app_events, close_all_windows
-from .instr_helper import InstrHelper
-from ..testing_utilities import join_threads
+from .instr_helper import InstrHelper, InstrHelperStarter, PROFILES, DRIVERS
+
+pytest_plugins = str('ecpy.testing.tasks.fixtures'),
 
 
 class TestApplyMagFieldTask(object):
 
     def setup(self):
         self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = ApplyMagFieldTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
+        self.task = ApplyMagFieldTask(name='Test',
+                                      parallel={'activated': False})
+        self.root.add_child_task(0, self.task)
+
+        self.root.run_time[DRIVERS] = {'Test': (InstrHelper,
+                                                InstrHelperStarter())}
+        self.root.run_time[PROFILES] =\
+            {'Test1': {'connections': {'C': {'owner': []}},
+                       'settings': {'S': {'make_ready': [None],
+                                          'go_to_field': [None],
+                                          'check_connection': [True]}}
+                       }
+             }
 
         # This is set simply to make sure the test of InstrTask pass.
-        self.task.selected_driver = 'Test'
-        self.task.selected_profile = 'Test1'
+        self.task.selected_instrument = ('Test1', 'Test', 'C', 'S')
 
     def test_check1(self):
-        # Simply test that everything is ok if field can be evaluated.
-        self.task.target_field = '3.0'
+        """Simply test that everything is ok if field can be evaluated.
+
+        """
+        self.task.field = '3.0'
 
         test, traceback = self.task.check(test_instr=True)
-        assert_true(test)
-        assert_false(traceback)
+        assert test
+        assert not traceback
 
-        assert_equal(self.task.get_from_database('Test_Bfield'), 3.0)
+        assert self.task.get_from_database('Test_field') == 3.0
 
     def test_check2(self):
-        # Check handling a wrong field.
-        self.task.target_field = '*1.0*'
+        """Check handling a wrong field.
+
+        """
+        self.task.field = '*1.0*'
 
         test, traceback = self.task.check(test_instr=True)
-        assert_false(test)
-        assert_equal(len(traceback), 1)
-        assert_in('root/Test-field', traceback)
+        assert not test
+        assert len(traceback) == 1
+        assert 'root/Test-field'in traceback
 
-        assert_equal(self.task.get_from_database('Test_Bfield'), 0.01)
+        assert self.task.get_from_database('Test_field') == 0.01
 
     def test_perform1(self):
-        # Simple test when everything is right.
-        self.task.target_field = '2.0'
+        """Simple test when everything is right.
 
-        self.root.run_time['profiles'] = {'Test1': ({'owner': []},
-                                                    {'make_ready': [None],
-                                                     'go_to_field': [None]}
-                                                    )}
+        """
+        self.task.field = '2.0'
 
-        self.root.task_database.prepare_for_running()
-
+        self.root.prepare()
         self.task.perform()
-        join_threads(self.root)
-        assert_equal(self.root.get_from_database('Test_Bfield'), 2.0)
+        assert self.root.get_from_database('Test_field') == 2.0
 
     def test_perform2(self):
-        # Test multiple run when connection is maintained.
-        self.task.target_field = '2.0'
+        """Test multiple run when connection is maintained.
 
-        self.root.run_time['profiles'] = {'Test1': ({'owner': []},
-                                                    {'make_ready': [None],
-                                                     'go_to_field': [None],
-                                                     'check_connection': [True]
-                                                     }
-                                                    )}
+        """
+        self.task.field = '2.0'
 
-        self.root.task_database.prepare_for_running()
-
+        self.root.prepare()
         self.task.perform()
-        join_threads(self.root)
         self.task.perform()
-        join_threads(self.root)
         # In case of fail make_ready would be called twice.
-        assert_equal(self.root.get_from_database('Test_Bfield'), 2.0)
+        assert self.root.get_from_database('Test_field') == 2.0
 
 
-@attr('ui')
-class TestApplyMagFieldView(object):
+@pytest.mark.ui
+def test_apply_mag_field_view1(windows, root_view, task_workbench):
+    """Test ApplyMagFieldView widget outisde of a LoopTask.
 
-    def setup(self):
-        self.workbench = Workbench()
-        self.workbench.register(CoreManifest())
-        self.workbench.register(StateManifest())
-        self.workbench.register(PreferencesManifest())
-        self.workbench.register(InstrManagerManifest())
-        self.workbench.register(TaskManagerManifest())
+    """
+    task = ApplyMagFieldTask(name='Test')
+    root_view.task.add_child_task(0, task)
+    show_and_close_widget(ApplyMagFieldView(task=task, root=root_view))
 
-        self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = ApplyMagFieldTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
 
-    def teardown(self):
-        close_all_windows()
+@pytest.mark.ui
+def test_apply_mag_field_view2(windows, root_view, task_workbench):
+    """Test ApplyMagFieldView widget inside of a LoopTask.
 
-        self.workbench.unregister(u'hqc_meas.task_manager')
-        self.workbench.unregister(u'hqc_meas.instr_manager')
-        self.workbench.unregister(u'hqc_meas.preferences')
-        self.workbench.unregister(u'hqc_meas.state')
-        self.workbench.unregister(u'enaml.workbench.core')
-
-    def test_view1(self):
-        # Intantiate a view with no selected interface and select one after
-        window = enaml.widgets.api.Window()
-        core = self.workbench.get_plugin('enaml.workbench.core')
-        view = ApplyMagFieldView(window, task=self.task, core=core)
-        window.show()
-
-        process_app_events()
+    """
+    task = ApplyMagFieldTask(name='Test')
+    loop = LoopTask(name='r', task=task)
+    root_view.task.add_child_task(0, loop)
+    show_and_close_widget(ApplyMagFieldView(task=task, root=root_view))

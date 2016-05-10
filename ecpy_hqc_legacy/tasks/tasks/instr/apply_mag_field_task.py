@@ -14,7 +14,7 @@ from __future__ import (division, unicode_literals, print_function,
 
 from atom.api import (Unicode, Float, Bool, set_default)
 
-from epy.tasks.api import InstrumentTask
+from ecpy.tasks.api import InstrumentTask
 
 
 class ApplyMagFieldTask(InstrumentTask):
@@ -22,7 +22,7 @@ class ApplyMagFieldTask(InstrumentTask):
 
     """
     # Target magnetic field (dynamically evaluated)
-    target_field = Unicode().tag(pref=True, feval='Skip_empty')
+    field = Unicode().tag(pref=True, feval='Skip_empty')
 
     # Rate at which to sweep the field.
     rate = Float(0.01).tag(pref=True)
@@ -35,7 +35,7 @@ class ApplyMagFieldTask(InstrumentTask):
     post_switch_wait = Float(30.0).tag(pref=True)
 
     parallel = set_default({'activated': True, 'pool': 'instr'})
-    database_entries = set_default({'Bfield': 0.01})
+    database_entries = set_default({'field': 0.01})
 
     def perform(self, target_value=None):
         """Apply the specified magnetic field.
@@ -43,11 +43,11 @@ class ApplyMagFieldTask(InstrumentTask):
         """
         if (self.driver.owner != self.name or
                 not self.driver.check_connection()):
-            self.driver.owner = self.task_name
+            self.driver.owner = self.name
             self.driver.make_ready()
 
         if target_value is None:
-            target_value = self.format_and_eval_string(self.target_field)
+            target_value = self.format_and_eval_string(self.field)
         self.driver.go_to_field(target_value, self.rate, self.auto_stop_heater,
                                 self.post_switch_wait)
-        self.write_in_database('Bfield', target_value)
+        self.write_in_database('field', target_value)

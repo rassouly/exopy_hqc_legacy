@@ -12,15 +12,16 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
-from enaml.layout.api import grid, hbox
+from enaml.layout.api import grid
 
 
 def auto_grid_layout(self):
-    """
+    """Automatic layout =ing function for instrument tasks views.
+
     """
     children = self.widgets()
-    labels = [children[0]] + children[3::2]
-    widgets = [hbox(children[1:2])] + children[4::2]
+    labels = [children[0]]*2 + children[3::2]
+    widgets = children[1:3] + children[4::2]
     n_labels = len(labels)
     n_widgets = len(widgets)
     if n_labels != n_widgets:

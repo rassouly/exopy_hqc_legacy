@@ -19,10 +19,10 @@ from enaml.core.api import Conditional
 from enaml.widgets.api import (GroupBox, Label, Field, ObjectCombo, CheckBox)
 from enaml.stdlib.fields import FloatField
 
-from ecpy.tasks.api import InstrView, EVALUATER_TOOLTIP
+from ecpy.tasks.api import EVALUATER_TOOLTIP
 from ecpy.utils.widgets.qt_completers import QtLineCompleter
 from ecpy_hqc_legacy.utils.layouts import auto_grid_layout
-from ..base_instr_view import InstrView
+from ...base_instr_view import InstrView
 
 
 enamldef ApplyMagFieldView(InstrView): view:
@@ -31,7 +31,7 @@ enamldef ApplyMagFieldView(InstrView): view:
     """
     #: Attribute used to determine whether this view is displayed as the child
     #: of a LoopTask
-    attr in_loop << task.parent.task_id== 'ecpy.LoopTask'
+    attr in_loop = True#<< task.parent.task_id== 'ecpy.LoopTask'
 
     constraints = [factory(auto_grid_layout)]
 
