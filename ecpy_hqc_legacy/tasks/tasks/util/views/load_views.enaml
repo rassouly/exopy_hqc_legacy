@@ -44,19 +44,16 @@ class BaseLoadView(BaseTaskView):
         """
         super(BaseLoadView, self).initialize()
 
-        cmd = 'ecpy.tasks.get_task_infos'
-        infos = self.root.core.invoke_command(cmd,
-                                              {'task': self.task.task_id})
+        interfaces = self.root.get_interfaces_for(self.task)
 
         file_formats = []
         f_interfaces = {}
         # Get the file formats and map them to their interface.
-        for i_infos in infos.interfaces.values():
+        for i_infos in interfaces.values():
             formats = i_infos.cls.file_formats
             file_formats.extend(formats)
             f_interfaces.update({f: i_infos.cls for f in formats})
         self.file_formats = file_formats
-        self._interfaces = infos.interfaces
         self._f_interfaces = f_interfaces
 
         if self.task.interface:
@@ -68,14 +65,10 @@ class BaseLoadView(BaseTaskView):
         """ Overriden destroyer to remove observers.
 
         """
-        self._interfaces.clear()
         self._unbind_observers()
         super(BaseLoadView, self).destroy()
 
     # --- Private API ---------------------------------------------------------
-
-    #: Mapping between interface id and its associated infos.
-    _interfaces = Dict()
 
     #: Mapping between formats and interfaces
     _f_interfaces = Dict()
@@ -104,10 +97,8 @@ class BaseLoadView(BaseTaskView):
         """Insert the views associated with the selected interface.
 
         """
-        i_infos = self._interfaces[interface.interface_id[0]]
-        if i_infos.views:
-            i_views = [v(self, interface=self.task.interface)
-                       for v in i_infos.views]
+        i_views = self.root.view_for(interface)
+        if i_views:
             # TODO handle more complex insertions.
             if hasattr(i_views[0], 'index'):
                 self.insert_children(i_views[0].index, i_views)
@@ -207,6 +198,9 @@ enamldef CSVLoadInterfaceView(Container):
     """
     #: Reference to the interface.
     attr interface
+
+    #: Reference to the root view.
+    attr root
 
     constraints = [hbox(del_lab, del_val, com_lab, com_val, nam, c_n)]
 

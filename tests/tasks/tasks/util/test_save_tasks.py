@@ -76,7 +76,6 @@ class TestSaveTask(object):
         file_path = os.path.join(str(tmpdir), 'test1.txt')
 
         test, traceback = task.check()
-        print(traceback)
         assert test and not traceback
         assert not os.path.isfile(file_path)
         assert not task.initialized

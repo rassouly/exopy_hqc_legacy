@@ -26,9 +26,6 @@ from ecpy_hqc_legacy.tasks.tasks.util.load_tasks import (LoadArrayTask,
 
 with enaml.imports():
     from ecpy_hqc_legacy.tasks.tasks.util.views.load_views import LoadArrayView
-    from ecpy_hqc_legacy.manifest import HqcLegacyManifest
-
-pytest_plugins = str('ecpy.testing.tasks.fixtures'),
 
 
 @pytest.fixture
@@ -117,7 +114,6 @@ class TestLoadArrayView(object):
         """Intantiate a view with no selected interface and select one after
 
         """
-        task_workbench.register(HqcLegacyManifest())
         view = LoadArrayView(task=self.task, root=root_view)
         win = show_widget(view)
         process_and_sleep()
@@ -136,7 +132,6 @@ class TestLoadArrayView(object):
         """Intantiate a view with a selected interface.
 
         """
-        task_workbench.register(HqcLegacyManifest())
         interface = CSVLoadInterface()
         self.task.interface = interface
         self.task.selected_format = 'CSV'

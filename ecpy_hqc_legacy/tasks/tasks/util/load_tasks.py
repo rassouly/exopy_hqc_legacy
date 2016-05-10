@@ -26,7 +26,6 @@ def _make_array(names, dtypes='f8'):
         dtypes = [dtypes for i in range(len(names))]
 
     dtype = {'names': names, 'formats': dtypes}
-    print(dtype)
     return np.ones((5,), dtype=dtype)
 
 
