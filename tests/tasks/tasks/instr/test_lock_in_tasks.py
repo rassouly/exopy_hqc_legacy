@@ -1,193 +1,172 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : test_meas_dc_voltage.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Tests for the ApplyMagFieldTask
+
 """
-"""
-from nose.tools import (assert_equal, assert_not_in)
-from nose.plugins.attrib import attr
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from multiprocessing import Event
-from enaml.workbench.api import Workbench
 
-from hqc_meas.tasks.api import RootTask
-from hqc_meas.tasks.tasks_instr.lock_in_measure_task import LockInMeasureTask
-
+import pytest
 import enaml
-with enaml.imports():
-    from enaml.workbench.core.core_manifest import CoreManifest
-    from hqc_meas.utils.state.manifest import StateManifest
-    from hqc_meas.utils.preferences.manifest import PreferencesManifest
-    from hqc_meas.tasks.manager.manifest import TaskManagerManifest
-    from hqc_meas.instruments.manager.manifest import InstrManagerManifest
 
-    from hqc_meas.tasks.tasks_instr.views.lock_in_meas_view\
+from ecpy.tasks.api import RootTask
+from ecpy.testing.util import show_and_close_widget
+from ecpy_hqc_legacy.tasks.tasks.instr.lock_in_measure_task\
+    import LockInMeasureTask
+
+with enaml.imports():
+    from ecpy_hqc_legacy.tasks.tasks.instr.views.lock_in_meas_view\
         import LockInMeasView
 
-from ...util import process_app_events, close_all_windows
-from .instr_helper import InstrHelper
+from .instr_helper import InstrHelper, InstrHelperStarter, PROFILES, DRIVERS
 
 
-class TestSetDCVoltageTask(object):
+class TestLockInMeasureTask(object):
 
     def setup(self):
         self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = LockInMeasureTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
+        self.task = LockInMeasureTask(name='Test')
+        self.root.add_child_task(0, self.task)
+
+        self.root.run_time[DRIVERS] = {'Test': (InstrHelper,
+                                                InstrHelperStarter())}
+        self.root.run_time[PROFILES] =\
+            {'Test1': {'connections': {'C': {'owner': []}},
+                       'settings': {'S': {'check_connection': [True]}}
+                       }
+             }
 
         # This is set simply to make sure the test of InstrTask pass.
-        self.task.selected_driver = 'Test'
-        self.task.selected_profile = 'Test1'
+        self.task.selected_instrument = ('Test1', 'Test', 'C', 'S')
 
     def test_mode_observation(self):
-        # Check database is correctly updated when the mode change.
+        """Check database is correctly updated when the mode change.
+
+        """
         self.task.mode = 'X'
 
-        assert_equal(self.task.get_from_database('Test_x'), 1.0)
-        aux = self.task.accessible_database_entries()
-        assert_not_in('Test_y', aux)
-        assert_not_in('Test_amplitude', aux)
-        assert_not_in('Test_phase', aux)
+        assert self.task.get_from_database('Test_x') == 1.0
+        aux = self.task.list_accessible_database_entries()
+        assert 'Test_y' not in aux
+        assert 'Test_amplitude' not in aux
+        assert 'Test_phase' not in aux
 
         self.task.mode = 'Y'
 
-        assert_equal(self.task.get_from_database('Test_y'), 1.0)
-        aux = self.task.accessible_database_entries()
-        assert_not_in('Test_x', aux)
-        assert_not_in('Test_amplitude', aux)
-        assert_not_in('Test_phase', aux)
+        assert self.task.get_from_database('Test_y') == 1.0
+        aux = self.task.list_accessible_database_entries()
+        assert 'Test_x' not in aux
+        assert 'Test_amplitude' not in aux
+        assert 'Test_phase' not in aux
 
         self.task.mode = 'X&Y'
 
-        assert_equal(self.task.get_from_database('Test_x'), 1.0)
-        assert_equal(self.task.get_from_database('Test_y'), 1.0)
-        aux = self.task.accessible_database_entries()
-        assert_not_in('Test_amplitude', aux)
-        assert_not_in('Test_phase', aux)
+        assert self.task.get_from_database('Test_x') == 1.0
+        assert self.task.get_from_database('Test_y') == 1.0
+        aux = self.task.list_accessible_database_entries()
+        assert 'Test_amplitude' not in aux
+        assert 'Test_phase' not in aux
 
         self.task.mode = 'Amp'
 
-        assert_equal(self.task.get_from_database('Test_amplitude'), 1.0)
-        aux = self.task.accessible_database_entries()
-        assert_not_in('Test_x', aux)
-        assert_not_in('Test_y', aux)
-        assert_not_in('Test_phase', aux)
+        assert self.task.get_from_database('Test_amplitude') == 1.0
+        aux = self.task.list_accessible_database_entries()
+        assert 'Test_x' not in aux
+        assert 'Test_y' not in aux
+        assert 'Test_phase' not in aux
 
         self.task.mode = 'Phase'
 
-        assert_equal(self.task.get_from_database('Test_phase'), 1.0)
-        aux = self.task.accessible_database_entries()
-        assert_not_in('Test_x', aux)
-        assert_not_in('Test_y', aux)
-        assert_not_in('Test_amplitude', aux)
+        assert self.task.get_from_database('Test_phase') == 1.0
+        aux = self.task.list_accessible_database_entries()
+        assert 'Test_x' not in aux
+        assert 'Test_y' not in aux
+        assert 'Test_amplitude' not in aux
 
         self.task.mode = 'Amp&Phase'
 
-        assert_equal(self.task.get_from_database('Test_amplitude'), 1.0)
-        assert_equal(self.task.get_from_database('Test_phase'), 1.0)
-        aux = self.task.accessible_database_entries()
-        assert_not_in('Test_x', aux)
-        assert_not_in('Test_y', aux)
+        assert self.task.get_from_database('Test_amplitude') == 1.0
+        assert self.task.get_from_database('Test_phase') == 1.0
+        aux = self.task.list_accessible_database_entries()
+        assert 'Test_x' not in aux
+        assert 'Test_y' not in aux
 
     def test_perform1(self):
         self.task.mode = 'X'
 
-        self.root.run_time['profiles'] = {'Test1': ({}, {'read_x': [2.0]})}
-
-        self.root.task_database.prepare_for_running()
+        p = self.root.run_time[PROFILES]['Test1']
+        p['settings']['S']['read_x'] = [2.0]
+        self.root.prepare()
 
         self.task.perform()
-        assert_equal(self.root.get_from_database('Test_x'), 2.0)
+        assert self.root.get_from_database('Test_x') == 2.0
 
     def test_perform2(self):
         self.task.mode = 'Y'
 
-        self.root.run_time['profiles'] = {'Test1': ({}, {'read_y': [2.0]})}
-
-        self.root.task_database.prepare_for_running()
+        p = self.root.run_time[PROFILES]['Test1']
+        p['settings']['S']['read_y'] = [2.0]
+        self.root.prepare()
 
         self.task.perform()
-        assert_equal(self.root.get_from_database('Test_y'), 2.0)
+        assert self.root.get_from_database('Test_y') == 2.0
 
     def test_perform3(self):
         self.task.mode = 'X&Y'
 
-        self.root.run_time['profiles'] = {'Test1': ({},
-                                                    {'read_xy': [(2.0, 3.0)]})}
-
-        self.root.task_database.prepare_for_running()
+        p = self.root.run_time[PROFILES]['Test1']
+        p['settings']['S']['read_xy'] = [(2.0, 3.0)]
+        self.root.prepare()
 
         self.task.perform()
-        assert_equal(self.root.get_from_database('Test_x'), 2.0)
-        assert_equal(self.root.get_from_database('Test_y'), 3.0)
+        assert self.root.get_from_database('Test_x') == 2.0
+        assert self.root.get_from_database('Test_y') == 3.0
 
     def test_perform4(self):
         self.task.mode = 'Amp'
 
-        self.root.run_time['profiles'] = {'Test1': ({},
-                                                    {'read_amplitude': [2.0]})}
-
-        self.root.task_database.prepare_for_running()
+        p = self.root.run_time[PROFILES]['Test1']
+        p['settings']['S']['read_amplitude'] = [2.0]
+        self.root.prepare()
 
         self.task.perform()
-        assert_equal(self.root.get_from_database('Test_amplitude'), 2.0)
+        assert self.root.get_from_database('Test_amplitude') == 2.0
 
     def test_perform5(self):
         self.task.mode = 'Phase'
 
-        self.root.run_time['profiles'] = {'Test1': ({}, {'read_phase': [2.0]})}
-
-        self.root.task_database.prepare_for_running()
+        p = self.root.run_time[PROFILES]['Test1']
+        p['settings']['S']['read_phase'] = [2.0]
+        self.root.prepare()
 
         self.task.perform()
-        assert_equal(self.root.get_from_database('Test_phase'), 2.0)
+        assert self.root.get_from_database('Test_phase') == 2.0
 
     def test_perform6(self):
         self.task.mode = 'Amp&Phase'
 
-        self.root.run_time['profiles'] = {'Test1': ({},
-                                          {'read_amp_and_phase': [(2.0, 3.0)]})
-                                          }
-
-        self.root.task_database.prepare_for_running()
+        p = self.root.run_time[PROFILES]['Test1']
+        p['settings']['S']['read_amp_and_phase'] = [(2.0, 3.0)]
+        self.root.prepare()
 
         self.task.perform()
-        assert_equal(self.root.get_from_database('Test_amplitude'), 2.0)
-        assert_equal(self.root.get_from_database('Test_phase'), 3.0)
+        assert self.root.get_from_database('Test_amplitude') == 2.0
+        assert self.root.get_from_database('Test_phase') == 3.0
 
 
-@attr('ui')
-class TestLockInView(object):
+@pytest.mark.ui
+def test_lock_in_meas_view1(windows, root_view, task_workbench):
+    """Test ApplyMagFieldView widget outisde of a LoopTask.
 
-    def setup(self):
-        self.workbench = Workbench()
-        self.workbench.register(CoreManifest())
-        self.workbench.register(StateManifest())
-        self.workbench.register(PreferencesManifest())
-        self.workbench.register(InstrManagerManifest())
-        self.workbench.register(TaskManagerManifest())
-
-        self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = LockInMeasureTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
-
-    def teardown(self):
-        close_all_windows()
-
-        self.workbench.unregister(u'hqc_meas.task_manager')
-        self.workbench.unregister(u'hqc_meas.instr_manager')
-        self.workbench.unregister(u'hqc_meas.preferences')
-        self.workbench.unregister(u'hqc_meas.state')
-        self.workbench.unregister(u'enaml.workbench.core')
-
-    def test_view1(self):
-        # Intantiate a view with no selected interface and select one after
-        window = enaml.widgets.api.Window()
-        core = self.workbench.get_plugin('enaml.workbench.core')
-        view = LockInMeasView(window, task=self.task, core=core)
-        window.show()
-
-        process_app_events()
+    """
+    task = LockInMeasureTask(name='Test')
+    root_view.task.add_child_task(0, task)
+    show_and_close_widget(LockInMeasView(task=task, root=root_view))

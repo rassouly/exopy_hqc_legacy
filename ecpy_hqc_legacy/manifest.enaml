@@ -61,3 +61,8 @@ enamldef HqcLegacyManifest(PluginManifest):
                     view = 'views.apply_mag_field_view:ApplyMagFieldView'
                     instruments = ['ecpy_hqc_legacy.IPS12010']
                     metadata = {'loopable': True}
+                Task:
+                    task = 'lock_in_measure_task:LockInMeasureTask'
+                    view = 'views.lock_in_meas_view:LockInMeasView'
+                    instruments = ['ecpy_hqc_legacy.SR7265LI',
+                                   'ecpy_hqc_legacy.SR830']

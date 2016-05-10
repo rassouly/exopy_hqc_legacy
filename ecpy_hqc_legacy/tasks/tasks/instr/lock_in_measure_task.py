@@ -62,20 +62,19 @@ class LockInMeasureTask(InstrumentTask):
             self.write_in_database('amplitude', amplitude)
             self.write_in_database('phase', phase)
 
-    def _post_setattr_mode(self, change):
+    def _post_setattr_mode(self, old, new):
         """ Update the database entries acording to the mode.
 
         """
-        new = change['value']
         if new == 'X':
-            self.task_database_entries = {'x': 1.0}
+            self.database_entries = {'x': 1.0}
         elif new == 'Y':
-            self.task_database_entries = {'y': 1.0}
+            self.database_entries = {'y': 1.0}
         elif new == 'X&Y':
-            self.task_database_entries = {'x': 1.0, 'y': 1.0}
+            self.database_entries = {'x': 1.0, 'y': 1.0}
         elif new == 'Amp':
-            self.task_database_entries = {'amplitude': 1.0}
+            self.database_entries = {'amplitude': 1.0}
         elif new == 'Phase':
-            self.task_database_entries = {'phase': 1.0}
+            self.database_entries = {'phase': 1.0}
         elif new == 'Amp&Phase':
-            self.task_database_entries = {'amplitude': 1.0, 'phase': 1.0}
+            self.database_entries = {'amplitude': 1.0, 'phase': 1.0}
