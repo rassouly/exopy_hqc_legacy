@@ -26,7 +26,6 @@ enamldef LockInMeasView(InstrView): view:
     """View for the LockInMeasTask
 
     """
-
     constraints = [factory(auto_grid_layout)]
 
     Label:

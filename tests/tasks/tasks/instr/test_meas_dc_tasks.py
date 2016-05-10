@@ -1,89 +1,68 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : test_meas_dc_voltage.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Tests for the ApplyMagFieldTask
+
 """
-"""
-from nose.tools import (assert_equal)
-from nose.plugins.attrib import attr
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from multiprocessing import Event
-from enaml.workbench.api import Workbench
 
-from hqc_meas.tasks.api import RootTask
-from hqc_meas.tasks.tasks_instr.meas_dc_tasks import MeasDCVoltageTask
-
+import pytest
 import enaml
+
+from ecpy.tasks.api import RootTask
+from ecpy.testing.util import show_and_close_widget
+from ecpy_hqc_legacy.tasks.tasks.instr.meas_dc_tasks\
+    import MeasDCVoltageTask
+
 with enaml.imports():
-    from enaml.workbench.core.core_manifest import CoreManifest
-    from hqc_meas.utils.state.manifest import StateManifest
-    from hqc_meas.utils.preferences.manifest import PreferencesManifest
-    from hqc_meas.tasks.manager.manifest import TaskManagerManifest
-    from hqc_meas.instruments.manager.manifest import InstrManagerManifest
+    from ecpy_hqc_legacy.tasks.tasks.instr.views.meas_dc_views\
+        import MeasDCVoltView
 
-    from hqc_meas.tasks.tasks_instr.views.meas_dc_views\
-        import DCVoltMeasView
-
-from ...util import process_app_events, close_all_windows
-from .instr_helper import InstrHelper
+from .instr_helper import InstrHelper, InstrHelperStarter, PROFILES, DRIVERS
 
 
 class TestSetDCVoltageTask(object):
 
     def setup(self):
         self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = MeasDCVoltageTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
+        self.task = MeasDCVoltageTask(name='Test')
+        self.root.add_child_task(0, self.task)
+
+        self.root.run_time[DRIVERS] = {'Test': (InstrHelper,
+                                                InstrHelperStarter())}
+        self.root.run_time[PROFILES] =\
+            {'Test1': {'connections': {'C': {'owner': []}},
+                       'settings': {'S': {'check_connection': [True]}}
+                       }
+             }
 
         # This is set simply to make sure the test of InstrTask pass.
-        self.task.selected_driver = 'Test'
-        self.task.selected_profile = 'Test1'
+        self.task.selected_instrument = ('Test1', 'Test', 'C', 'S')
 
     def test_perform(self):
         self.task.wait_time = 1.0
 
-        self.root.run_time['profiles'] = {'Test1': ({},
-                                                    {'read_voltage_dc': [2.0]})
-                                                    }
-
-        self.root.task_database.prepare_for_running()
+        p = self.root.run_time[PROFILES]['Test1']
+        p['settings']['S']['read_voltage_dc'] = [2.0]
+        self.root.prepare()
 
         self.task.perform()
-        assert_equal(self.root.get_from_database('Test_voltage'), 2.0)
+        assert self.root.get_from_database('Test_voltage') == 2.0
 
 
-@attr('ui')
-class TestSetDCVoltageView(object):
+@pytest.mark.ui
+def test_meas_dc_voltage_view(windows, root_view, task_workbench):
+    """Test ApplyMagFieldView widget outisde of a LoopTask.
 
-    def setup(self):
-        self.workbench = Workbench()
-        self.workbench.register(CoreManifest())
-        self.workbench.register(StateManifest())
-        self.workbench.register(PreferencesManifest())
-        self.workbench.register(InstrManagerManifest())
-        self.workbench.register(TaskManagerManifest())
-
-        self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = MeasDCVoltageTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
-
-    def teardown(self):
-        close_all_windows()
-
-        self.workbench.unregister(u'hqc_meas.task_manager')
-        self.workbench.unregister(u'hqc_meas.instr_manager')
-        self.workbench.unregister(u'hqc_meas.preferences')
-        self.workbench.unregister(u'hqc_meas.state')
-        self.workbench.unregister(u'enaml.workbench.core')
-
-    def test_view1(self):
-        # Intantiate a view with no selected interface and select one after
-        window = enaml.widgets.api.Window()
-        core = self.workbench.get_plugin('enaml.workbench.core')
-        view = DCVoltMeasView(window, task=self.task, core=core)
-        window.show()
-
-        process_app_events()
+    """
+    task = MeasDCVoltageTask(name='Test')
+    root_view.task.add_child_task(0, task)
+    show_and_close_widget(MeasDCVoltView(task=task, root=root_view))

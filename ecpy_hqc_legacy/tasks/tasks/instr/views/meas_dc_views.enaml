@@ -19,16 +19,18 @@ from enaml.stdlib.fields import FloatField
 from enaml.layout.api import factory
 
 from ecpy_hqc_legacy.utils.layouts import auto_grid_layout
-from ..base_instr_view import InstrView
+from ...base_instr_view import InstrView
 
 
-enamldef DCVoltMeasView(InstrView): view:
+enamldef MeasDCVoltView(InstrView): view:
     """View for the DCVoltMeasTask.
 
     """
+    constraints = [factory(auto_grid_layout)]
+
     Label:
         text = 'Wait (s)'
     FloatField:
         value := task.wait_time
         tool_tip = fill("Time to wait before querying values from the "
-                        "voltmeter."), 60)
+                        "voltmeter.", 60)

@@ -16,7 +16,7 @@ from time import sleep
 
 from atom.api import Float, set_default
 
-from hqc_meas.tasks.api import InstrumentTask
+from ecpy.tasks.api import InstrumentTask
 
 
 class MeasDCVoltageTask(InstrumentTask):
