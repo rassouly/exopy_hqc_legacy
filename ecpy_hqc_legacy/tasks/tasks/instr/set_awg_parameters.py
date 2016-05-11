@@ -21,6 +21,7 @@ from ecpy.utils.atom_util import HasPrefAtom, tagged_members
 from ecpy.tasks.api import (InstrumentTask, InterfaceableTaskMixin,
                             InstrTaskInterface)
 
+# XXX unfinished
 
 class AnalogicalParameters(HasPrefAtom):
     """Parameters for one analogical port of the channel.

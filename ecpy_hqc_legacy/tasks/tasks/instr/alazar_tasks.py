@@ -19,6 +19,7 @@ from atom.api import (Unicode, Bool, set_default)
 
 from ecpy.tasks.api import InstrumentTask
 
+# XXX unfinished
 
 class DemodAlazarTask(InstrumentTask):
     """ Get the raw or averaged quadratures of the signal.

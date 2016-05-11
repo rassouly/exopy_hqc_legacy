@@ -26,6 +26,8 @@ from hqc_meas.tasks.tools.string_evaluation import EVALUATER_TOOLTIP
 from hqc_meas.tasks.views.base_instr_view import BaseInstrumentView
 from hqc_meas.pulses.sequences_views import instantiate_context_view
 
+# XXX unfinished
+
 enamldef VarEditor(Container):
     """ Fields allowing top edit the local variables of a sequence.
 
@@ -208,4 +210,4 @@ enamldef AWGTransferPulseSequenceInterfaceView(Page):
 
 INTERFACE_VIEW_MAPPING = {'AWGTransferInterface':
                           [AWGTransferPulseSequenceInterfaceView]}
-                          
+

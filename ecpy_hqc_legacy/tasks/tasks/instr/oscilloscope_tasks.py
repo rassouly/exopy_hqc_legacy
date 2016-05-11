@@ -16,6 +16,7 @@ import numpy as np
 from atom.api import (Unicode, Bool, set_default, Enum)
 from ecpy.tasks.api import InstrumentTask
 
+# XXX unfinished
 
 class OscilloGetTraceTask(InstrumentTask):
     """ Get the trace displayed on the oscilloscope.

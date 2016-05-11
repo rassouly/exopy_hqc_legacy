@@ -14,6 +14,7 @@ from __future__ import (division, unicode_literals, print_function,
 
 from ecpy.tasks.api import InstrTaskInterface
 
+# XXX unfinished
 
 class TaborTransferInterface(InstrTaskInterface):
     """Interface for the Tabor, handling naming the transfered sequences and

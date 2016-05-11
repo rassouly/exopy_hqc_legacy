@@ -19,6 +19,8 @@ from atom.api import (Value, Bool, Unicode, Dict)
 from hqc_meas.tasks.api import (InstrumentTask, InterfaceableTaskMixin,
                                 InstrTaskInterface)
 
+# XXX unfinished
+
 
 class TransferPulseSequenceTask(InterfaceableTaskMixin, InstrumentTask):
     """Build and transfer a pulse sequence to an instrument.

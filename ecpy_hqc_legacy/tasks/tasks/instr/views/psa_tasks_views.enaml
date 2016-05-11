@@ -23,6 +23,7 @@ from ecpy.utils.widgets.qt_completers import QtLineCompleter
 from ecpy_hqc_legacy.utils.layouts import auto_grid_layout
 from ..base_instr_view import InstrView
 
+# XXX unfinished
 
 enamldef PSAGetTraceView(InstrView): view:
     """View for the PSAGetTraceTask.
@@ -52,7 +53,7 @@ enamldef PSASetParamView(InstrView): view:
     QtLineCompleter:
         hug_width = 'ignore'
         text := task.average_nb
-        entries_updater << task.accessible_database_entries
+        entries_updater << task.list_accessible_database_entries
         tool_tip = EVALUATER_TOOLTIP
 
     Label:
@@ -60,7 +61,7 @@ enamldef PSASetParamView(InstrView): view:
     QtLineCompleter:
         hug_width = 'ignore'
         text := task.resolution_bandwidth
-        entries_updater << task.accessible_database_entries
+        entries_updater << task.list_accessible_database_entries
         tool_tip = EVALUATER_TOOLTIP
 
     Label:
@@ -68,7 +69,7 @@ enamldef PSASetParamView(InstrView): view:
     QtLineCompleter:
         hug_width = 'ignore'
         text := task.video_bandwidth
-        entries_updater << task.accessible_database_entries
+        entries_updater << task.list_accessible_database_entries
         tool_tip = EVALUATER_TOOLTIP
 
     Label:
@@ -84,7 +85,7 @@ enamldef PSASetParamView(InstrView): view:
         QtLineCompleter:
             hug_width = 'ignore'
             text := task.start_freq
-            entries_updater << task.accessible_database_entries
+            entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
 
         Label:
@@ -92,7 +93,7 @@ enamldef PSASetParamView(InstrView): view:
         QtLineCompleter:
             hug_width = 'ignore'
             text := task.end_freq
-            entries_updater << task.accessible_database_entries
+            entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
 
     Conditional:
@@ -102,7 +103,7 @@ enamldef PSASetParamView(InstrView): view:
         QtLineCompleter:
             hug_width = 'ignore'
             text := task.center_freq
-            entries_updater << task.accessible_database_entries
+            entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
 
         Label:
@@ -110,5 +111,5 @@ enamldef PSASetParamView(InstrView): view:
         QtLineCompleter:
             hug_width = 'ignore'
             text := task.span_freq
-            entries_updater << task.accessible_database_entries
+            entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP

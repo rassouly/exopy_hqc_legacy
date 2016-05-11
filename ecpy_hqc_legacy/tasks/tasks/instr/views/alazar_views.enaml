@@ -16,7 +16,7 @@ from hqc_meas.utils.layouts import auto_grid_layout
 from hqc_meas.tasks.views.base_instr_view import BaseInstrumentView
 from hqc_meas.tasks.tools.string_evaluation import EVALUATER_TOOLTIP
 
-
+# XXX unfinished
 
 enamldef DemodAlazarView(BaseInstrumentView): view:
 
@@ -41,23 +41,23 @@ enamldef DemodAlazarView(BaseInstrumentView): view:
         text = 'Instr'
     ObjectCombo: prof_val:
         items << sorted(profiles)
-        selected := task.selected_profile    
+        selected := task.selected_profile
 
     Label: traces:
         text = 'Number of traces'
     Field: traces_val:
         text := task.tracesnumber
-        
+
     Label: buffer:
         text = 'Traces per Buffer'
     Field: buffer_val:
         text := task.tracesbuffer
-        
+
     Label: average:
         text = 'Average'
     CheckBox: average_val:
         checked := task.average
-        
+
     Label: IQtracemode:
         text = 'IQ trace mode'
     CheckBox: IQtracemode_val:
@@ -68,12 +68,12 @@ enamldef DemodAlazarView(BaseInstrumentView): view:
         constraints = [grid([after, duration, dfreq, samplingtime],
                             [after_val, duration_val, dfreq_val, samplingtime_val]),
                        dfreq_val.width == after_val.width,
-                       after_val.width == duration_val.width]                
+                       after_val.width == duration_val.width]
         Label: dfreq:
             text = 'Demodulation frequency (MHz)'
         Field: dfreq_val:
             text := task.freq
-         
+
         Label: after:
             text = 'Start time after trigger (ns)'
         Field: after_val:
@@ -81,7 +81,7 @@ enamldef DemodAlazarView(BaseInstrumentView): view:
             tool_tip = fill(cleandoc('''Separate the start times with commas.
                                         For example : 0,500,1500
                                         In IQtrace mode, give the first time only'''))
-        
+
         Label: duration:
             text = 'Duration (ns)'
         Field: duration_val:
@@ -100,16 +100,16 @@ enamldef DemodAlazarView(BaseInstrumentView): view:
             tool_tip = fill(cleandoc(
                             '''Requested only in IQtrace mode'''))
     GroupBox: demodB:
-        title = 'Channel B demodulation settings'  
+        title = 'Channel B demodulation settings'
         constraints = [grid([afterB, durationB, dfreqB, samplingtimeB],
                             [afterB_val, durationB_val, dfreqB_val, samplingtimeB_val]),
                        dfreqB_val.width == afterB_val.width,
-                       afterB_val.width == durationB_val.width]                 
+                       afterB_val.width == durationB_val.width]
         Label: dfreqB:
             text = 'Demodulation frequency (MHz)'
         Field: dfreqB_val:
             text := task.freqB
-         
+
         Label: afterB:
             text = 'Start time after trigger (ns)'
         Field: afterB_val:
@@ -117,7 +117,7 @@ enamldef DemodAlazarView(BaseInstrumentView): view:
             tool_tip = fill(cleandoc('''Separate the start times with commas.
                                         For example : 0,500,1500
                                         In IQtrace mode, give the first time only'''))
-        
+
         Label: durationB:
             text = 'Duration (ns)'
         Field: durationB_val:
@@ -140,7 +140,7 @@ enamldef DemodAlazarView(BaseInstrumentView): view:
         title = 'Channel A raw trace record settings'
         constraints = [grid([traceafter, traceduration],
                             [traceafter_val, traceduration_val]),
-                       traceafter_val.width == traceduration_val.width]                
+                       traceafter_val.width == traceduration_val.width]
 
         Label: traceafter:
             text = 'Start time after trigger (ns)'
@@ -148,7 +148,7 @@ enamldef DemodAlazarView(BaseInstrumentView): view:
             text := task.tracetimeaftertrig
             tool_tip = fill(cleandoc('''Separate the start times with commas.
                                         For example : 0,500,1500'''))
-        
+
         Label: traceduration:
             text = 'Duration (ns)'
         Field: traceduration_val:
@@ -161,10 +161,10 @@ enamldef DemodAlazarView(BaseInstrumentView): view:
                             disabled if demodulation and trace record are both
                             disabled on this channel. This improves channel B speed.'''))
     GroupBox: traceB:
-        title = 'Channel B raw trace record settings'  
+        title = 'Channel B raw trace record settings'
         constraints = [grid([traceafterB, tracedurationB],
                             [traceafterB_val, tracedurationB_val]),
-                       traceafterB_val.width == tracedurationB_val.width]                 
+                       traceafterB_val.width == tracedurationB_val.width]
 
         Label: traceafterB:
             text = 'Start time after trigger (ns)'
@@ -172,7 +172,7 @@ enamldef DemodAlazarView(BaseInstrumentView): view:
             text := task.tracetimeaftertrigB
             tool_tip = fill(cleandoc('''Separate the start times with commas.
                                         For example : 0,500,1500'''))
-        
+
         Label: tracedurationB:
             text = 'Duration (ns)'
         Field: tracedurationB_val:
@@ -216,12 +216,12 @@ enamldef TracesAlazarView(BaseInstrumentView): view:
         text = 'Number of traces'
     Field: traces_val:
         text := task.tracesnumber
-        
+
     Label: buffer:
         text = 'Traces per Buffer'
     Field: buffer_val:
         text := task.tracesbuffer
-        
+
     Label: average:
         text = 'Average'
     CheckBox: average_val:

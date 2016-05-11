@@ -20,6 +20,7 @@ from atom.api import (Unicode, Int, set_default, Enum)
 
 from ecpy.tasks.api import InstrumentTask
 
+# XXX unfinished
 
 class PSAGetTrace(InstrumentTask):
     """ Get the trace displayed on the Power Spectrum Analyzer.
