@@ -1,24 +1,26 @@
 # -*- coding: utf-8 -*-
-#==============================================================================
-# module : agilent_multimeter.py
-# author : Matthieu Dartiailh
-# license : MIT license
-#==============================================================================
-"""
-This module defines drivers for agilent PSG SignalGenerator using VISA library.
-
-:Contains:
-    AgilentPSGSignalGenerator : tested for Agilent
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Drivers for Keysight PSG SignalGenerator using VISA library.
 
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+import re
+from textwrap import fill
+from inspect import cleandoc
+
+from visa import VisaTypeError
 
 from ..driver_tools import (InstrIOError, instrument_property,
                             secure_communication)
 from ..visa_tools import VisaInstrument
-from visa import VisaTypeError
-from textwrap import fill
-from inspect import cleandoc
-import re
 
 
 class AgilentPSGSignalGenerator(VisaInstrument):
@@ -145,5 +147,3 @@ class AgilentPSGSignalGenerator(VisaInstrument):
             mess = fill(cleandoc('''The invalid value {} was sent to
                         switch_on_off method''').format(value), 80)
             raise VisaTypeError(mess)
-
-DRIVERS = {'AgilentE8257D': AgilentPSGSignalGenerator}

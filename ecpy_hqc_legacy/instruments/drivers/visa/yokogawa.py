@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
-#==============================================================================
-# module : agilent_multimeter.py
-# author : Matthieu Dartiailh
-# license : MIT license
-#==============================================================================
-"""
-This module defines drivers for yokogawa sources using VISA library.
-
-:Contains:
-    YokogawaGS200 : Driver for the YokogawaGS200 using VISA
-    Yokogawa7651 : Driver for the Yokogawa7651 using VISA
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Base classes for instrument relying on the VISA protocol.
 
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 import re
 from textwrap import fill
 from inspect import cleandoc
@@ -44,7 +44,6 @@ class YokogawaGS200(VisaInstrument):
         State of the output 'ON'(True)/'OFF'(False).
 
     """
-
     @instrument_property
     @secure_communication()
     def voltage(self):
@@ -63,7 +62,7 @@ class YokogawaGS200(VisaInstrument):
         """
         self.write(":SOURce:LEVel {}".format(set_point))
         value = self.ask_for_values('SOURce:LEVel?')[0]
-        #to avoid floating point rouding
+        # to avoid floating point rouding
         if abs(value - round(set_point, 9)) > 10**-9:
             raise InstrIOError('Instrument did not set correctly the voltage')
 
@@ -124,7 +123,6 @@ class YokogawaGS200(VisaInstrument):
         """
         value = self.ask('SOURce:FUNCtion?')
         if value is not None:
-            #Stripping leading and trailing '
             return value
         else:
             raise InstrIOError('Instrument did not return the function')
@@ -184,10 +182,10 @@ class YokogawaGS200(VisaInstrument):
                     output state of the Yokogawa driver''').format(value), 80)
             raise VisaTypeError(mess)
 
-#    def check_connection(self):
-#        """Found no way to check whether or not the cache can be corrupted
-#        """
-#        return False
+    def check_connection(self):
+        """
+        """
+        return False
 
 
 class Yokogawa7651(VisaInstrument):
@@ -213,7 +211,6 @@ class Yokogawa7651(VisaInstrument):
         State of the output 'ON'(True)/'OFF'(False).
 
     """
-
     @instrument_property
     @secure_communication()
     def voltage(self):
@@ -236,7 +233,7 @@ class Yokogawa7651(VisaInstrument):
         self.write("S{:+E}E".format(set_point))
         data = self.ask("OD")
         value = float(data[4::])
-        #to avoid floating point rouding
+        # to avoid floating point rouding
         if abs(value - round(set_point, 9)) > 10**-9:
             raise InstrIOError('Instrument did not set correctly the voltage')
 
@@ -328,6 +325,3 @@ class Yokogawa7651(VisaInstrument):
         """
         """
         return False
-
-DRIVERS = {'YokogawaGS200': YokogawaGS200,
-           'Yokogawa7651': Yokogawa7651}

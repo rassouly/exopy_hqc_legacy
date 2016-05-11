@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
-#==============================================================================
-# module : lock_in_sr72_series.py
-# author : Matthieu Dartiailh
-# license : MIT license
-#==============================================================================
-"""
-This module defines drivers for lock-in from Signal Recoveries
-
-:Contains:
-    LockInSR7265 : driver for the SR7265 lock-in
-    LockInSR7270 : driver for the SR7272 lock-in
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Drivers for lock-in from Signal Recovery using VISA library.
 
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
 
 from ..driver_tools import (InstrIOError, secure_communication)
 from ..visa_tools import VisaInstrument
@@ -214,6 +213,3 @@ class LockInSR7270(LockInSR7265):
             return 'Command went wrong'
         else:
             return 'OK'
-
-DRIVERS = {'SR7265-LI': LockInSR7265,
-           'SR7270-LI': LockInSR7270}

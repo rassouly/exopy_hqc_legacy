@@ -1,15 +1,16 @@
-# =============================================================================
-# module : keithley_multimeter.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
-"""
-This module defines drivers for keithley multimeters using VISA library.
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Driver for Keithley instruments using VISA library.
 
-:Contains:
-    Keithley2000 : Driver for the Keithley2000 multimeter.
-
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
 
 from ..driver_tools import (InstrIOError, secure_communication,
                             instrument_property)
@@ -61,6 +62,7 @@ class Keithley2000(VisaInstrument):
     @secure_communication()
     def function(self):
         """Function setter
+
         """
         value = self.ask('FUNCtion?')
         if value:
@@ -71,8 +73,6 @@ class Keithley2000(VisaInstrument):
     @function.setter
     @secure_communication()
     def function(self, value):
-        """Function setter
-        """
         self.write('FUNCtion "{}"'.format(value))
         # The Keithley returns "VOLT:DC" needs to remove the quotes
         if not(self.ask('FUNCtion?')[1:-1].lower() == value.lower()):
@@ -177,6 +177,7 @@ class Keithley2000(VisaInstrument):
     @secure_communication()
     def check_connection(self):
         """Check wether or not a front panel user set the instrument in local.
+
         If a front panel user set the instrument in local the cache can be
         corrupted and should be cleared.
 
@@ -184,5 +185,3 @@ class Keithley2000(VisaInstrument):
         val = ('{0:08b}'.format(int(self.ask('*ESR'))))[::-1]
         if val:
             return val[6]
-
-DRIVERS = {'Keithley2000' : Keithley2000}

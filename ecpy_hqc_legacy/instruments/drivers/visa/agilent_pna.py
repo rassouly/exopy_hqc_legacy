@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : agilent_pna.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
-"""
-This module defines drivers for agilent PNA.
-
-:Contains:
-    AgilentPNAChannelError
-    AgilentPNAChannel
-    AgilentPNA
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Driver for the Keysight VNA (PNA).
 
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 import logging
 from inspect import cleandoc
 import numpy as np

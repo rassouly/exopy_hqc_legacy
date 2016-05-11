@@ -108,6 +108,12 @@ enamldef HqcLegacyManifest(PluginManifest):
                 Drivers:
                     manufacturer = 'Anritsu'
                     pass
+                Drivers:
+                    manufacturer = 'Bilt'
+                    pass
+                Drivers:
+                    manufacturer = 'Standford instruments'
+                    pass
             Drivers:
                 path = 'dll'
                 starter = 'ecpy_hqc_legacy.starter.dll'

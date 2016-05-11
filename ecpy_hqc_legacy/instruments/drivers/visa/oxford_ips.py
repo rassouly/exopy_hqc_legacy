@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-#==============================================================================
-# module : oxford_ips.py
-# author : Matthieu Dartiailh
-# license : MIT license
-#==============================================================================
-"""
-This module defines drivers for oxford ips magnet supply
-
-:Contains:
-    IPS12010
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Drivers for oxford ips magnet supply using VISA library.
 
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from inspect import cleandoc
 from time import sleep
 from ..driver_tools import (InstrIOError, secure_communication,
@@ -54,7 +55,8 @@ _GET_HEATER_DICT = {0: 'Off Magnet at Zero',
 
 
 class IPS12010(VisaInstrument):
-    """
+    """Driver for the superconducting magnet power supply IPS120-10
+
     """
 
     caching_permissions = {'heater_state': True,
@@ -346,5 +348,3 @@ class IPS12010(VisaInstrument):
             return status.strip()
         else:
             raise InstrIOError('''IPS120-10 did not return its status''')
-
-DRIVERS = {'IPS12010': IPS12010}

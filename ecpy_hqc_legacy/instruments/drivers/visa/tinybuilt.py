@@ -1,30 +1,30 @@
 # -*- coding: utf-8 -*-
-#==============================================================================
-# module : anritsu_signal_generator.py
-# author : Pierre Heidmann
-# license : MIT license
-#==============================================================================
-"""
-
-This module defines drivers for TinyBilt using VISA library.
-
-:Contains:
-    TinyBiltChannel
-    TinyBilt
-
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Drivers for the BILT rack BN100 with BE2100 cards using VISA library.
 
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+import re
+import time
+from textwrap import fill
+from inspect import cleandoc
 from threading import Lock
 from contextlib import contextmanager
+
+import numpy as np
+from visa import VisaTypeError
+
 from ..driver_tools import (BaseInstrument, InstrIOError, secure_communication,
                             instrument_property)
 from ..visa_tools import VisaInstrument
-from visa import VisaTypeError
-from textwrap import fill
-from inspect import cleandoc
-import re
-import time
-import numpy as np
 
 
 class TinyBiltChannel(BaseInstrument):
@@ -237,16 +237,16 @@ class TinyBiltChannel(BaseInstrument):
         """
         with self.secure():
             present_voltage = round(self._TB.ask_for_values
-                                   ('i{};Volt?'.format(self._channel))[0],
+                                    ('i{};Volt?'.format(self._channel))[0],
                                     5)
             while abs(round(present_voltage - volt_destination,
                             5)) >= volt_step:
                 time.sleep(time_step)
                 self._TB.write('i{};volt {}'
                                .format(self._channel, present_voltage))
-                present_voltage = round(present_voltage + volt_step
-                                        * np.sign(volt_destination
-                                                  - present_voltage), 5)
+                present_voltage = round(present_voltage + volt_step *
+                                        np.sign(volt_destination -
+                                                present_voltage), 5)
             self._TB.write('i{};volt {}'
                            .format(self._channel, volt_destination))
 
@@ -295,5 +295,3 @@ class TinyBilt(VisaInstrument):
         else:
             raise InstrIOError(cleandoc('''Instrument did not return
                                             the defined channels'''))
-
-DRIVERS = {'TinyBilt': TinyBilt}

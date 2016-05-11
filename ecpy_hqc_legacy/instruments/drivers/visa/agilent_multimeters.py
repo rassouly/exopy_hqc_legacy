@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-#==============================================================================
-# module : agilent_multimeter.py
-# author : Matthieu Dartiailh
-# license : MIT license
-#==============================================================================
-"""
-This module defines drivers for agilent multimeters using VISA library.
-
-:Contains:
-    Agilent34410A
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Drivers for keysight multimeters using VISA library.
 
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
 
 from ..driver_tools import (InstrIOError, secure_communication)
 from ..visa_tools import VisaInstrument
@@ -107,5 +107,3 @@ class Agilent34410A(VisaInstrument):
             return value[0]
         else:
             raise InstrIOError('AC current measure failed')
-
-DRIVERS = {'Agilent34410A': Agilent34410A}

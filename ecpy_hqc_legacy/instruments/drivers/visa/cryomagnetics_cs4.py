@@ -1,5 +1,20 @@
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Driver for the Cryomagnetic superconducting magnets power supply.
+
+"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 from inspect import cleandoc
 from time import sleep
+
 from ..driver_tools import (InstrIOError, secure_communication,
                             instrument_property)
 from ..visa_tools import VisaInstrument
@@ -14,18 +29,24 @@ FIELD_CURRENT_RATIO = 0.043963
 OUT_FLUC = 2e-4
 MAXITER = 20
 
+
 class CS4(VisaInstrument):
+    """Driver for the CS4 superconducting magnet power supply.
+
+    """
 
     @secure_communication()
     def make_ready(self):
-        """
+        """Setup the correct unit and range.
+
         """
         self.write('UNITS T')
         self.write('RANGE 0 100')
 
     def go_to_field(self, value, rate, auto_stop_heater=True,
                     post_switch_wait=30):
-        """
+        """Ramp up the field to the specified value.
+
         """
         # sweeping rate is converted from T/min to A/sec
         self.field_sweep_rate = rate / (60 * FIELD_CURRENT_RATIO)
@@ -59,7 +80,9 @@ class CS4(VisaInstrument):
 
     @instrument_property
     def heater_state(self):
-        """
+        """State of the switch heater allowing to inject current into the
+        coil.
+
         """
         heat = self.ask('PSHTR?').strip()
         try:
@@ -70,27 +93,25 @@ class CS4(VisaInstrument):
     @heater_state.setter
     @secure_communication()
     def heater_state(self, state):
-        """
-        """
         if state in ['On', 'Off']:
             self.write('PSHTR {}'.format(state))
 
     @instrument_property
     def field_sweep_rate(self):
-        """
+        """Rate at which to ramp the field.
+
         """
         return float(self.ask('RATE? 0'))
 
     @field_sweep_rate.setter
     @secure_communication()
     def field_sweep_rate(self, rate):
-        """
-        """
         self.write("RATE 0 {}".format(rate))
 
     @instrument_property
     def target_field(self):
-        """
+        """Field that the source will try to reach.
+
         """
         return float(self.ask('IOUT?').strip(' T'))
 
@@ -114,29 +135,26 @@ class CS4(VisaInstrument):
                 raise InstrIOError(cleandoc('''CS4 didn't set the field
                     to {}'''.format(target)))
 
-
     @instrument_property
     def persistent_field(self):
-        """
+        """Last known field.
+
         """
         return float(self.ask('IMAG?').strip(' T'))
 
     @instrument_property
     def activity(self):
-        """
+        """Current activity of the power supply (idle, ramping).
+
         """
         return self.ask('SWEEP?').strip()
 
     @activity.setter
     @secure_communication()
     def activity(self, value):
-        """
-        """
         par = _ACTIVITY_DICT.get(value, None)
         if par:
             self.write(par)
         else:
             raise ValueError(cleandoc(''' Invalid parameter {} sent to
                 CS4 set_activity method'''.format(value)))
-
-DRIVERS = {'CryomagCS4' : CS4}

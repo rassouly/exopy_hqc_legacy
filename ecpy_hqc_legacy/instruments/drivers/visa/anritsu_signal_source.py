@@ -1,27 +1,31 @@
 # -*- coding: utf-8 -*-
-#==============================================================================
-# module : anritsu_signal_generator.py
-# author : Matthieu Dartiailh
-# license : MIT license
-#==============================================================================
-"""
-This module defines drivers for Anritsu instrument using VISA library.
-
-:Contains:
-    AnritsuMG3694
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Drivers for Anritsu instrument using VISA library.
 
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+import re
+from textwrap import fill
+from inspect import cleandoc
+
+from visa import VisaTypeError
+
 from ..driver_tools import (InstrIOError, secure_communication,
                             instrument_property)
 from ..visa_tools import VisaInstrument
-from visa import VisaTypeError
-from textwrap import fill
-from inspect import cleandoc
-import re
 
 
 class AnritsuMG3694(VisaInstrument):
-    """
+    """Driver for the Anritsu MG 3694 microwave source.
+
     """
 
     def __init__(self, connection_info, caching_allowed=True,
@@ -33,14 +37,14 @@ class AnritsuMG3694(VisaInstrument):
         self.frequency_unit = 'GHz'
         self.write("DSPL 4")
         self.write("EBW3")  # if the external reference is very stable in phase
-#        The biggest EBW must be chosen'
-        self.write("LO0")  # 'no offset on the power
-        self.write("LOG")  # 'Selects logarithmic power level operation in dBm
-        self.write("TR1")  # 'Sets 40 dB of attenuation when RF is switched off
-        self.write("PS1")  # 'Turns on the Phase Offset
-        self.write("DS1")  # 'Turns off the secure mode
-        self.write("AT1")  # 'Selects ALC step attenuator decoupling
-        self.write("IL1")  # 'Selects internal leveling of output power
+                            # the largest EBW must be chosen
+        self.write("LO0")   # no offset on the power
+        self.write("LOG")   # Selects logarithmic power level operation in dBm
+        self.write("TR1")   # Sets 40 dB of attenuation when RF is switched off
+        self.write("PS1")   # Turns on the Phase Offset
+        self.write("DS1")   # Turns off the secure mode
+        self.write("AT1")   # Selects ALC step attenuator decoupling
+        self.write("IL1")   # Selects internal leveling of output power
 
     @instrument_property
     @secure_communication()
@@ -110,8 +114,6 @@ class AnritsuMG3694(VisaInstrument):
             return 'ON'
         elif output == 0:
             return 'OFF'
-#        if output is not None:
-#            return bool(output[0])
         else:
             mes = 'Anritsu signal source did not return its output'
             raise InstrIOError(mes)
@@ -131,7 +133,6 @@ class AnritsuMG3694(VisaInstrument):
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the output'''))
         elif off.match(value) or value == 0:
-#        elif value == 0:
             self.write('OUTP 0')
             if self.ask_for_values('OUTP?')[0] != 0:
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
@@ -140,6 +141,3 @@ class AnritsuMG3694(VisaInstrument):
             mess = fill(cleandoc('''The invalid value {} was sent to
                         switch_on_off method''').format(value), 80)
             raise VisaTypeError(mess)
-
-
-DRIVERS = {'AnritsuMG3694': AnritsuMG3694}

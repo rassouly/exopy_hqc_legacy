@@ -1,29 +1,29 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : AWG.py
-# author : Pierre Heidmann
-# license : MIT license
-# =============================================================================
-""" This module defines drivers for AWG using VISA library.
-
-:Contains:
-    AWGChannel
-    AWG
-
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Drivers for the Tektronik AWG5014 using VISA library.
 
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
 
-
+import re
+import time
+from textwrap import fill
+from inspect import cleandoc
 from threading import Lock
 from contextlib import contextmanager
+
+from visa import VisaTypeError
+
 from ..driver_tools import (BaseInstrument, InstrIOError, secure_communication,
                             instrument_property)
 from ..visa_tools import VisaInstrument, VisaIOError
-from visa import VisaTypeError
-from textwrap import fill
-from inspect import cleandoc
-import re
-import time
 
 
 class AWGChannel(BaseInstrument):
@@ -404,10 +404,10 @@ class AWG(VisaInstrument):
                                   caching_permissions, auto_open)
         self.channels = {}
         self.lock = Lock()
-        
+
     def reopen_connection(self):
         """Clear buffer on connection reseting.
-        
+
         """
         super(AWG, self).reopen_connection()
         self.write('*CLS') # As this does not seem to work poll the output
@@ -442,14 +442,14 @@ class AWG(VisaInstrument):
             self.write("WLIST:WAVEFORM:NEW '{}' , {}, INTeger" .format(name,
                                                                        looplength))
             initialized = True
-            
+
         numApresDiese = len('{}'.format(numbyte))
         header = "WLIS:WAV:DATA '{}',0,{},#{}{}".format(name, looplength,
                                                         numApresDiese,
                                                         numbyte)
         self.write('{}{}'.format(header, waveform))
         self.write('*WAI')
-        
+
         return initialized
 
     @instrument_property
@@ -624,6 +624,3 @@ class AWG(VisaInstrument):
             mess = fill(cleandoc('''The invalid value {} was sent to
                                  run mode method''').format(value), 80)
             raise VisaTypeError(mess)
-
-
-DRIVERS = {'AWG5014B': AWG}

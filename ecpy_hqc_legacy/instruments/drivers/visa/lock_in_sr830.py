@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-#==============================================================================
-# module : lock_in_sr830.py
-# author : Matthieu Dartiailh
-# license : MIT license
-#==============================================================================
-"""
-This module defines a driver for the Stanford instrument lock-in SR830
-
-:Contains:
-    LockInSR830 : driver for the SR830 lock-in
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Drivers for Stanford instrument lock-in SR830 using VISA library.
 
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
 
 from ..driver_tools import (InstrIOError, secure_communication)
 from ..visa_tools import VisaInstrument
@@ -145,5 +145,3 @@ class LockInSR830(VisaInstrument):
             raise InstrIOError('The command did not complete correctly')
         else:
             return values
-
-DRIVERS = {'SR830': LockInSR830}

@@ -24,7 +24,6 @@ except ImportError:
 from .driver_tools import BaseInstrument, InstrIOError
 
 
-# XXX fix propeties name clashes
 class VisaInstrument(BaseInstrument):
     """Base class for drivers using the VISA library to communicate
 
@@ -154,13 +153,13 @@ class VisaInstrument(BaseInstrument):
         """
         return self._driver.read()
 
-    def read_values(self, format=None):
+    def read_values(self, format=0):
         """Read one line of the instrument's buffer and convert to values.
 
         Simply call the `read_values` method of the `Instrument` object
         stored in the attribute `_driver`
         """
-        return self._driver.read_values(format=format)
+        return self._driver.read_values(format=0)
 
     def ask(self, message):
         """Send the specified message to the instrument and read its answer.
@@ -170,14 +169,14 @@ class VisaInstrument(BaseInstrument):
         """
         return self._driver.query(message)
 
-    def ask_for_values(self, message, format=None):
+    def ask_for_values(self, message, format=0):
         """Send the specified message to the instrument and convert its answer
         to values.
 
         Simply call the `ask_for_values` method of the `Instrument` object
         stored in the attribute `_driver`
         """
-        return self._driver.query_for_values(message, format)
+        return self._driver.ask_for_values(message, format)
 
     def clear(self):
         """Resets the device (highly bus dependent).
@@ -193,7 +192,7 @@ class VisaInstrument(BaseInstrument):
         Simply call the `trigger` method of the `Instrument` object stored
         in the attribute `_driver`
         """
-        return self._driver.trigger()
+        return self._driver.assert_trigger()
 
     def read_raw(self):
         """Read one line of the instrument buffer and return without stripping
@@ -214,52 +213,12 @@ class VisaInstrument(BaseInstrument):
     """Conveninence to set/get the `timeout` attribute of the `Instrument`
     object"""
 
-    def _term_chars(self):
-        return self._driver.term_chars
-
-    def _set_term_chars(self, value):
-        self._driver.term_chars = value
-
-    term_chars = property(_term_chars, _set_term_chars)
-    """Conveninence to set/get the `term_chars` attribute of the `Instrument`
-    object"""
-
-    def _send_end(self):
-        return self._driver.send_end
-
-    def _set_send_end(self, value):
-        self._driver.send_end = value
-
-    send_end = property(_send_end, _set_send_end)
-    """Conveninence to set/get the `send_end` attribute of the `Instrument`
-    object"""
-
     def _delay(self):
-        return self._driver.delay
+        return self._driver.query_delay
 
     def _set_delay(self, value):
-        self._driver.delay = value
+        self._driver.query_delay = value
 
     delay = property(_delay, _set_delay)
-    """Conveninence to set/get the `delay` attribute of the `Instrument`
-    object"""
-
-    def _values_format(self):
-        return self._driver.values_format
-
-    def _set_values_format(self, value):
-        self._driver.values_format = value
-
-    values_format = property(_values_format, _set_values_format)
-    """Conveninence to set/get the `values_format` attribute of the
-    `Instrument` object"""
-
-    def _chunk_size(self):
-        return self._driver.chunk_size
-
-    def _set_chunk_size(self, value):
-        self._driver.chunk_size = value
-
-    chunk_size = property(_chunk_size, _set_chunk_size)
-    """Conveninence to set/get the `chunk_size` attribute of the `Instrument`
+    """Conveninence to set/get the `query_delay` attribute of the `Instrument`
     object"""
