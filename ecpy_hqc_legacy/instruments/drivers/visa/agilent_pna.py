@@ -45,8 +45,6 @@ class AgilentPNAChannelError(Exception):
 class AgilentPNAChannel(BaseInstrument):
     """
     """
-    _channel = 1
-    port = 1
     caching_permissions = {'frequency': True,
                            'power': True,
                            'selected_measure': True,
@@ -63,6 +61,7 @@ class AgilentPNAChannel(BaseInstrument):
                                                 caching_permissions)
         self._pna = pna
         self._channel = channel_num
+        self.port = 1
 
     def reopen_connection(self):
         """
@@ -174,7 +173,7 @@ class AgilentPNAChannel(BaseInstrument):
 
         self.average_state = 1
 
-        for i in range(0,int(self.average_count)):
+        for i in range(0, int(self.average_count)):
             self._pna.write('sense{}:sweep:mode gro'.format(self._channel))
 
             while True:
@@ -386,8 +385,7 @@ class AgilentPNAChannel(BaseInstrument):
     def tracenb(self, value):
         """Current trace number setter method
         """
-        self._pna.write('CALC{}:PAR:MNUM {}'.format(self._channel,
-                                                            value))
+        self._pna.write('CALC{}:PAR:MNUM {}'.format(self._channel, value))
         result = self._pna.ask_for_values('CALC{}:PAR:MNUM?'.format(
                                           self._channel))
         if result:
@@ -619,8 +617,7 @@ class AgilentPNAChannel(BaseInstrument):
     def sweep_time(self, value):
         """
         """
-        self._pna.write('sense{}:sweep:time {}'.format(self._channel,value))
-
+        self._pna.write('sense{}:sweep:time {}'.format(self._channel, value))
 
     @instrument_property
     @secure_communication()
@@ -723,16 +720,23 @@ class AgilentPNAChannel(BaseInstrument):
         """
         electrical delay for the selected trace in ns
         """
-        self._pna.write('CALC{}:CORR:EDEL:TIME {}NS'.format(self._channel, value))
+        self._pna.write('CALC{}:CORR:EDEL:TIME {}NS'.format(self._channel,
+                                                            value))
+
 
 class AgilentPNA(VisaInstrument):
     """
     """
 
-    channels = {}
     caching_permissions = {'defined_channels': True,
                            'trigger_scope': True,
                            'data_format': True}
+
+    def __init__(self, connection_info, caching_allowed=True,
+                 caching_permissions={}, auto_open=True):
+        super(AgilentPNA, self).__init__(connection_info, caching_allowed,
+                                         caching_permissions, auto_open)
+        self.channels = {}
 
     def get_channel(self, num):
         """
@@ -901,5 +905,3 @@ class AgilentPNA(VisaInstrument):
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''PNA did not set correctly the
                 data format'''))
-
-DRIVERS = {'AgilentPNA' : AgilentPNA}

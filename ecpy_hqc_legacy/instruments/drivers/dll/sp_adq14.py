@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : alazar935x.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
-"""
-
-This module defines drivers for SP devices cards using the ADQAPI.dll.
-
-:Contains:
-    SPADQ14
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Driver for the ADQ14 digitizer card.
 
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 import os
 import time
 import atexit
@@ -68,6 +68,9 @@ class ADQControlUnit(object):
 
 
 class SPADQ14(DllInstrument):
+    """Driver for the ADQ14 digitizer.
+
+    """
 
     library = 'ADQAPI.dll'
 
@@ -204,5 +207,3 @@ class SPADQ14(DllInstrument):
         ch2_avg += ch2_offset
 
         return ch1_avg, ch2_avg
-
-DRIVERS = {'ADQ14': SPADQ14}
