@@ -6,93 +6,73 @@
 #
 # The full license is in the file LICENCE, distributed with this software.
 # -----------------------------------------------------------------------------
-"""Task perform measurements with A VNA.
+"""Task perform measurements with a VNA.
 
 """
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
-from atom.api import (Unicode, Int, Bool, Enum, set_default, Tuple,
-                      Dcit, Value)
+from atom.api import (Unicode, Int, Bool, Enum, set_default, Typed,
+                      Value)
 
 import time
 import re
 from inspect import cleandoc
+from collections import OrderedDict
+
 import numpy as np
 
-from ecpy.tasks.api import InstrumentTask, InstrTaskInterface
-from ecpy.instruments.api import InstrIOError
+from ecpy.tasks.api import InstrumentTask, TaskInterface
+from ecpy.utils.atom_util import ordered_dict_to_pref, ordered_dict_from_pref
 
-# XXX fix to use new system
+
 def check_channels_presence(task, channels, *args, **kwargs):
     """ Check that all the channels are correctly defined on the PNA.
 
     """
     if kwargs.get('test_instr'):
-        run_time = task.root_task.run_time
         traceback = {}
-        p_id, d_id, c_id, s_id = task.selected_instrument
-        if task.selected_profile and run_time:
-            config = run_time['profiles'].get(task.selected_profile)
-            if not config:
+        err_path = task.get_error_path()
+        with task.test_driver() as instr:
+            if instr is None:
                 return False, traceback
-        else:
-            return False, traceback
+            channels_present = True
+            for channel in channels:
+                if channel not in instr.defined_channels:
+                    key = err_path + '_' + str(channel)
+                    msg = ("Channel {} is not defined in the PNA {}."
+                           " Please define it yourself and try again.")
+                    traceback[key] = msg.format(channel,
+                                                task.selected_instrument[0])
 
-        if run_time and task.selected_driver in run_time['drivers']:
-            driver_cls, starter = run_time['drivers'][task.selected_driver]
-        else:
-            return False, traceback
+                    channels_present = False
 
-        try:
-            instr = starter.initialize(driver_cls, config)
-        except InstrIOError:
-            return False, traceback
-
-        channels_present = True
-        for channel in channels:
-            if channel not in instr.defined_channels:
-                string = task.task_path + '/' + task.task_name +\
-                    '_' + str(channel)
-
-                mes = '''Channel {} is not defined in the PNA {}, please define
-                    it yourself and try again.'''
-                traceback[string] = cleandoc(mes.format(channel,
-                                                        task.selected_profile)
-                                             )
-
-                channels_present = False
-
-        return channels_present, traceback
+            return channels_present, traceback
 
     else:
         return True, {}
 
 
-class PNASetRFFrequencyInterface(InstrTaskInterface):
-    """Set the central frequecny to be used for the specified channel.
+class PNASetRFFrequencyInterface(TaskInterface):
+    """Set the central frequency to be used for the specified channel.
 
     """
-    # Id of the channel whose central frequency should be set.
+    #: Id of the channel whose central frequency should be set.
     channel = Int(1).tag(pref=True)
 
-    # Driver for the channel.
+    #: Driver for the channel.
     channel_driver = Value()
 
-    driver_list = ['AgilentPNA']
-
-    has_view = True
-
     def perform(self, frequency=None):
-        """
+        """Set the central frequency of the specified channel.
+
         """
         task = self.task
-        if not task.driver:
-            task.start_driver()
+        if not self.channel_driver:
             self.channel_driver = task.driver.get_channel(self.channel)
 
-        task.driver.owner = task.task_name
-        self.channel_driver.owner = task.task_name
+        task.driver.owner = task.name
+        self.channel_driver.owner = task.name
 
         if frequency is None:
             frequency = task.format_and_eval_string(task.frequency)
@@ -102,40 +82,44 @@ class PNASetRFFrequencyInterface(InstrTaskInterface):
         task.write_in_database('frequency', frequency)
 
     def check(self, *args, **kwargs):
-        """
+        """Make sure the specified channel does exists on the instrument.
 
         """
+        test, tb = super(PNASetRFFrequencyInterface,
+                         self).check(*args, **kwargs)
         task = self.task
-        return check_channels_presence(task, [self.channel], *args, **kwargs)
+        res = check_channels_presence(task, [self.channel], *args, **kwargs)
+        tb.update(res[1])
+        return test and res[0], tb
 
 
-class PNASetRFPowerInterface(InstrTaskInterface):
+class PNASetRFPowerInterface(TaskInterface):
     """Set the central power to be used for the specified channel.
 
     """
-    # Id of the channel whose central frequency should be set.
+    #: Id of the channel whose central frequency should be set.
     channel = Int(1).tag(pref=True)
 
-    # Driver for the channel.
-    channel_driver = Value()
-
-    # Port whose output power should be set.
+    #: Port whose output power should be set.
     port = Int(1).tag(pref=True)
 
-    driver_list = ['AgilentPNA']
+    #: Driver for the channel.
+    channel_driver = Value()
 
-    has_view = True
+    def prepare(self):
+        """Create the channel driver.
+
+        """
+        self.channel_driver = self.task.driver.get_channel(self.channel)
 
     def perform(self, power=None):
-        """
+        """Set the power for the selected channel and port.
+
         """
         task = self.task
-        if not task.driver:
-            task.start_driver()
-            self.channel_driver = task.driver.get_channel(self.channel)
 
-        task.driver.owner = task.task_name
-        self.channel_driver.owner = task.task_name
+        task.driver.owner = task.name
+        self.channel_driver.owner = task.name
 
         if power is None:
             power = task.format_and_eval_string(task.power)
@@ -145,28 +129,34 @@ class PNASetRFPowerInterface(InstrTaskInterface):
         task.write_in_database('power', power)
 
     def check(self, *args, **kwargs):
-        """
+        """Ensure the presence of the requested channel.
 
         """
+        test, tb = super(PNASetRFPowerInterface, self).check(*args, **kwargs)
         task = self.task
-        return check_channels_presence(task, [self.channel], *args, **kwargs)
-
-
-INTERFACES = {'SetRFFrequencyTask': [PNASetRFFrequencyInterface],
-              'SetRFPowerTask': [PNASetRFPowerInterface]}
+        res = check_channels_presence(task, [self.channel], *args, **kwargs)
+        tb.update(res[1])
+        return test and res[0], tb
 
 
 class SingleChannelPNATask(InstrumentTask):
-    """ Helper class managing the notion of channel in the PNA.
+    """Helper class managing the notion of channel in the PNA.
 
     """
-    # Id of the channel to use.
+    #: Id of the channel to use.
     channel = Int(1).tag(pref=True)
 
     channel_driver = Value()
 
+    def prepare(self):
+        """Get the channel driver.
+
+        """
+        super(SingleChannelPNATask, self).prepare()
+        self.channel_driver = self.driver.get_channel(self.channel)
+
     def check(self, *args, **kwargs):
-        """ Add checking for channels to the base tests.
+        """Add checking for channels to the base tests.
 
         """
         test, traceback = super(SingleChannelPNATask, self).check(*args,
@@ -184,26 +174,29 @@ class PNASinglePointMeasureTask(SingleChannelPNATask):
     Wait for any parallel operation before execution.
 
     """
+    #: Id of the channel to use.
     channel = Int(1).tag(pref=True)
-    measures = ContainerList(Tuple()).tag(pref=True)
 
+    #: Measures to perform.
+    measures = Typed(OrderedDict, ()).tag(pref=(ordered_dict_to_pref,
+                                                ordered_dict_from_pref))
+
+    #: Bandwith for averaging.
     if_bandwidth = Int(2).tag(pref=True)
-    window = Int(1).tag(pref=True)
 
-    driver_list = ['AgilentPNA']
+    #: Window number in which to display the traces.
+    window = Int(1).tag(pref=True)
 
     wait = set_default({'activated': True, 'wait': ['instr']})
 
     def perform(self):
-        """
+        """Prepare the measure and execute it.
+
         """
         waiting_time = 1.0/self.if_bandwidth
-        if not self.driver:
-            self.start_driver()
-            self.channel_driver = self.driver.get_channel(self.channel)
 
-        if self.driver.owner != self.task_name:
-            self.driver.owner = self.task_name
+        if self.driver.owner != self.name:
+            self.driver.owner = self.name
             self.driver.set_all_chanel_to_hold()
             self.driver.trigger_scope = 'CURRent'
             if self.if_bandwidth >= 5:
@@ -214,8 +207,8 @@ class PNASinglePointMeasureTask(SingleChannelPNATask):
         meas_names = ['Ch{}:'.format(self.channel) + ':'.join(measure)
                       for measure in self.measures]
 
-        if self.channel_driver.owner != self.task_name:
-            self.channel_driver.owner = self.task_name
+        if self.channel_driver.owner != self.name:
+            self.channel_driver.owner = self.name
             self.channel_driver.if_bandwidth = self.if_bandwidth
             # Avoid the PNA doing stupid things if it was doing a sweep
             # previously
@@ -232,8 +225,8 @@ class PNASinglePointMeasureTask(SingleChannelPNATask):
             measures = self.channel_driver.list_existing_measures()
             existing_meas = [meas['name'] for meas in measures]
 
-            if not (all([meas in existing_meas for meas in meas_names])
-                    and all([meas in meas_names for meas in existing_meas])):
+            if not (all([meas in existing_meas for meas in meas_names]) and
+                    all([meas in meas_names for meas in existing_meas])):
                 clear = True
                 self.channel_driver.delete_all_meas()
                 for i, meas_name in enumerate(meas_names):
@@ -260,7 +253,7 @@ class PNASinglePointMeasureTask(SingleChannelPNATask):
             self.write_in_database('_'.join(self.measures[i]), data)
 
     def check(self, *args, **kwargs):
-        """
+        """Validate the measure names.
 
         """
         test, traceback = super(PNASinglePointMeasureTask,
@@ -268,26 +261,27 @@ class PNASinglePointMeasureTask(SingleChannelPNATask):
 
         pattern = re.compile('S[1-4][1-4]')
         for i, meas in enumerate(self.measures):
-            match = pattern.match(meas[0])
+            match = pattern.match(meas)
             if not match:
-                path = self.task_path + '/' + self.task_name
+                path = self.get_error_path()
                 path += '_Meas_{}'.format(i)
-                traceback[path] = 'Unvalid parameter : {}'.format(meas[0])
+                traceback[path] = 'Unvalid parameter : {}'.format(meas)
                 test = False
 
         return test, traceback
 
-    def _observe_measures(self, change):
-        """
+    def _post_setattr_measures(self, old, new):
+        """Update the database based on the measures.
+
         """
         entries = {}
-        for measure in change['value']:
+        for measure in new:
             if measure[1]:
                 entries['_'.join(measure)] = 1.0
             else:
                 entries[measure[0]] = 1.0 + 1j
 
-        self.task_database_entries = entries
+        self.database_entries = entries
 
 
 class PNASweepTask(SingleChannelPNATask):
@@ -298,35 +292,40 @@ class PNASweepTask(SingleChannelPNATask):
     Wait for any parallel operation before execution.
 
     """
+    #: Id of the channel to use.
     channel = Int(1).tag(pref=True)
 
-    start = Str().tag(pref=True)
+    #: Start value for the sweep.
+    start = Unicode().tag(pref=True, feval='Skip_empty')
 
-    stop = Str().tag(pref=True)
+    #: Stop value for the sweep.
+    stop = Unicode().tag(pref=True, feval='Skip_empty')
 
-    points = Str().tag(pref=True)
+    #: Number of points desired in the sweep.
+    points = Unicode().tag(pref=True, feval='Skip_empty')
 
-    sweep_type = Enum('','Frequency', 'Power').tag(pref=True)
+    #: Kind of sweep to perform.
+    sweep_type = Enum('', 'Frequency', 'Power').tag(pref=True)
 
-    measures = ContainerList(Tuple()).tag(pref=True)
+    #: Measures to perform.
+    measures = Typed(OrderedDict, ()).tag(pref=(ordered_dict_to_pref,
+                                                ordered_dict_from_pref))
 
-    if_bandwidth = Int(0).tag(pref=True)
+    #: Bandwith for averaging.
+    if_bandwidth = Int(2).tag(pref=True)
 
+    #: Window number in which to display the traces.
     window = Int(1).tag(pref=True)
 
     wait = set_default({'activated': True, 'wait': ['instr']})
-    driver_list = ['AgilentPNA']
-    task_database_entries = set_default({'sweep_data': np.array([0])})
+    database_entries = set_default({'sweep_data': np.array([0])})
 
     def perform(self):
-        """
-        """
-        if not self.driver:
-            self.start_driver()
-            self.channel_driver = self.driver.get_channel(self.channel)
+        """Set up the measures and run them.
 
-        if self.driver.owner != self.task_name:
-            self.driver.owner = self.task_name
+        """
+        if self.driver.owner != self.name:
+            self.driver.owner = self.name
             self.driver.set_all_chanel_to_hold()
             self.driver.trigger_scope = 'CURRent'
             self.driver.trigger_source = 'MANual'
@@ -334,9 +333,9 @@ class PNASweepTask(SingleChannelPNATask):
         meas_names = ['Ch{}:'.format(self.channel) + ':'.join(measure)
                       for measure in self.measures]
 
-        if self.channel_driver.owner != self.task_name:
-            self.channel_driver.owner = self.task_name
-            if self.if_bandwidth>0:
+        if self.channel_driver.owner != self.name:
+            self.channel_driver.owner = self.name
+            if self.if_bandwidth > 0:
                 self.channel_driver.if_bandwidth = self.if_bandwidth
 
             # Check whether or not we are doing the same measures as the ones
@@ -344,27 +343,28 @@ class PNASweepTask(SingleChannelPNATask):
             measures = self.channel_driver.list_existing_measures()
             existing_meas = [meas['name'] for meas in measures]
 
-            if not (all([meas in existing_meas for meas in meas_names])
-                    and all([meas in meas_names for meas in existing_meas])):
+            if not (all([meas in existing_meas for meas in meas_names]) and
+                    all([meas in meas_names for meas in existing_meas])):
                 clear = True
                 self.channel_driver.delete_all_meas()
                 for i, meas_name in enumerate(meas_names):
                     self.channel_driver.prepare_measure(meas_name, self.window,
                                                         i+1, clear)
                     clear = False
-        current_Xaxis = self.channel_driver.sweep_x_axis
+
+        current_x_axis = self.channel_driver.sweep_x_axis
         if self.start:
             start = self.format_and_eval_string(self.start)
         else:
-            start = current_Xaxis[0]*1e9
+            start = current_x_axis[0]*1e9
         if self.stop:
             stop = self.format_and_eval_string(self.stop)
         else:
-            stop = current_Xaxis[-1]*1e9
+            stop = current_x_axis[-1]*1e9
         if self.points:
             points = self.format_and_eval_string(self.points)
         else:
-            points = len(current_Xaxis)
+            points = len(current_x_axis)
         if self.sweep_type:
             self.channel_driver.prepare_sweep(self.sweep_type.upper(), start,
                                               stop, points)
@@ -373,7 +373,7 @@ class PNASweepTask(SingleChannelPNATask):
                 self.channel_driver.prepare_sweep('FREQUENCY',
                                                   start, stop, points)
             elif self.channel_driver.sweep_type.upper() == 'POW':
-                 self.channel_driver.prepare_sweep('POWER',
+                self.channel_driver.prepare_sweep('POWER',
                                                   start, stop, points)
 
         waiting_time = self.channel_driver.sweep_time
@@ -396,39 +396,19 @@ class PNASweepTask(SingleChannelPNATask):
         self.write_in_database('sweep_data', final_arr)
 
     def check(self, *args, **kwargs):
-        """
+        """Validate the measures.
+
         """
         test, traceback = super(PNASweepTask, self).check(*args, **kwargs)
 
         pattern = re.compile('S[1-4][1-4]')
         for i, meas in enumerate(self.measures):
-            match = pattern.match(meas[0])
+            match = pattern.match(meas)
             if not match:
-                path = self.task_path + '/' + self.task_name
+                path = self.task_path + '/' + self.name
                 path += '_Meas_{}'.format(i)
-                traceback[path] = 'Unvalid parameter : {}'.format(meas[0])
+                traceback[path] = 'Unvalid parameter : {}'.format(meas)
                 test = False
-        if self.start:
-            try:
-                self.format_and_eval_string(self.start)
-            except:
-                test = False
-                traceback[self.task_path + '/' + self.task_name + '-start'] = \
-                    'Failed to eval the start formula {}'.format(self.start)
-        if self.stop:
-            try:
-                self.format_and_eval_string(self.stop)
-            except:
-                test = False
-                traceback[self.task_path + '/' + self.task_name + '-stop'] = \
-                    'Failed to eval the stop formula {}'.format(self.stop)
-        if self.points:
-            try:
-                self.format_and_eval_string(self.points)
-            except:
-                test = False
-                traceback[self.task_path + '/' + self.task_name + '-step'] = \
-                    'Failed to eval the points formula {}'.format(self.points)
 
         data = [np.array([0.0, 1.0])] + \
             [np.array([0.0, 1.0]) for meas in self.measures]
@@ -438,6 +418,7 @@ class PNASweepTask(SingleChannelPNATask):
         self.write_in_database('sweep_data', final_arr)
         return test, traceback
 
+
 class PNAGetTraces(InstrumentTask):
     """ Get the traces that are displayed right now (no new acquisition).
 
@@ -446,22 +427,20 @@ class PNAGetTraces(InstrumentTask):
     ex: 1,1;1,3 for ch1, tr1 and ch1, tr3
 
     """
+    #: Traces to get.
+    tracelist = Unicode('1,1').tag(pref=True)
 
-    tracelist = Str('1,1').tag(pref=True)
+    #: Should the data be measured first.
     already_measured = Bool(False).tag(pref=True)
 
-    driver_list = ['AgilentPNA']
-    task_database_entries = set_default({'sweep_data': {}})
+    database_entries = set_default({'sweep_data': {}})
 
     def perform(self):
         traces = self.tracelist.split(';')
-        if not self.driver:
-            self.start_driver()
-
         tr_data = {}
 
         if not self.already_measured:
-            for i in range(1,30):
+            for i in range(1, 30):
                 if str(i)+',' in self.tracelist:
                     self.average_channel(i)
 
@@ -472,14 +451,14 @@ class PNAGetTraces(InstrumentTask):
         self.write_in_database('sweep_data', tr_data)
 
     def average_channel(self, channelnb):
-        """ Performs the averaging of a channel
+        """Performs the averaging of a channel
 
         """
         channel_driver = self.driver.get_channel(channelnb)
         channel_driver.run_averaging()
 
     def get_trace(self, channelnb, tracenb):
-        """ Get the trace that is displayed right now (no new acquisition)
+        """Get the trace that is displayed right now (no new acquisition)
         on channel and tracenb.
 
         """
@@ -494,17 +473,20 @@ class PNAGetTraces(InstrumentTask):
 
         measname = channel_driver.selected_measure
         data = channel_driver.sweep_x_axis
-        complexdata = channel_driver.read_raw_data(measname)* \
-                np.exp(2*np.pi*1j*data*channel_driver.electrical_delay)
+        complexdata = (channel_driver.read_raw_data(measname) *
+                       np.exp(2*np.pi*1j*data*channel_driver.electrical_delay))
         aux = [data, complexdata.real, complexdata.imag,
-                np.absolute(complexdata),
-                np.unwrap(np.angle(complexdata))]
+               np.absolute(complexdata),
+               np.unwrap(np.angle(complexdata))]
 
         return np.rec.fromarrays(aux, names=['Freq (GHz)', measname+' real',
-                    measname+' imag',  measname+' abs',  measname+' phase' ])
+                                             measname+' imag',
+                                             measname+' abs',
+                                             measname+' phase'])
 
     def check(self, *args, **kwargs):
-        """
+        """Create meaningful database entries.
+
         """
         test, traceback = super(PNAGetTraces, self).check(*args, **kwargs)
 
@@ -516,10 +498,3 @@ class PNAGetTraces(InstrumentTask):
 
         self.write_in_database('sweep_data', sweep_data)
         return test, traceback
-
-
-
-
-KNOWN_PY_TASKS = [PNASinglePointMeasureTask,
-                  PNASweepTask,
-                  PNAGetTraces]

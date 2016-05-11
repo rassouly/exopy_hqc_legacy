@@ -1,318 +1,258 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : test_rf_tasks.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
-"""
-"""
-from nose.tools import (assert_equal, assert_true, assert_false, assert_in,
-                        assert_is_instance, assert_is)
-from nose.plugins.attrib import attr
-from multiprocessing import Event
-from enaml.workbench.api import Workbench
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Tests for the ApplyMagFieldTask
 
-from hqc_meas.tasks.api import RootTask
-from hqc_meas.tasks.tasks_instr.rf_tasks\
+"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+from multiprocessing import Event
+from collections import OrderedDict
+
+import pytest
+import enaml
+
+from ecpy.tasks.api import RootTask
+from ecpy.testing.util import show_and_close_widget
+from ecpy_hqc_legacy.tasks.tasks.instr.rf_tasks\
     import (SetRFFrequencyTask, SetRFPowerTask)
-from hqc_meas.tasks.tasks_instr.pna_tasks\
+from ecpy_hqc_legacy.tasks.tasks.instr.pna_tasks\
     import (PNASetRFFrequencyInterface, PNASetRFPowerInterface,
             PNASinglePointMeasureTask, PNASweepTask)
 
-import enaml
 with enaml.imports():
-    from enaml.workbench.core.core_manifest import CoreManifest
-    from hqc_meas.utils.state.manifest import StateManifest
-    from hqc_meas.utils.preferences.manifest import PreferencesManifest
-    from hqc_meas.tasks.manager.manifest import TaskManagerManifest
-    from hqc_meas.instruments.manager.manifest import InstrManagerManifest
-
-    from hqc_meas.tasks.tasks_instr.views.rf_views\
+    from ecpy_hqc_legacy.tasks.tasks.instr.views.rf_views\
         import (RFFrequencyView, RFPowerView)
-    from hqc_meas.tasks.tasks_instr.views.pna_task_views\
+    from ecpy_hqc_legacy.tasks.tasks.instr.views.pna_task_views\
         import (PNASinglePointView, PNASweepMeasView)
 
-from ...util import process_app_events, close_all_windows
-from .instr_helper import InstrHelper
+from .instr_helper import InstrHelper, InstrHelperStarter, PROFILES, DRIVERS
 
 
 class TestPNASetRFFrequencyTask(object):
+    """Test of the PNA set frequency interface.
+
+    """
 
     def setup(self):
         self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = SetRFFrequencyTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
-
+        self.task = SetRFFrequencyTask(name='Test')
         self.task.unit = 'GHz'
+        self.root.add_child_task(0, self.task)
+
+        self.root.run_time[DRIVERS] = {'Test': (InstrHelper,
+                                                InstrHelperStarter())}
+        self.root.run_time[PROFILES] =\
+            {'Test1': {'connections': {'C': {'owner': []}},
+                       'settings': {'S': {'check_connection': [True]}}
+                       }
+             }
 
         # This is set simply to make sure the test of InstrTask pass.
-        self.task.selected_driver = 'Test'
-        self.task.selected_profile = 'Test1'
+        self.task.selected_instrument = ('Test1', 'Test', 'C', 'S')
 
     def test_check_pna_interface1(self):
-        # Simply test that everything is ok if frequency can be evaluated.
+        """Simply test that everything is ok if frequency can be evaluated.
+
+        """
         self.task.interface = PNASetRFFrequencyInterface(task=self.task,
                                                          channel=1)
         self.task.frequency = '1.0'
 
-        profile = {'Test1': ({'defined_channels': [[1]]},
-                             {})}
-        self.root.run_time['profiles'] = profile
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'defined_channels': [[1]]}
 
         test, traceback = self.task.check(test_instr=True)
-        assert_true(test)
-        assert_false(traceback)
+        assert test
+        assert not traceback
 
     def test_check_pna_interface2(self):
-        # Check handling a wrong channel.
+        """Check handling a wrong channel.
+
+        """
         self.task.interface = PNASetRFFrequencyInterface(task=self.task,
                                                          channel=1)
         self.task.frequency = '1.0'
 
-        profile = {'Test1': ({'defined_channels': [[2]]},
-                             {})}
-        self.root.run_time['profiles'] = profile
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'defined_channels': [[2]]}
 
         test, traceback = self.task.check(test_instr=True)
-        assert_false(test)
-        assert_equal(len(traceback), 1)
+        assert not test
+        assert len(traceback) == 1
 
     def test_perform_pna_interface(self):
+        """Test setting the frequency through the interface.
+
+        """
         self.task.interface = PNASetRFFrequencyInterface(task=self.task)
         self.task.frequency = '1.0'
 
-        profile = {'Test1': ({'frequency': [0.0],
-                              'owner': [None]},
-                             {'get_channel': lambda x, i: x}
-                             )}
-        self.root.run_time['profiles'] = profile
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'frequency': [0.0], 'owner': [None]}
+        s = self.root.run_time[PROFILES]['Test1']['settings']
+        s['S'] = {'get_channel': lambda x, i: x}
 
-        self.root.task_database.prepare_for_running()
+        self.root.prepare()
 
         self.task.perform()
-        assert_equal(self.root.get_from_database('Test_frequency'), 1.0e9)
+        assert self.root.get_from_database('Test_frequency') == 1.0e9
 
 
-@attr('ui')
-class TestPNASetRFFrequencyView(object):
+@pytest.mark.ui
+def test_pna_frequency_view(windows, root_view, task_workbench):
+    """Test PNA frequency interface widget outisde of a LoopTask.
 
-    def setup(self):
-        self.workbench = Workbench()
-        self.workbench.register(CoreManifest())
-        self.workbench.register(StateManifest())
-        self.workbench.register(PreferencesManifest())
-        self.workbench.register(InstrManagerManifest())
-        self.workbench.register(TaskManagerManifest())
-
-        self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = SetRFFrequencyTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
-
-    def teardown(self):
-        close_all_windows()
-
-        self.workbench.unregister(u'hqc_meas.task_manager')
-        self.workbench.unregister(u'hqc_meas.instr_manager')
-        self.workbench.unregister(u'hqc_meas.preferences')
-        self.workbench.unregister(u'hqc_meas.state')
-        self.workbench.unregister(u'enaml.workbench.core')
-
-    def test_view1(self):
-        # Intantiate a view with no selected interface and select one after
-        window = enaml.widgets.api.Window()
-        core = self.workbench.get_plugin('enaml.workbench.core')
-        view = RFFrequencyView(window, task=self.task, core=core)
-        window.show()
-
-        process_app_events()
-
-        assert_in('AgilentPNA', view.drivers)
-        self.task.selected_driver = 'AgilentPNA'
-        process_app_events()
-        assert_is_instance(self.task.interface, PNASetRFFrequencyInterface)
-
-    def test_view2(self):
-        # Intantiate a view with a selected interface.
-        self.task.interface = PNASetRFFrequencyInterface(task=self.task)
-        self.task.frequency = '1.0'
-        self.task.selected_driver = 'AgilentPNA'
-
-        interface = self.task.interface
-
-        window = enaml.widgets.api.Window()
-        core = self.workbench.get_plugin('enaml.workbench.core')
-        RFFrequencyView(window, task=self.task, core=core)
-        window.show()
-
-        process_app_events()
-
-        assert_is(self.task.interface, interface)
+    """
+    task = SetRFFrequencyTask(name='Test')
+    task.interface = PNASetRFFrequencyInterface(task=task)
+    root_view.task.add_child_task(0, task)
+    show_and_close_widget(RFFrequencyView(task=task, root=root_view))
 
 
 class TestPNASetRFPowerTask(object):
+    """Test of the PNA set power interface.
+
+    """
 
     def setup(self):
         self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = SetRFPowerTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
+        self.task = SetRFPowerTask(name='Test')
+        self.root.add_child_task(0, self.task)
+
+        self.root.run_time[DRIVERS] = {'Test': (InstrHelper,
+                                                InstrHelperStarter())}
+        self.root.run_time[PROFILES] =\
+            {'Test1': {'connections': {'C': {'owner': []}},
+                       'settings': {'S': {'check_connection': [True]}}
+                       }
+             }
 
         # This is set simply to make sure the test of InstrTask pass.
-        self.task.selected_driver = 'Test'
-        self.task.selected_profile = 'Test1'
+        self.task.selected_instrument = ('Test1', 'Test', 'C', 'S')
 
     def test_check_pna_interface1(self):
-        # Simply test that everything is ok if power can be evaluated.
+        """Simply test that everything is ok if power can be evaluated.
+
+        """
         self.task.interface = PNASetRFPowerInterface(task=self.task,
                                                      channel=1)
         self.task.power = '1.0'
-        profile = {'Test1': ({'defined_channels': [[1]]},
-                             {})}
-        self.root.run_time['profiles'] = profile
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'defined_channels': [[1]]}
 
         test, traceback = self.task.check(test_instr=True)
-        assert_true(test)
-        assert_false(traceback)
+        assert test
+        assert not traceback
 
     def test_check_pna_interface2(self):
-        # Check handling a wrong channel.
+        """Check handling a wrong channel.
+
+        """
         self.task.interface = PNASetRFPowerInterface(task=self.task,
                                                      channel=2)
         self.task.power = '1.0'
-        profile = {'Test1': ({'defined_channels': [[1]]},
-                             {})}
-        self.root.run_time['profiles'] = profile
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'defined_channels': [[1]]}
 
         test, traceback = self.task.check(test_instr=True)
-        assert_false(test)
-        assert_equal(len(traceback), 1)
+        assert not test
+        assert len(traceback) == 1
 
     def test_perform_pna_interface(self):
         self.task.interface = PNASetRFPowerInterface(task=self.task,
                                                      channel=1)
         self.task.power = '1.0'
 
-        profile = {'Test1': ({'power': [0.0],
-                              'port': [1],
-                              'owner': [None]},
-                             {'get_channel': lambda x, i: x}
-                             )}
-        self.root.run_time['profiles'] = profile
-        self.root.task_database.prepare_for_running()
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'power': [0.0], 'port': [1], 'owner': [None]}
+        s = self.root.run_time[PROFILES]['Test1']['settings']
+        s['S'] = {'get_channel': lambda x, i: x}
+
+        self.root.prepare()
 
         self.task.perform()
-        assert_equal(self.root.get_from_database('Test_power'), 1.0)
+        assert self.root.get_from_database('Test_power') == 1.0
 
 
-@attr('ui')
-class TestPNASetRFPowerView(object):
+@pytest.mark.ui
+def test_pna_power_view(windows, root_view, task_workbench):
+    """Test PNA power interface widget outisde of a LoopTask.
 
-    def setup(self):
-        self.workbench = Workbench()
-        self.workbench.register(CoreManifest())
-        self.workbench.register(StateManifest())
-        self.workbench.register(PreferencesManifest())
-        self.workbench.register(InstrManagerManifest())
-        self.workbench.register(TaskManagerManifest())
-
-        self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = SetRFPowerTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
-
-    def teardown(self):
-        close_all_windows()
-
-        self.workbench.unregister(u'hqc_meas.task_manager')
-        self.workbench.unregister(u'hqc_meas.instr_manager')
-        self.workbench.unregister(u'hqc_meas.preferences')
-        self.workbench.unregister(u'hqc_meas.state')
-        self.workbench.unregister(u'enaml.workbench.core')
-
-    def test_view1(self):
-        # Intantiate a view with no selected interface and select one after
-        window = enaml.widgets.api.Window()
-        core = self.workbench.get_plugin('enaml.workbench.core')
-        view = RFPowerView(window, task=self.task, core=core)
-        window.show()
-
-        process_app_events()
-
-        assert_in('AgilentPNA', view.drivers)
-        self.task.selected_driver = 'AgilentPNA'
-        process_app_events()
-        assert_is_instance(self.task.interface, PNASetRFPowerInterface)
-
-    def test_view2(self):
-        # Intantiate a view with a selected interface.
-        self.task.interface = PNASetRFPowerInterface(task=self.task)
-        self.task.power = '1.0'
-        self.task.selected_driver = 'AgilentPNA'
-
-        interface = self.task.interface
-
-        window = enaml.widgets.api.Window()
-        core = self.workbench.get_plugin('enaml.workbench.core')
-        RFPowerView(window, task=self.task, core=core)
-        window.show()
-
-        process_app_events()
-
-        assert_is(self.task.interface, interface)
+    """
+    task = SetRFPowerTask(name='Test')
+    task.interface = PNASetRFPowerInterface(task=task)
+    root_view.task.add_child_task(0, task)
+    show_and_close_widget(RFPowerView(task=task, root=root_view))
 
 
 class TestPNASinglePointMeasureTask(object):
+    """Test PNASinglePointMeasureTask.
 
+    """
     def setup(self):
         self.root = RootTask(should_stop=Event(), should_pause=Event())
-        self.task = PNASinglePointMeasureTask(task_name='Test')
-        self.root.children_task.append(self.task)
-        self.root.run_time['drivers'] = {'Test': InstrHelper}
+        self.task = PNASinglePointMeasureTask(name='Test')
+        self.root.add_child_task(0, self.task)
+
+        self.root.run_time[DRIVERS] = {'Test': (InstrHelper,
+                                                InstrHelperStarter())}
+        self.root.run_time[PROFILES] =\
+            {'Test1': {'connections': {'C': {'owner': []}},
+                       'settings': {'S': {'check_connection': [True]}}
+                       }
+             }
 
         # This is set simply to make sure the test of InstrTask pass.
-        self.task.selected_driver = 'Test'
-        self.task.selected_profile = 'Test1'
+        self.task.selected_instrument = ('Test1', 'Test', 'C', 'S')
 
     def test_measure_observation(self):
         pass
 
     def test_check1(self):
-        # Simply test that everything is ok.
-        self.task.measures = [('S21', ''), ('S33', 'MLIN')]
+        """Simply test that everything is ok.
 
-        profile = {'Test1': ({'defined_channels': [[1]]},
-                             {})}
-        self.root.run_time['profiles'] = profile
+        """
+        self.task.measures = OrderedDict([('S21', ''), ('S33', 'MLIN')])
+
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'defined_channels': [[1]]}
 
         test, traceback = self.task.check(test_instr=True)
-        assert_true(test)
-        assert_false(traceback)
+        assert test
+        assert not traceback
 
     def test_check2(self):
-        # Check handling a wrong channel.
-        self.task.measures = [('S21', ''), ('S33', 'MLIN')]
+        """Check handling a wrong channel.
 
-        profile = {'Test1': ({'defined_channels': [[3]]},
-                             {})}
-        self.root.run_time['profiles'] = profile
+        """
+        self.task.measures = OrderedDict([('S21', ''), ('S33', 'MLIN')])
+
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'defined_channels': [[3]]}
 
         test, traceback = self.task.check(test_instr=True)
-        assert_false(test)
-        assert_equal(len(traceback), 1)
+        assert not test
+        assert len(traceback) == 1
 
     def test_check3(self):
-        # Check handling a wrong S parameter.
-        self.task.measures = [('S21', ''), ('SF3', 'MLIN')]
+        """Check handling a wrong S parameter.
 
-        profile = {'Test1': ({'defined_channels': [[1]]},
-                             {})}
-        self.root.run_time['profiles'] = profile
+        """
+        self.task.measures = OrderedDict([('S21', ''), ('SF3', 'MLIN')])
+
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'defined_channels': [[1]]}
 
         test, traceback = self.task.check(test_instr=True)
-        assert_false(test)
-        assert_equal(len(traceback), 1)
+        assert not test
+        assert len(traceback) == 1
 
 #    def test_perform(self):
 #        self.task.measures = [('S21', ''), ('S33', 'MLIN')]
@@ -327,66 +267,32 @@ class TestPNASinglePointMeasureTask(object):
 #        assert_equal(self.root.get_from_database('Test_output'), 1.0)
 
 
-#@attr('ui')
-#class TestPNASinglePointMeasureView(object):
-#
-#    def setup(self):
-#        self.workbench = Workbench()
-#        self.workbench.register(CoreManifest())
-#        self.workbench.register(StateManifest())
-#        self.workbench.register(PreferencesManifest())
-#        self.workbench.register(InstrManagerManifest())
-#        self.workbench.register(TaskManagerManifest())
-#
-#        self.root = RootTask(should_stop=Event(), should_pause=Event())
-#        self.task = PNASinglePointMeasureTask(task_name='Test')
-#        self.root.children_task.append(self.task)
-#        self.root.run_time['drivers'] = {'Test': InstrHelper}
-#
-#    def teardown(self):
-#        close_all_windows()
-#
-#        self.workbench.unregister(u'hqc_meas.task_manager')
-#        self.workbench.unregister(u'hqc_meas.instr_manager')
-#        self.workbench.unregister(u'hqc_meas.preferences')
-#        self.workbench.unregister(u'hqc_meas.state')
-#        self.workbench.unregister(u'enaml.workbench.core')
-#
-#    def test_view1(self):
-#        # Intantiate a view with no selected interface and select one after
-#        window = enaml.widgets.api.Window()
-#        core = self.workbench.get_plugin('enaml.workbench.core')
-#        view = PNASinglePointView(window, task=self.task, core=core)
-#        window.show()
-#
-#        process_app_events()
-#
-#        assert_in('AgilentE8257D', view.drivers)
-#        self.task.selected_driver = 'AgilentE8257D'
-#        process_app_events()
-#
-#    def test_view2(self):
-#        # Intantiate a view with a selected interface.
-#        self.task.switch = '1.0'
-#        self.task.selected_driver = 'AgilentE8257D'
-#
-#        interface = self.task.interface
-#
-#        window = enaml.widgets.api.Window()
-#        core = self.workbench.get_plugin('enaml.workbench.core')
-#        PNASinglePointView(window, task=self.task, core=core)
-#        window.show()
-#
-#        process_app_events()
-#
-#        assert_is(self.task.interface, interface)
-#
-#
+@pytest.mark.ui
+def test_pna_single_point_view(windows, root_view, task_workbench):
+    """Test PNA single point meas view no measure.
+
+    """
+    task = PNASinglePointMeasureTask(name='Test')
+    root_view.task.add_child_task(0, task)
+    show_and_close_widget(PNASinglePointView(task=task, root=root_view))
+
+
+@pytest.mark.ui
+def test_pna_single_point_view2(windows, root_view, task_workbench):
+    """Test PNA single point meas view.
+
+    """
+    task = PNASinglePointMeasureTask(name='Test')
+    task.measures = OrderedDict([('S21', ''), ('S43', 'MLIN')])
+    root_view.task.add_child_task(0, task)
+    show_and_close_widget(PNASinglePointView(task=task, root=root_view))
+
+
 #class TestPNASweepTask(object):
 #
 #    def setup(self):
 #        self.root = RootTask(should_stop=Event(), should_pause=Event())
-#        self.task = PNASweepTask(task_name='Test')
+#        self.task = PNASweepTask(name='Test')
 #        self.root.children_task.append(self.task)
 #        self.root.run_time['drivers'] = {'Test': InstrHelper}
 #
@@ -399,16 +305,16 @@ class TestPNASinglePointMeasureTask(object):
 #        self.task.switch = '1.0'
 #
 #        test, traceback = self.task.check(test_instr=True)
-#        assert_true(test)
-#        assert_false(traceback)
+#        assert test
+#        assert not traceback
 #
 #    def test_check2(self):
 #        # Check handling a wrong voltage.
 #        self.task.switch = '*1.0*'
 #
 #        test, traceback = self.task.check(test_instr=True)
-#        assert_false(test)
-#        assert_equal(len(traceback), 1)
+#        assert not test
+#        assert len(traceback) == 1
 #
 #    def test_perform(self):
 #        self.task.switch = '1.0'
@@ -434,7 +340,7 @@ class TestPNASinglePointMeasureTask(object):
 #        self.workbench.register(TaskManagerManifest())
 #
 #        self.root = RootTask(should_stop=Event(), should_pause=Event())
-#        self.task = PNASweepTask(task_name='Test')
+#        self.task = PNASweepTask(name='Test')
 #        self.root.children_task.append(self.task)
 #        self.root.run_time['drivers'] = {'Test': InstrHelper}
 #

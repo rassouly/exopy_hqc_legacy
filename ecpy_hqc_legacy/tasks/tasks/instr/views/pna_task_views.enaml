@@ -1,143 +1,133 @@
 # -*- coding: utf-8 -*-
-#==============================================================================
-# module : pna_tasks_views.py
-# author : Matthieu Dartiailh
-# license : MIT license
-#==============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Views for the PNA tasks.
+
 """
-"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+import re
+from textwrap import fill
+
 from atom.api import set_default, Value, observe
 from enaml.core.api import Conditional
 from enaml.layout.api import grid, vbox, hbox, factory
 from enaml.widgets.api import (GroupBox, Label, Field, ObjectCombo, Container,
-                                   CheckBox)
+                               CheckBox)
 from enaml.stdlib.fields import IntField, FloatField
 from enaml.validator import Validator
 
-from inspect import cleandoc
-from textwrap import fill
-import re
-
-from hqc_meas.utils.layouts import auto_grid_layout
-from hqc_meas.tasks.views.base_instr_view import BaseInstrumentView
-from hqc_meas.utils.widgets.qt_line_completer import QtLineCompleter
-from hqc_meas.tasks.tools.pair_editor import PairEditor, PairEditorModel
-from hqc_meas.tasks.tools.string_evaluation import EVALUATER_TOOLTIP
+from ecpy.tasks.api import EVALUATER_TOOLTIP
+from ecpy.utils.widgets.qt_completers import QtLineCompleter
+from ecpy.utils.widgets.dict_editor import DictEditor
+from ecpy_hqc_legacy.utils.layouts import auto_grid_layout
+from ...base_instr_view import InstrView
 
 
 enamldef IPNAChannelLabel(Label):
+    """Label for the channel selection.
 
+    """
     attr interface
-    attr index = 4
+    attr root
+    attr index = 2
     text = 'Channel'
 
-enamldef IPNAChannelValue(IntField):
 
+enamldef IPNAChannelValue(IntField):
+    """Value for the channel selection.
+
+    """
     attr interface
+    attr root
     hug_width = 'strong'
     value := interface.channel
 
-enamldef IPNAPortLabel(Label):
 
+enamldef IPNAPortLabel(Label):
+    """Label for the port selection.
+
+    """
     attr interface
+    attr root
     text = 'Port'
 
-enamldef IPNAPortValue(IntField):
 
+enamldef IPNAPortValue(IntField):
+    """Value for the port selection.
+
+    """
     attr interface
+    attr root
     hug_width = 'strong'
     value := interface.port
-
-INTERFACE_VIEW_MAPPING = {'PNASetRFFrequencyInterface':
-                          [IPNAChannelLabel, IPNAChannelValue],
-                          'PNASetRFPowerInterface':
-                          [IPNAChannelLabel, IPNAChannelValue,
-                           IPNAPortLabel, IPNAPortValue]}
 
 
 MODES = {'Raw': '', 'Mag lin': 'MLIN', 'Mag log': 'MLOG', 'Phase': 'PHAS',
          'Real part': 'REAL','Imaginary part': 'IMAG'}
 
-class PNAPairEditorModel(PairEditorModel):
-    """
-    """
-
-    @observe('pairs')
-    def refresh(self, change):
-        """
-        """
-        aux = []
-        for p in self.pairs:
-            if p.value:
-                aux.append((p.label, p.value))
-            else:
-                aux.append((p.label,))
-        setattr(self.model, self.iterable_name, aux)
 
 class SParametersValidator(Validator):
-    """
+    """Validator for the S-parameter definition.
 
     """
-    pattern = Value()
+    #: Pattren that the S-parameter should match.
+    pattern = Value(default=re.compile('S[1-4][1-4]'))
 
-    message = set_default(cleandoc('''S parameters are of the form : Sij with
-                                    i, j in[1,4]'''))
+    #: Message displayed if the S-parameter is incorrect.
+    message = set_default("S parameters are of the form : Sij with i, j "
+                          "in[1,4].")
 
     def validate(self, text):
-        """
+        """Validate the input of the text field.
 
         """
         return self.pattern.match(text)
 
-    def _default_pattern(self):
-        return re.compile('S[1-4][1-4]')
-
 
 enamldef MeasField(Container):
+    """Measure editor used as content for DictEditor.
 
+    """
+    #: Pair model passed by the DictEditor
     attr model
+
     padding = 0
     constraints = [hbox(field, combo)]
 
     Field: field:
-        text := model.label
+        text := model.key
         validator = SParametersValidator()
-        tool_tip =  fill(cleandoc(
-                        '''Measure should be described by the parameter to
-                          measure. ex : S21.'''))
+        tool_tip = fill("Measure should be described by the parameter to "
+                        "measure. ex : S21.")
 
     ObjectCombo: combo:
-        items = ['Raw', 'Mag lin', 'Mag log', 'Phase', 'Real part',
-                 'Imaginary part']
-        selected = [k for k,v in MODES.iteritems() if v == model.value][0]
+        items = list(MODES)
+        selected << [k for k,v in MODES.iteritems() if v == model.value][0]
         selected::
             model.value = MODES[change['value']]
-        tool_tip = fill(cleandoc(
-            '''Choose the format in which to display and read the measures.
-            In 'Raw' the measurement will return a complex number.'''))
+        tool_tip = fill(
+            "Choose the format in which to display and read the measures. "
+            "In 'Raw' the measurement will return a complex number.")
 
 
-enamldef PNASinglePointView(BaseInstrumentView): view:
+enamldef PNASinglePointView(InstrView): view:
+    """View for for the PNASinglePointTask.
 
-    title << task.task_name
+    """
+
     constraints = [vbox(
-                    grid([driv_lab, instr_lab, cha_lab, if_lab, win_lab],
-                         [driv_val, instr_val, cha_val, if_val, win_val]),
+                    grid([instr_label, cha_lab, if_lab, win_lab],
+                         [instr_selection, cha_val, if_val, win_val]),
                     meas),
                     cha_val.width == if_val.width,
                     if_val.width == win_val.width]
-
-    Label: driv_lab:
-        text = 'Driver'
-    ObjectCombo: driv_val:
-        items << sorted(task.driver_list)
-        selected := task.selected_driver
-
-    Label: instr_lab:
-        text = 'Instr'
-    ObjectCombo: instr_val:
-        items << sorted(profiles)
-        selected := task.selected_profile
 
     Label: cha_lab:
         text = 'Channel'
@@ -156,45 +146,36 @@ enamldef PNASinglePointView(BaseInstrumentView): view:
 
     GroupBox: meas:
         title = 'Measures'
-        PairEditor(MeasField): ed:
-            ed.model = task
-            ed.iterable_name = 'measures'
+        DictEditor(MeasField): ed:
+            ed.mapping = task.measures
+            ed.operations = ('add', 'move', 'remove')
             ed.alignment = 'v_center'
-            ed._model = PNAPairEditorModel(model=model,
-                                           iterable_name=iterable_name)
 
 
 def label_maker(label, mode):
+    """Make a label based on the selected sweep mode.
+
+    """
     if mode == 'Frequency':
         return label + '(Hz)'
     else:
         return label + '(dBm)'
 
 
-enamldef PNASweepMeasView(BaseInstrumentView): view:
+enamldef PNASweepMeasView(InstrView): view:
+    """View for the PNASweepMeasTask.
 
-    title << task.task_name
+    """
     constraints = [vbox(
-                    grid([driv_lab, instr_lab, cha_lab, if_lab, win_lab],
-                         [driv_val, instr_val, cha_val, if_val, win_val]),
+                    grid([instr_label, instr_label, cha_lab, if_lab, win_lab],
+                         [instr_selection, instr_val, cha_val, if_val,
+                          win_val]),
                     grid([type_lab, start_lab, stop_lab, points_lab],
                          [type_val, start_val, stop_val, points_val]),
                     meas),
                     cha_val.width == if_val.width,
                     if_val.width == win_val.width,
                     start_val.width == stop_val.width]
-
-    Label: driv_lab:
-        text = 'Driver'
-    ObjectCombo: driv_val:
-        items << sorted(task.driver_list)
-        selected := task.selected_driver
-
-    Label: instr_lab:
-        text = 'Instr'
-    ObjectCombo: instr_val:
-        items << sorted(profiles)
-        selected := task.selected_profile
 
     Label: cha_lab:
         text = 'Channel'
@@ -221,68 +202,48 @@ enamldef PNASweepMeasView(BaseInstrumentView): view:
         text << label_maker('Start', task.sweep_type)
     QtLineCompleter: start_val:
         text := task.start
-        entries_updater << task.accessible_database_entries
+        entries_updater << task.list_accessible_database_entries
         tool_tip = EVALUATER_TOOLTIP
 
     Label: stop_lab:
         text << label_maker('Stop', task.sweep_type)
     QtLineCompleter: stop_val:
         text := task.stop
-        entries_updater << task.accessible_database_entries
+        entries_updater << task.list_accessible_database_entries
         tool_tip = EVALUATER_TOOLTIP
 
     Label: points_lab:
         text = 'Points'
     QtLineCompleter: points_val:
         text := task.points
-        entries_updater << task.accessible_database_entries
+        entries_updater << task.list_accessible_database_entries
         tool_tip = EVALUATER_TOOLTIP
 
     GroupBox: meas:
         title = 'Measures'
-        PairEditor(MeasField): ed:
-            ed.model = task
-            ed.iterable_name = 'measures'
+        DictEditor(MeasField): ed:
+            ed.mapping = task.measures
+            ed.operations = ('add', 'move', 'remove')
             ed.alignment = 'v_center'
-            ed._model = PNAPairEditorModel(model=model,
-                                           iterable_name=iterable_name)
 
-enamldef PNAGetTraceView(BaseInstrumentView): view:
 
-    title << task.task_name
+enamldef PNAGetTraceView(InstrView): view:
+    """View for the PNAGetTraceTask.
+
+    """
     constraints = [factory(auto_grid_layout)]
-
-    Label: driv_lab:
-        text = 'Driver'
-    ObjectCombo: driv_val:
-        items << sorted(task.driver_list)
-        selected := task.selected_driver
-
-    Label: instr_lab:
-        text = 'Instr'
-    ObjectCombo: instr_val:
-        items << sorted(profiles)
-        selected := task.selected_profile
 
     Label: tracelist_lab:
         text = 'Traces'
     Field: tracelist_val:
         text := task.tracelist
-        tool_tip = fill(cleandoc(
-                        '''The list of traces to be measured must be entered
-                        in the following formatch1,tr1;ch2,tr2;ch3,tr3;...
-                        ex: 1,1;1,3 for ch1, tr1 and ch1, tr3
-                        '''))
+        tool_tip = fill("The list of traces to be measured must be entered "
+                        "in the following formatch1,tr1;ch2,tr2;ch3,tr3;... "
+                        "ex: 1,1;1,3 for ch1, tr1 and ch1, tr3")
 
     Label: already_measured_lab:
         text = 'Already measured'
     CheckBox: already_measured_val:
         checked := task.already_measured
-        tool_tip = fill(cleandoc(
-                        '''Check if you do not want to run a new measurement
-                        before recording what is on the PNA screen
-                        '''))
-
-TASK_VIEW_MAPPING = {'PNASinglePointMeasureTask': PNASinglePointView,
-                     'PNASweepTask': PNASweepMeasView,
-                     'PNAGetTraces': PNAGetTraceView}
+        tool_tip = fill("Check if you do not want to run a new measurement "
+                        "before recording what is on the PNA screen.")
