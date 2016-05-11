@@ -14,6 +14,29 @@ from __future__ import (division, unicode_literals, print_function,
 
 from enaml.workbench.api import PluginManifest, Extension
 from ecpy.tasks.api import Tasks, Task, Interface
+from ecpy.instruments.api import Starter, Connection, Drivers, Driver
+
+
+enamldef LegacyStarter(Starter):
+    """Starter for legacy instruments.
+
+    """
+    initialize => (driver_cls, connection, settings):
+        c = format_connection_infos(connection)
+        return driver_cls(c)
+
+    check_infos => (driver_cls, connection, settings):
+        c = format_connection_infos(connection)
+        return driver_cls(c).connected
+
+    reset => (driver):
+        driver.clear_cache()
+
+    finalize => (driver):
+        driver.close_connection()
+
+    func format_connection_infos(infos):
+        raise NotImplementedError()
 
 
 enamldef HqcLegacyManifest(PluginManifest):
@@ -23,6 +46,80 @@ enamldef HqcLegacyManifest(PluginManifest):
     id = 'ecpy_hqc_legacy'
 
     Extension:
+        id = 'instruments.starters'
+        point = 'ecpy.instruments.starters'
+        LegacyStarter:
+            id = 'ecpy_hqc_legacy.starter.visa'
+            decription = ('Starter for legacy instrument relying on the VISA '
+                          'protocol')
+            format_connection_infos => (infos):
+                from pyvisa.rname import to_canonical_name
+                return {'resource_name': to_canonical_name(**infos)}
+
+        LegacyStarter:
+            id = 'ecpy_hqc_legacy.starter.dll'
+            format_connection_infos => (infos):
+                i = infos.copy()
+                i['instr_id'] = infos['serial_number']
+                del i['serial_number']
+                return i
+
+    Extension:
+        id = 'instruments.connections'
+        point = 'ecpy.instruments.connections'
+        Connection:
+            id = 'ecpy_hqc_legacy.dll_serial_number_connection'
+            description = ('Connection for instruments communicating via a '
+                           'DLL and identified by their serial number.')
+            new => (workbench, defaults):
+                from .instruments.connections.dll_serial_number_connection\
+                    import DLLSerialNumberConnection
+                defaults = dict(lib_path=defaults.get('lib_path', ''),
+                                serial_number=default.get('serial_number', ''))
+                return DLLSerialNumberConnection(**defaults)
+
+    Extension:
+        id = 'instruments.drivers'
+        point = 'ecpy.instruments.drivers'
+        Drivers:
+            path = 'ecpy_hqc_legacy.drivers'
+            architecture = 'Legacy'
+            Drivers:
+                path = 'visa'
+                starter = 'ecpy_hqc_legacy.starter.visa'
+                Drivers:
+                    manufacturer = 'Keysight'
+                    pass
+                Drivers:
+                    manufacturer = 'Yokogawa'
+                    pass
+                Drivers:
+                    manufacturer = 'Keithley'
+                    pass
+                Drivers:
+                    manufacturer = 'Oxford'
+                    pass
+                Driver:
+                    manufacturer = 'Tektronix'
+                    pass
+                Drivers:
+                    manufacturer = 'Signal recovery'
+                    pass
+                Drivers:
+                    manufacturer = 'Anritsu'
+                    pass
+            Drivers:
+                path = 'dll'
+                starter = 'ecpy_hqc_legacy.starter.dll'
+                connections = {'ecpy_hqc_legacy.dll_serial_number_connection':
+                               {}}
+                Driver:
+                    driver = 'sp_adq14:SPADQ14'
+                    manufacturer = 'SPDevices'
+                    model = 'ADQ14'
+
+    Extension:
+        id = 'ecpy_hqc_legacy.tasks'
         point = 'ecpy.tasks.declarations'
         Tasks:
             path = 'ecpy_hqc_legacy.tasks.tasks'

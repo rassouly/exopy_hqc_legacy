@@ -1,0 +1,56 @@
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
+# Copyright 2015 by Ecpy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Dynamic linking library connection information edition widget.
+
+"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+from enaml.widgets.api import Field, Label, ToolButton
+from enaml.layout.api import hbox, vbox, grid, align
+
+from .base_connection import BaseConnection
+
+
+enamldef DLLSerialNumberConnection(BaseConnection):
+    """Connection for instruments communicating via a DLL and identified by
+    their serial number.
+
+    """
+    #: Path to the DLL used to communicate with the instrument.
+    alias lib_path : path_val.text
+
+    #: Serial number of the instrument with which the connection should be
+    #: established. Specified as text.
+    alias serial_number : sr_val.text
+
+    gather_infos => ():
+        return {'lib_path': lib_path, 'serial_number': serial_number}
+
+    constraints = [grid([path_lab, path_val, path_exp],
+                        [sr_lab, sr_val, sr_val])]
+
+    Label: path_lab:
+        text = 'Library path'
+    Field: path_val:
+        tool_tip = ('If left empty the program will look for it in the usual '
+                    'used by your operating system')
+    ToolButton: path_exp:
+        hug_width = 'strong'
+        text = 'E'
+        clicked ::
+            filt = ['.dll', '.lib', '.so']
+            path = FileDialogEx.get_open_file_name(name_filters=filt)
+            if path:
+                path_val.text = path
+
+    Label: sr_lab:
+        text = 'Serial Number'
+    Field: sr_val:
+        pass
