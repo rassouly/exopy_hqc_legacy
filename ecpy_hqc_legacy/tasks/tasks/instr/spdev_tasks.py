@@ -1,42 +1,44 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : spdev_tasks.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
-"""
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Task perform measurements the SPDevices digitizers.
 
 """
-from atom.api import (Unicode, set_default)
-from traceback import format_exc
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
 import numpy as np
+from atom.api import (Unicode, set_default)
 
-from hqc_meas.tasks.api import InstrumentTask
+from ecpy.tasks.api import InstrumentTask
 
 
 class DemodSPTask(InstrumentTask):
-    """ Get the raw or averaged quadratures of the signal.
-        Can also get raw or averaged traces of the signal.
+    """Get the averaged quadratures of the signal.
+
     """
     # Frequency of the signal sent to channel 1 in MHz
-    freq_1 = Unicode('50').tag(pref=True)
+    freq_1 = Unicode('20').tag(pref=True, feval=True)
 
     # Frequency of the signal sent to channel 2 in MHz
-    freq_2 = Unicode('50').tag(pref=True)
+    freq_2 = Unicode('20').tag(pref=True, feval=True)
 
     # Time during which to acquire data after a trigger (s).
-    duration = Unicode('0').tag(pref=True)
+    duration = Unicode('0').tag(pref=True, feval=True)
 
     # Time to wait after a trigger before starting acquisition (s).
-    delay = Unicode('0').tag(pref=True)
+    delay = Unicode('0').tag(pref=True, feval=True)
 
     # Number of records to acquire (one per trig)
-    records_number = Unicode('1000').tag(pref=True)
+    records_number = Unicode('1000').tag(pref=True, feval=True)
 
-    driver_list = ['ADQ14']
-
-    task_database_entries = set_default({'Ch1_I': 1.0, 'Ch1_Q': 1.0,
-                                         'Ch2_I': 1.0, 'Ch2_Q': 1.0})
+    database_entries = set_default({'Ch1_I': 1.0, 'Ch1_Q': 1.0,
+                                    'Ch2_I': 1.0, 'Ch2_Q': 1.0})
 
     def check(self, *args, **kwargs):
         """Check that parameters make sense.
@@ -44,18 +46,12 @@ class DemodSPTask(InstrumentTask):
         """
         test, traceback = super(DemodSPTask, self).check(*args, **kwargs)
 
-        locs = {}
-        for n in ('freq_1', 'freq_2', 'duration', 'delay', 'records_number'):
-            try:
-                locs[n] = self.format_and_eval_string(getattr(self, n))
-            except Exception:
-                test = False
-                msg = 'Failed to evaluate formaula for %s : %s.\n%s'
-                traceback[self.path + '/' + self.task_name + '-' + n] = \
-                    msg % (n, getattr(self, n), format_exc())
-
         if not test:
             return test, traceback
+
+        locs = {}
+        for n in ('freq_1', 'freq_2', 'duration'):
+            locs[n] = self.format_and_eval_string(getattr(self, n))
 
         p1 = locs['freq_1']*1e6*locs['duration']
         p2 = locs['freq_2']*1e6*locs['duration']
@@ -63,7 +59,7 @@ class DemodSPTask(InstrumentTask):
             test = False
             msg = ('The duration must be an integer times the period of the '
                    'demodulations.')
-            traceback[self.path + '/' + self.task_name + '-' + n] = msg
+            traceback[self.get_error_path() + '-' + n] = msg
 
         return test, traceback
 
@@ -72,11 +68,8 @@ class DemodSPTask(InstrumentTask):
         siganl for both channels.
 
         """
-        if not self.driver:
-            self.start_driver()
-
-        if self.driver.owner != self.task_name:
-            self.driver.owner = self.task_name
+        if self.driver.owner != self.name:
+            self.driver.owner = self.name
 
             self.driver.configure_board()
 
@@ -92,13 +85,10 @@ class DemodSPTask(InstrumentTask):
         s1 = np.sin(phi1)
         self.write_in_database('Ch1_I', np.mean(ch1*c1))
         self.write_in_database('Ch1_Q', np.mean(ch1*s1))
-        del phi1, c1, s1
 
-        f2 = self.format_and_eval_string(self.freq_2)
-        phi2 = np.arange(0, 2*np.pi*f2*duration, 2e-9)
-        c2 = np.cos(phi2)
-        s2 = np.sin(phi2)
-        self.write_in_database('Ch2_I', np.mean(ch2*c2))
-        self.write_in_database('Ch2_Q', np.mean(ch2*s2))
-
-KNOWN_PY_TASKS = [DemodSPTask]
+#        f2 = self.format_and_eval_string(self.freq_2)
+#        phi2 = np.arange(0, 2*np.pi*f2*duration, 2e-9)
+#        c2 = np.cos(phi2)
+#        s2 = np.sin(phi2)
+#        self.write_in_database('Ch2_I', np.mean(ch2*c2))
+#        self.write_in_database('Ch2_Q', np.mean(ch2*s2))

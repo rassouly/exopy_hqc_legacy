@@ -130,3 +130,7 @@ enamldef HqcLegacyManifest(PluginManifest):
                                  'views.set_dc_voltage_view:'
                                  'MultiChannelVoltageSourceIChannel']
                         instruments = ['ecpy_hqc_legacy.TinyBilt']
+                Task:
+                    task = 'spdev_tasks:DemodSPTask'
+                    view = 'views.spdev_views:DemodSpView'
+                    instruments = ['ecpy_hqc_legacy.ADQ14']

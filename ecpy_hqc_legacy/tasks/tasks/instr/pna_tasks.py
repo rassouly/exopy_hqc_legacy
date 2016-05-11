@@ -12,15 +12,14 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
-from atom.api import (Unicode, Int, Bool, Enum, set_default, Typed,
-                      Value)
-
 import time
 import re
 from inspect import cleandoc
 from collections import OrderedDict
 
 import numpy as np
+from atom.api import (Unicode, Int, Bool, Enum, set_default, Typed,
+                      Value)
 
 from ecpy.tasks.api import InstrumentTask, TaskInterface
 from ecpy.utils.atom_util import ordered_dict_to_pref, ordered_dict_from_pref
