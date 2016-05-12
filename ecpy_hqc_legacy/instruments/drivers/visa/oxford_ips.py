@@ -218,7 +218,7 @@ class IPS12010(VisaInstrument):
         """
         status = self._get_status()
         control = int(status[6])
-        state = [k for k, v in _CONTROL_DICT.iteritems() if v == control]
+        state = [k for k, v in _CONTROL_DICT.items() if v == control]
         if state:
             return state[0]
         else:
@@ -245,7 +245,7 @@ class IPS12010(VisaInstrument):
         """
         status = self._get_status()
         act = int(status[4])
-        return [k for k, v in _ACTIVITY_DICT.iteritems() if v == act][0]
+        return [k for k, v in _ACTIVITY_DICT.items() if v == act][0]
 
     @activity.setter
     @secure_communication()

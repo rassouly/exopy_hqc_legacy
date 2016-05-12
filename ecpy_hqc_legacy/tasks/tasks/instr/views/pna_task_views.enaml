@@ -109,7 +109,7 @@ enamldef MeasField(Container):
 
     ObjectCombo: combo:
         items = list(MODES)
-        selected << [k for k,v in MODES.iteritems() if v == model.value][0]
+        selected << [k for k,v in MODES.items() if v == model.value][0]
         selected::
             model.value = MODES[change['value']]
         tool_tip = fill(
