@@ -7,14 +7,14 @@ import os.path
 import sys
 
 sys.path.insert(0, os.path.abspath('.'))
-from ecpy_ext_demo.version import __version__
+from ecpy_hqc_legacy.version import __version__
 
 
 setup(
     name='ecpy_hqc_legacy',
     description='Transitional package between HQCMeas and Ecpy',
     version=__version__,
-    long_description=open('README').read(),
+    long_description=open('README.md').read(),
     author='see AUTHORS',
     author_email='m.dartiailh@gmail.com',
     url='https://github.com/ecpy/ecpy_hqc_legacy',

@@ -19,11 +19,11 @@ from inspect import cleandoc
 from threading import Lock
 from contextlib import contextmanager
 
-from visa import VisaTypeError
+from visa import VisaTypeError, VisaIOError
 
 from ..driver_tools import (BaseInstrument, InstrIOError, secure_communication,
                             instrument_property)
-from ..visa_tools import VisaInstrument, VisaIOError
+from ..visa_tools import VisaInstrument
 
 
 class AWGChannel(BaseInstrument):

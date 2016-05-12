@@ -18,7 +18,7 @@ from inspect import cleandoc
 
 from ..driver_tools import (InstrIOError, instrument_property,
                             secure_communication)
-from ..visa_tools import VisaInstrument, VisaTypeError
+from ..visa_tools import VisaInstrument, errors
 
 
 class YokogawaGS200(VisaInstrument):
@@ -147,7 +147,7 @@ class YokogawaGS200(VisaInstrument):
         else:
             mess = fill('''The invalid value {} was sent to set_function
                         method of the Yokogawa driver'''.format(value), 80)
-            raise VisaTypeError(mess)
+            raise errors.VisaTypeError(mess)
 
     @instrument_property
     @secure_communication()
@@ -180,7 +180,7 @@ class YokogawaGS200(VisaInstrument):
         else:
             mess = fill(cleandoc('''The invalid value {} was sent to set the
                     output state of the Yokogawa driver''').format(value), 80)
-            raise VisaTypeError(mess)
+            raise errors.VisaTypeError(mess)
 
     def check_connection(self):
         """
@@ -279,7 +279,7 @@ class Yokogawa7651(VisaInstrument):
         else:
             mess = fill('''The invalid value {} was sent to set_function
                         method of the Yokogawa driver'''.format(value), 80)
-            raise VisaTypeError(mess)
+            raise errors.VisaTypeError(mess)
 
     @instrument_property
     @secure_communication()
@@ -319,7 +319,7 @@ class Yokogawa7651(VisaInstrument):
         else:
             mess = fill(cleandoc('''The invalid value {} was sent to set the
                     output state of the Yokogawa driver''').format(value), 80)
-            raise VisaTypeError(mess)
+            raise errors.VisaTypeError(mess)
 
     def check_connection(self):
         """
