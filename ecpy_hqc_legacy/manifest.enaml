@@ -50,7 +50,7 @@ enamldef HqcLegacyManifest(PluginManifest):
         point = 'ecpy.instruments.starters'
         LegacyStarter:
             id = 'ecpy_hqc_legacy.starter.visa'
-            decription = ('Starter for legacy instrument relying on the VISA '
+            description = ('Starter for legacy instrument relying on the VISA '
                           'protocol')
             format_connection_infos => (infos):
                 from pyvisa.rname import to_canonical_name
@@ -89,31 +89,132 @@ enamldef HqcLegacyManifest(PluginManifest):
                 starter = 'ecpy_hqc_legacy.starter.visa'
                 Drivers:
                     manufacturer = 'Keysight'
-                    pass
+                    Driver:
+                        driver = 'agilent_multimeters:Agilent34410A'
+                        model = '34410A'
+                        kind = 'Multimeter'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaUSB': {'resource_class': 'INSTR'},
+                                       'VisaTCPIP': {'resource_class': 'INSTR'}
+                                       }
+                    Driver:
+                        driver = 'agilent_pna:AgilentPNA'
+                        model = 'PNA'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaUSB': {'resource_class': 'INSTR'},
+                                       'VisaTCPIP': {'resource_class': 'INSTR'}
+                                       }
+                    Driver:
+                        driver = 'agilent_psg_signal_generators:AgilentPSG'
+                        serie = 'PSG'
+                        model = 'E8257D'
+                        kind = 'RF source'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaUSB': {'resource_class': 'INSTR'},
+                                       'VisaTCPIP': {'resource_class': 'INSTR'}
+                                       }
                 Drivers:
                     manufacturer = 'Yokogawa'
-                    pass
+                    Driver:
+                        driver = 'yokogawa:YokogawaGS200'
+                        model = 'GS200'
+                        kind = 'DC source'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaUSB': {'resource_class': 'INSTR',
+                                                   'manufacturer_ID': '0xB21',
+                                                   'model_code': '0x39'},
+                                       }
+                    Driver:
+                        driver = 'yokogawa:Yokogawa7651'
+                        model = '7651'
+                        kind = 'DC source'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaRS232':
+                                           {'ressource_class': 'INSTR'}
+                                       }
                 Drivers:
                     manufacturer = 'Keithley'
-                    pass
+                    Driver:
+                        driver = 'keithley_multimeters:Keithley2000'
+                        model = '2000'
+                        kind = 'Mulimeter'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaRS232':
+                                           {'ressource_class': 'INSTR'}
+                                       }
                 Drivers:
                     manufacturer = 'Oxford'
-                    pass
+                    Driver:
+                        driver = 'oxford_ips:IPS12010'
+                        model  = 'IPS120-10'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaRS232':
+                                           {'ressource_class': 'INSTR'}
+                                       }
                 Driver:
                     manufacturer = 'Tektronix'
-                    pass
+                    Driver:
+                        driver = 'tektro_awg:AWG'
+                        model = 'AWG5014C'
+                        kind = 'AWG'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaUSB': {'resource_class': 'INSTR'},
+                                       'VisaTCPIP': {'resource_class': 'INSTR'}
+                                       }
                 Drivers:
                     manufacturer = 'Signal recovery'
-                    pass
+                    Driver:
+                        driver = 'lock_in_sr72_series:SR7265LI'
+                        model = '7265'
+                        kind = 'Lock-in'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaRS232':
+                                           {'ressource_class': 'INSTR'}
+                                       }
+                    Driver:
+                        driver = 'lock_in_sr72_series:SR7265LI'
+                        model = '7280'
+                        kind = 'Lock-in'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaRS232':
+                                           {'ressource_class': 'INSTR'}
+                                       }
+                    Driver:
+                        driver = 'lock_in_sr72_series:SR7265LI'
+                        model = '7270'
+                        kind = 'Lock-in'
+                        connections = {'VisaTCPIP':
+                                           {'port': 50000,
+                                            'resource_class': 'SOCKET'}
+                                       }
                 Drivers:
                     manufacturer = 'Anritsu'
-                    pass
+                    Driver:
+                        driver = 'anritsu_signa_source:AnritsuMG3694'
+                        model = 'MG3694'
+                        kind = 'RF source'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'}
+                                       }
                 Drivers:
                     manufacturer = 'Bilt'
-                    pass
+                    Driver:
+                        driver = 'tnybuilt:TinyBilt'
+                        model = 'BN100'
+                        kind = 'DC source'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaUSB': {'resource_class': 'INSTR'},
+                                       'VisaTCPIP': {'resource_class': 'INSTR'}
+                                       }
                 Drivers:
                     manufacturer = 'Standford instruments'
-                    pass
+                    Driver:
+                        driver = 'lock_in_sr830:LockInSR830'
+                        model = 'SR830'
+                        kind = 'Lock-in'
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaRS232':
+                                           {'ressource_class': 'INSTR'}
+                                       }
             Drivers:
                 path = 'dll'
                 starter = 'ecpy_hqc_legacy.starter.dll'
