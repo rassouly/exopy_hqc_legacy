@@ -199,7 +199,8 @@ class LockInSR7270(LockInSR7265):
     def __init__(self, *args, **kwargs):
 
         super(LockInSR7270, self).__init__(*args, **kwargs)
-        self.term_chars = '\0'
+        self.write_termination = '\0'
+        self.read_termination = '\0'
 
     @secure_communication()
     def _check_status(self):

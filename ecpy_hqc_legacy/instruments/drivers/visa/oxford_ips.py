@@ -70,7 +70,8 @@ class IPS12010(VisaInstrument):
                  caching_permissions={}):
         super(IPS12010, self).__init__(connection_info, caching_allowed,
                                        caching_permissions)
-        self.term_chars = '\r'
+        self.write_termination = '\r'
+        self.read_termination = '\r'
 
     def make_ready(self):
         """

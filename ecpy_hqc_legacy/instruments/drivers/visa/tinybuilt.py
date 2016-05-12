@@ -266,8 +266,9 @@ class TinyBilt(VisaInstrument):
     def open_connection(self, **para):
         """Open the connection to the instr using the `connection_str`
         """
-        para['term_chars'] = '\n'
         super(TinyBilt, self).open_connection(**para)
+        self.write_termination = '\n'
+        self.read_termination = '\n'
 
     def get_channel(self, num):
         """

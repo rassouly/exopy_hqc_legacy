@@ -55,12 +55,10 @@ class VisaInstrument(BaseInstrument):
 
     The following attributes simply reflects the attribute of a `PyVisa`
     `Instrument` object :
-    time_out
-    send_end
-    term_chars
+    timeout
+    write_termination
+    read_termination
     delay
-    values_format
-    chunk_size
 
     Methods
     -------
@@ -123,11 +121,9 @@ class VisaInstrument(BaseInstrument):
 
         """
         para = {'timeout': self._driver.timeout,
-                'send_end': self._driver.send_end,
                 'delay': self._driver.delay,
-                'term_chars': self._driver.term_chars,
-                'values_format': self._driver.values_format,
-                'chunk_size': self._driver.chunk_size,
+                'write_termination': self._driver.write_termination,
+                'read_termination': self._driver.read_termination,
                 }
         self._driver.close()
         self.open_connection(**para)
@@ -222,3 +218,25 @@ class VisaInstrument(BaseInstrument):
     delay = property(_delay, _set_delay)
     """Conveninence to set/get the `query_delay` attribute of the `Instrument`
     object"""
+
+    def _write_termination(self):
+        return self._driver.write_termination
+
+    def _set_write_termination(self, value):
+        self._driver.write_termination = value
+
+    write_termination = property(_write_termination,
+                                 _set_write_termination)
+    """Conveninence to set/get the `write_termination` attribute of the
+    `Instrument` object"""
+
+    def _read_termination(self):
+        return self._driver.read_termination
+
+    def _set_read_termination(self, value):
+        self._driver.read_termination = value
+
+    read_termination = property(_read_termination,
+                                 _set_read_termination)
+    """Conveninence to set/get the `read_termination` attribute of the
+    `Instrument` object"""

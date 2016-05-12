@@ -23,7 +23,7 @@ from ..driver_tools import (InstrIOError, instrument_property,
 from ..visa_tools import VisaInstrument
 
 
-class AgilentPSGSignalGenerator(VisaInstrument):
+class AgilentPSG(VisaInstrument):
     """
     Generic driver for Agilent PSG SignalGenerator, using the VISA library.
 
