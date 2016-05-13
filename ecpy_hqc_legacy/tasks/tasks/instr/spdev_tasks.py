@@ -12,10 +12,17 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
+import numbers
+
 import numpy as np
 from atom.api import (Unicode, set_default)
 
-from ecpy.tasks.api import InstrumentTask
+from ecpy.tasks.api import InstrumentTask, validators
+
+
+VAL_REAL = validators.Feval(types=numbers.Real)
+
+VAL_INT = validators.Feval(types=numbers.Integral)
 
 
 class DemodSPTask(InstrumentTask):
@@ -23,19 +30,19 @@ class DemodSPTask(InstrumentTask):
 
     """
     # Frequency of the signal sent to channel 1 in MHz
-    freq_1 = Unicode('20').tag(pref=True, feval=True)
+    freq_1 = Unicode('20').tag(pref=True, feval=VAL_REAL)
 
     # Frequency of the signal sent to channel 2 in MHz
-    freq_2 = Unicode('20').tag(pref=True, feval=True)
+    freq_2 = Unicode('20').tag(pref=True, feval=VAL_REAL)
 
     # Time during which to acquire data after a trigger (s).
-    duration = Unicode('0').tag(pref=True, feval=True)
+    duration = Unicode('0').tag(pref=True, feval=VAL_REAL)
 
     # Time to wait after a trigger before starting acquisition (s).
-    delay = Unicode('0').tag(pref=True, feval=True)
+    delay = Unicode('0').tag(pref=True, feval=VAL_REAL)
 
     # Number of records to acquire (one per trig)
-    records_number = Unicode('1000').tag(pref=True, feval=True)
+    records_number = Unicode('1000').tag(pref=True, feval=VAL_INT)
 
     database_entries = set_default({'Ch1_I': 1.0, 'Ch1_Q': 1.0,
                                     'Ch2_I': 1.0, 'Ch2_Q': 1.0})

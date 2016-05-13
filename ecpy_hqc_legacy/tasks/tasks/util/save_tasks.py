@@ -15,6 +15,7 @@ from __future__ import (division, unicode_literals, print_function,
 import os
 import errno
 import logging
+import numbers
 from inspect import cleandoc
 from collections import OrderedDict
 from traceback import format_exc
@@ -23,7 +24,7 @@ import numpy
 import h5py
 from atom.api import Unicode, Enum, Value, Bool, Int, Typed, List, set_default
 
-from ecpy.tasks.api import SimpleTask
+from ecpy.tasks.api import SimpleTask, validators
 from ecpy.utils.atom_util import ordered_dict_from_pref, ordered_dict_to_pref
 
 
@@ -450,6 +451,8 @@ class _HDF5File(h5py.File):
             f.create_dataset(name, shape, maxshape=maximumshape,
                              dtype=datatype)
 
+VAL_REAL = validators.Feval(types=numbers.Real)
+
 
 class SaveFileHDF5Task(SimpleTask):
     """ Save the specified entries in a HDF5 file.
@@ -481,7 +484,7 @@ class SaveFileHDF5Task(SimpleTask):
 
     #: Estimation of the number of calls of this task during the measure.
     #: This helps h5py to chunk the file appropriately
-    calls_estimation = Unicode('1').tag(pref=True, feval=True)
+    calls_estimation = Unicode('1').tag(pref=True, feval=VAL_REAL)
 
     #: Flag indicating whether or not initialisation has been performed.
     initialized = Bool(False)
@@ -627,6 +630,9 @@ class SaveFileHDF5Task(SimpleTask):
     _formatted_labels = List()
 
 
+ARR_VAL = validators.Feval(types=numpy.ndarray)
+
+
 class SaveArrayTask(SimpleTask):
     """Save the specified array either in a CSV file or as a .npy binary file.
 
@@ -644,7 +650,7 @@ class SaveArrayTask(SimpleTask):
     header = Unicode().tag(pref=True, fmt=True)
 
     #: Name of the array to save in the database.
-    target_array = Unicode().tag(pref=True, feval=True)
+    target_array = Unicode().tag(pref=True, feval=ARR_VAL)
 
     #: Flag indicating whether to save as csv or .npy.
     mode = Enum('Text file', 'Binary file').tag(pref=True)
@@ -750,14 +756,4 @@ class SaveArrayTask(SimpleTask):
             traceback[err_path] = mess.format(e)
             return False, traceback
 
-        try:
-            array = self.format_and_eval_string(self.target_array)
-        except Exception:
-            return False, traceback
-
-        if not isinstance(array, numpy.ndarray):
-            traceback[err_path] = \
-                'Target array evaluation did not return an array'
-            return False, traceback
-
-        return True, traceback
+        return test, traceback

@@ -14,6 +14,7 @@ from __future__ import (division, unicode_literals, print_function,
 
 import time
 import re
+import numbers
 from inspect import cleandoc
 from collections import OrderedDict
 
@@ -21,7 +22,7 @@ import numpy as np
 from atom.api import (Unicode, Int, Bool, Enum, set_default, Typed,
                       Value)
 
-from ecpy.tasks.api import InstrumentTask, TaskInterface
+from ecpy.tasks.api import InstrumentTask, TaskInterface, validators
 from ecpy.utils.atom_util import ordered_dict_to_pref, ordered_dict_from_pref
 
 
@@ -283,6 +284,9 @@ class PNASinglePointMeasureTask(SingleChannelPNATask):
         self.database_entries = entries
 
 
+FEVAL = validators.SkipEmpty(types=numbers.Real)
+
+
 class PNASweepTask(SingleChannelPNATask):
     """Measure the specified parameters while sweeping either the frequency or
     the power. Measure are saved in an array with named fields : Frequency or
@@ -295,13 +299,13 @@ class PNASweepTask(SingleChannelPNATask):
     channel = Int(1).tag(pref=True)
 
     #: Start value for the sweep.
-    start = Unicode().tag(pref=True, feval='Skip_empty')
+    start = Unicode().tag(pref=True, feval=FEVAL)
 
     #: Stop value for the sweep.
-    stop = Unicode().tag(pref=True, feval='Skip_empty')
+    stop = Unicode().tag(pref=True, feval=FEVAL)
 
     #: Number of points desired in the sweep.
-    points = Unicode().tag(pref=True, feval='Skip_empty')
+    points = Unicode().tag(pref=True, feval=FEVAL)
 
     #: Kind of sweep to perform.
     sweep_type = Enum('', 'Frequency', 'Power').tag(pref=True)

@@ -13,11 +13,12 @@ from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
 import time
+import numbers
 
 from atom.api import (Float, Value, Unicode, Int, set_default)
 
 from ecpy.tasks.api import (InstrumentTask, TaskInterface,
-                            InterfaceableTaskMixin)
+                            InterfaceableTaskMixin, validators)
 
 
 class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
@@ -28,7 +29,8 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
 
     """
     #: Target value for the source (dynamically evaluated)
-    target_value = Unicode().tag(pref=True, feval='Skip_empty')
+    target_value = Unicode().tag(pref=True,
+                                 feval=validators.SkipLoop(types=numbers.Real))
 
     #: Largest allowed step when changing the output of the instr.
     back_step = Float().tag(pref=True)

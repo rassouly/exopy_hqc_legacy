@@ -12,13 +12,14 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
+import numbers
 from inspect import cleandoc
 
 import numpy as np
 from atom.api import (Unicode, Int, set_default, Enum)
 
 
-from ecpy.tasks.api import InstrumentTask
+from ecpy.tasks.api import InstrumentTask, validators
 
 # XXX unfinished
 
@@ -68,6 +69,11 @@ class PSAGetTrace(InstrumentTask):
         return test, traceback
 
 
+EMPTY_REAL = validators.SkipEmpty(types=numbers.Real)
+
+EMPTY_INT = validators.SkipEmpty(types=numbers.Integral)
+
+
 class PSASetParam(InstrumentTask):
     """ Set important parameters of the Power Spectrum Analyzer.
 
@@ -76,19 +82,19 @@ class PSASetParam(InstrumentTask):
 
     mode = Enum('Start/Stop', 'Center/Span').tag(pref=True)
 
-    start_freq = Unicode().tag(pref=True, feval='Skip_empty')
+    start_freq = Unicode().tag(pref=True, feval=EMPTY_REAL)
 
-    end_freq = Unicode().tag(pref=True, feval='Skip_empty')
+    end_freq = Unicode().tag(pref=True, feval=EMPTY_REAL)
 
-    center_freq = Unicode().tag(pref=True, feval='Skip_empty')
+    center_freq = Unicode().tag(pref=True, feval=EMPTY_REAL)
 
-    span_freq = Unicode().tag(pref=True, feval='Skip_empty')
+    span_freq = Unicode().tag(pref=True, feval=EMPTY_REAL)
 
-    average_nb = Unicode().tag(pref=True, feval='Skip_empty')
+    average_nb = Unicode().tag(pref=True, feval=EMPTY_INT)
 
-    resolution_bandwidth = Unicode().tag(pref=True, feval='Skip_empty')
+    resolution_bandwidth = Unicode().tag(pref=True, feval=EMPTY_REAL)
 
-    video_bandwidth = Unicode().tag(pref=True, feval='Skip_empty')
+    video_bandwidth = Unicode().tag(pref=True, feval=EMPTY_REAL)
 
     database_entries = set_default({'psa_config': ''})
 

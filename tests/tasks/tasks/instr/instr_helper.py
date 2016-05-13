@@ -56,7 +56,7 @@ class InstrHelper(with_metaclass(HelperMeta, object)):
         object.__setattr__(self, '_attrs', _attrs)
 
         # Dynamical method binding to instance.
-        for entry, call in callables.items()():
+        for entry, call in callables.items():
             if callable(call):
                 call.__name__ = str(entry)
                 object.__setattr__(self, entry, MethodType(call, self))

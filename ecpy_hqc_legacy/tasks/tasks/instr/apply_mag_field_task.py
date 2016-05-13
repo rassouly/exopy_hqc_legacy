@@ -12,9 +12,11 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
+import numbers
+
 from atom.api import (Unicode, Float, Bool, set_default)
 
-from ecpy.tasks.api import InstrumentTask
+from ecpy.tasks.api import InstrumentTask, validators
 
 
 class ApplyMagFieldTask(InstrumentTask):
@@ -22,7 +24,8 @@ class ApplyMagFieldTask(InstrumentTask):
 
     """
     # Target magnetic field (dynamically evaluated)
-    field = Unicode().tag(pref=True, feval='Skip_empty')
+    field = Unicode().tag(pref=True,
+                          feval=validators.SkipLoop(types=numbers.Real))
 
     # Rate at which to sweep the field.
     rate = Float(0.01).tag(pref=True)

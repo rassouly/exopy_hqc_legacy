@@ -15,7 +15,10 @@ from __future__ import (division, unicode_literals, print_function,
 import numpy as np
 from future.utils import raise_from
 from atom.api import (Enum, Unicode, set_default)
-from ecpy.tasks.api import SimpleTask
+from ecpy.tasks.api import SimpleTask, validators
+
+
+ARR_VAL = validators.Feval(types=np.ndarray)
 
 
 class ArrayExtremaTask(SimpleTask):
@@ -25,7 +28,7 @@ class ArrayExtremaTask(SimpleTask):
 
     """
     #: Name of the target in the database.
-    target_array = Unicode().tag(pref=True, feval=True)
+    target_array = Unicode().tag(pref=True, feval=ARR_VAL)
 
     #: Name of the column into which the extrema should be looked for.
     column_name = Unicode().tag(pref=True)
@@ -110,13 +113,13 @@ class ArrayFindValueTask(SimpleTask):
 
     """
     #: Name of the target in the database.
-    target_array = Unicode().tag(pref=True, feval=True)
+    target_array = Unicode().tag(pref=True, feval=ARR_VAL)
 
     #: Name of the column into which the extrema should be looked for.
     column_name = Unicode().tag(pref=True)
 
     #: Value which should be looked for in the array.
-    value = Unicode().tag(pref=True, feval=True)
+    value = Unicode().tag(pref=True, feval=validators.Feval())
 
     database_entries = set_default({'index': 0})
 

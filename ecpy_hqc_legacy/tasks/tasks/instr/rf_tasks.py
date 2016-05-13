@@ -12,9 +12,12 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
+import numbers
+
 from atom.api import (Unicode, Bool, set_default, Enum)
 
-from ecpy.tasks.api import (InstrumentTask, InterfaceableTaskMixin)
+from ecpy.tasks.api import (InstrumentTask, InterfaceableTaskMixin,
+                            validators)
 
 CONVERSION_FACTORS = {'GHz': {'Hz': 1e9, 'kHz': 1e6, 'MHz': 1e3, 'GHz': 1},
                       'MHz': {'Hz': 1e6, 'kHz': 1e3, 'MHz': 1, 'GHz': 1e-3},
@@ -22,12 +25,15 @@ CONVERSION_FACTORS = {'GHz': {'Hz': 1e9, 'kHz': 1e6, 'MHz': 1e3, 'GHz': 1},
                       'Hz': {'Hz': 1, 'kHz': 1e-3, 'MHz': 1e-6, 'GHz': 1e-9}}
 
 
+LOOP_REAL = validators.SkipLoop(types=numbers.Real)
+
+
 class SetRFFrequencyTask(InterfaceableTaskMixin, InstrumentTask):
     """Set the frequency of the signal delivered by a RF source.
 
     """
     # Target frequency (dynamically evaluated)
-    frequency = Unicode().tag(pref=True, feval=True)
+    frequency = Unicode().tag(pref=True, feval=LOOP_REAL)
 
     # Unit of the frequency
     unit = Enum('GHz', 'MHz', 'kHz', 'Hz').tag(pref=True)
@@ -85,7 +91,7 @@ class SetRFPowerTask(InterfaceableTaskMixin, InstrumentTask):
 
     """
     # Target power (dynamically evaluated)
-    power = Unicode().tag(pref=True, feval=True)
+    power = Unicode().tag(pref=True, feval=LOOP_REAL)
 
     # Whether to start the source if its output is off.
     auto_start = Bool(False).tag(pref=True)
@@ -111,7 +117,7 @@ class SetRFOnOffTask(InterfaceableTaskMixin, InstrumentTask):
 
     """
     # Desired state of the output, runtime value can be 0 or 1.
-    switch = Unicode('Off').tag(pref=True, feval='Skip_empty')
+    switch = Unicode('Off').tag(pref=True, feval=validators.SkipLoop())
 
     database_entries = set_default({'output': 0})
 
