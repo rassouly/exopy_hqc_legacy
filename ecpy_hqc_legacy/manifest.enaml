@@ -53,8 +53,8 @@ enamldef HqcLegacyManifest(PluginManifest):
             description = ('Starter for legacy instrument relying on the VISA '
                           'protocol')
             format_connection_infos => (infos):
-                from pyvisa.rname import to_canonical_name
-                return {'resource_name': to_canonical_name(**infos)}
+                from pyvisa.rname import assemble_canonical_name
+                return {'resource_name': assemble_canonical_name(**infos)}
 
         LegacyStarter:
             id = 'ecpy_hqc_legacy.starter.dll'
@@ -123,7 +123,7 @@ enamldef HqcLegacyManifest(PluginManifest):
                         kind = 'DC source'
                         connections = {'VisaGPIB': {'resource_class': 'INSTR'},
                                        'VisaUSB': {'resource_class': 'INSTR',
-                                                   'manufacturer_ID': '0xB21',
+                                                   'manufacturer_id': '0xB21',
                                                    'model_code': '0x39'},
                                        }
                     Driver:
