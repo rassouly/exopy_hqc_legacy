@@ -40,7 +40,7 @@ before_install:
   - cd ..
 
   # Install ecpy dependencies
-  - $CONDA_INSTALL pyqt numpy ecpy
+  - $CONDA_INSTALL pyqt numpy ecpy h5py
   - $PIP_INSTALL pyvisa
 
 
