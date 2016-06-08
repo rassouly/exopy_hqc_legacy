@@ -12,6 +12,8 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
+from traceback import format_exc
+
 from enaml.workbench.api import PluginManifest, Extension
 from ecpy.tasks.api import Tasks, Task, Interface
 from ecpy.instruments.api import Starter, Connection, Drivers, Driver
@@ -27,7 +29,12 @@ enamldef LegacyStarter(Starter):
 
     check_infos => (driver_cls, connection, settings):
         c = format_connection_infos(connection)
-        return driver_cls(c).connected
+        try:
+            res = driver_cls(c).connected
+        except Exception:
+            return False, format_exc()
+        return res, ('Instrument does not appear to be connected but no '
+                     'exception was raised.')
 
     reset => (driver):
         driver.clear_cache()
