@@ -56,14 +56,14 @@ class InstrHelper(with_metaclass(HelperMeta, object)):
         object.__setattr__(self, '_attrs', _attrs)
 
         # Dynamical method binding to instance.
+        _calls = {}
         for entry, call in callables.items():
             if callable(call):
                 call.__name__ = str(entry)
                 object.__setattr__(self, entry, MethodType(call, self))
             else:
-                call_meth = lambda *args, **kwargs: call[::-1].pop()
-                call_meth.__name__ = str(entry)
-                object.__setattr__(self, entry, MethodType(call_meth, self))
+                _calls[entry] = call
+        object.__setattr__(self, '_calls', _calls)
 
     def __getattr__(self, name):
         """Mock attribute access.
@@ -79,6 +79,8 @@ class InstrHelper(with_metaclass(HelperMeta, object)):
                 raise attr
             else:
                 return attr
+        elif name in self._calls:
+            return lambda *args, **kwargs: self._calls[name][::-1].pop()
 
         else:
             raise AttributeError('{} has no attr {}'.format(self, name))
