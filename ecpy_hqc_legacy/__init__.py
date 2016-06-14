@@ -12,14 +12,13 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
-import enaml
-
 
 def list_manifests():
     """List the manifest that should be regsitered when the main Ecpy app is
     started.
 
     """
+    import enaml
     with enaml.imports():
         from .manifest import HqcLegacyManifest
     return [HqcLegacyManifest]

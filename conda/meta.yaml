@@ -1,0 +1,37 @@
+package:
+  name: ecpy_hqc_legacy
+  version: {{ environ.get('GIT_DESCRIBE_TAG', '') }}
+
+source:
+  git_url: https://github.com/Ecpy/ecpy_hqc_legacy.git
+  git_tag: master
+
+build:
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 1) }}
+  preserve_egg_dir: True
+
+requirements:
+  build:
+    - python
+    - future
+  run:
+    - python
+    - python.app       [osx]
+    - enaml >0.9.8
+    - atom >0.3.10
+    - pyqt
+    - kiwisolver >0.1.3
+    - ply
+    - future
+    - watchdog
+    - configobj
+
+test:
+  imports:
+    - ecpy_hqc_legacy
+
+about:
+  home: https://github.com/Ecpy/ecpy_hqc_legacy
+  license: BSD
+  license_file: LICENSE
+  summary: Transitional package for HQCMeas
