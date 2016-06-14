@@ -38,8 +38,8 @@ def fake_data(tmpdir):
     full_path = os.path.join(str(tmpdir), 'fake.dat')
     with open(full_path, 'wb') as f:
 
-        f.write('# this is a comment \n')
-        f.write('\t'.join(data.dtype.names) + '\n')
+        f.write('# this is a comment \n'.encode('utf-8'))
+        f.write(('\t'.join(data.dtype.names) + '\n').encode('utf-8'))
 
         np.savetxt(f, data, delimiter='\t')
 

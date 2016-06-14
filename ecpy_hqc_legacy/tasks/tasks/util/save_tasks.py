@@ -114,9 +114,11 @@ class SaveTask(SimpleTask):
                 if self.header:
                     h = self.format_string(self.header)
                     for line in h.split('\n'):
-                        self.file_object.write('# ' + line + '\n')
+                        self.file_object.write(('# ' + line +
+                                                '\n').encode('utf-8'))
                 labels = [self.format_string(s) for s in self.saved_values]
-                self.file_object.write('\t'.join(labels) + '\n')
+                self.file_object.write(('\t'.join(labels) +
+                                        '\n').encode('utf-8'))
                 self.file_object.flush()
 
             if self.saving_target != 'File':
@@ -134,8 +136,8 @@ class SaveTask(SimpleTask):
         values = tuple(self.format_and_eval_string(s)
                        for s in self.saved_values.values())
         if self.saving_target != 'Array':
-            self.file_object.write('\t'.join([str(val)
-                                              for val in values]) + '\n')
+            new_line = '\t'.join([str(val) for val in values]) + '\n'
+            self.file_object.write(new_line.encode('utf-8'))
             self.file_object.flush()
         if self.saving_target != 'File':
             self.array[self.line_index] = tuple(values)
@@ -309,7 +311,8 @@ class SaveFileTask(SimpleTask):
             if self.header:
                 h = self.format_string(self.header)
                 for line in h.split('\n'):
-                    self.file_object.write('# ' + line + '\n')
+                    self.file_object.write(('# ' + line +
+                                            '\n').encode('utf-8'))
 
             labels = []
             self.array_values = set()
@@ -325,7 +328,7 @@ class SaveFileTask(SimpleTask):
                         labels.append(label)
                 else:
                     labels.append(label)
-            self.file_object.write('\t'.join(labels) + '\n')
+            self.file_object.write(('\t'.join(labels) + '\n').encode('utf-8'))
             self.file_object.flush()
 
             self.initialized = True
@@ -355,8 +358,8 @@ class SaveFileTask(SimpleTask):
                 length = lengths.pop()
 
         if not self.array_values:
-            self.file_object.write('\t'.join([str(val) for val in values]) +
-                                   '\n')
+            new_line = '\t'.join([str(val) for val in values]) + '\n'
+            self.file_object.write(new_line.encode('utf-8'))
             self.file_object.flush()
         else:
             columns = []
@@ -690,10 +693,11 @@ class SaveArrayTask(SimpleTask):
             if self.header:
                 h = self.format_string(self.header)
                 for line in h.split('\n'):
-                    file_object.write('# ' + line + '\n')
+                    file_object.write(('# ' + line + '\n').encode('utf-8'))
 
             if array_to_save.dtype.names:
-                file_object.write('\t'.join(array_to_save.dtype.names) + '\n')
+                names = '\t'.join(array_to_save.dtype.names) + '\n'
+                file_object.write(names.encode('utf-8'))
 
             numpy.savetxt(file_object, array_to_save, delimiter='\t')
             file_object.close()

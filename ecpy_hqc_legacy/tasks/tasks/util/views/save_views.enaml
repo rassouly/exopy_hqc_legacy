@@ -58,8 +58,9 @@ enamldef SavedValueView(Container):
     """View to edit a key/value pair.
 
     """
+    #: Reference to the key/value pair being edited
     attr model
-    constraints = [hbox(k, v)]
+    constraints = [hbox(k, v), 2*k.width <= v.width]
     padding = 1
 
     QtLineCompleter: k:

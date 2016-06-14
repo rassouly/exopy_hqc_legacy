@@ -21,7 +21,7 @@ import enaml
 import numpy as np
 
 from ecpy.tasks.api import RootTask
-from ecpy.testing.util import show_and_close_widget
+from ecpy.testing.util import (show_and_close_widget, show_widget)
 from ecpy_hqc_legacy.tasks.tasks.util.save_tasks import (SaveTask,
                                                          SaveArrayTask,
                                                          SaveFileTask)
@@ -394,7 +394,6 @@ class TestSaveFileTask(object):
         task.filename = 'test{tt}.txt'
 
         test, traceback = task.check()
-        print(traceback)
         assert not test
         assert len(traceback) == 1
 
@@ -702,24 +701,38 @@ class TestSaveArrayTask(object):
 
 
 @pytest.mark.ui
-def test_save_view(windows):
+def test_save_view(windows, process_and_sleep, root_view):
     """Test SaveView widget.
 
     """
-    show_and_close_widget(SaveView(task=SaveTask(name='Test')))
+    task = SaveTask(name='Test')
+    root_view.task.add_child_task(0, task)
+    view = SaveView(task=task, root=root_view)
+    win = show_widget(view)
+    process_and_sleep()
+
+    d_editor = view.widgets()[-1]
+    d_editor._model.add_pair(0)
+    process_and_sleep()
+
+    win.close()
 
 
 @pytest.mark.ui
-def test_save_file_view(windows):
+def test_save_file_view(windows, root_view):
     """Test SaveView widget.
 
     """
-    show_and_close_widget(SaveFileView(task=SaveFileTask(name='Test')))
+    task = SaveFileTask(name='Test')
+    root_view.task.add_child_task(0, task)
+    show_and_close_widget(SaveFileView(task=task, root=root_view))
 
 
 @pytest.mark.ui
-def test_save_array_view(windows):
+def test_save_array_view(windows, root_view):
     """Test SaveView widget.
 
     """
-    show_and_close_widget(SaveArrayView(task=SaveArrayTask(name='Test')))
+    task = SaveArrayTask(name='Test')
+    root_view.task.add_child_task(0, task)
+    show_and_close_widget(SaveArrayView(task=task, root=root_view))
