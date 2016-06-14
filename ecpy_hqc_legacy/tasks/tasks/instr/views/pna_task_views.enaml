@@ -146,6 +146,7 @@ enamldef PNASinglePointView(InstrView): view:
 
     GroupBox: meas:
         title = 'Measures'
+        padding = 1
         DictEditor(MeasField): ed:
             ed.mapping = task.measures
             ed.operations = ('add', 'move', 'remove')
@@ -221,6 +222,7 @@ enamldef PNASweepMeasView(InstrView): view:
 
     GroupBox: meas:
         title = 'Measures'
+        padding = 1
         DictEditor(MeasField): ed:
             ed.mapping = task.measures
             ed.operations = ('add', 'move', 'remove')
