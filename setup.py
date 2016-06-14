@@ -14,7 +14,6 @@ setup(
     name='ecpy_hqc_legacy',
     description='Transitional package between HQCMeas and Ecpy',
     version=__version__,
-    long_description=open('README.md').read(),
     author='see AUTHORS',
     author_email='m.dartiailh@gmail.com',
     url='https://github.com/ecpy/ecpy_hqc_legacy',
@@ -33,7 +32,7 @@ setup(
     packages=find_packages(exclude=['tests', 'tests.*']),
     package_data={'': ['*.enaml']},
     requires=['ecpy', 'pyvisa', 'h5py', 'numpy'],
-    install_requires=['ecpy', 'pyvisa', 'h5py', 'numpy'],
+    install_requires=['setuptools', 'ecpy', 'pyvisa', 'h5py', 'numpy'],
     entry_points={
         'ecpy_package_extension':
         'ecpy_hqc_legacy = ecpy_hqc_legacy:list_manifests'}
