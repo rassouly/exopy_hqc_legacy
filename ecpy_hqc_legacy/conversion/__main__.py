@@ -6,10 +6,31 @@
 #
 # The full license is in the file LICENCE, distributed with this software.
 # -----------------------------------------------------------------------------
-"""Load ecpy fixtures.
+"""Start up script for HQCMeas .ini files to ecpy converter tool.
 
 """
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
-pytest_plugins = str('ecpy.testing.fixtures'),
+import sys
+
+import enaml
+from enaml.qt.qt_application import QtApplication
+
+with enaml.imports():
+    from .ui import Main
+
+
+def main():
+    """Start the GUI.
+
+    """
+    app = QtApplication()
+    win = Main()
+    win.show()
+
+    sys.exit(app.start())
+
+
+if __name__ == '__main__':
+    main()

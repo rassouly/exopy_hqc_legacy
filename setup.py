@@ -34,6 +34,8 @@ setup(
     requires=['ecpy', 'pyvisa', 'h5py', 'numpy'],
     install_requires=['setuptools', 'ecpy', 'pyvisa', 'h5py', 'numpy'],
     entry_points={
+        'gui_scripts':
+        'hqcmeas_to_ecpy = ecpy_hqc_legacy.conversion.__main__:main',
         'ecpy_package_extension':
         'ecpy_hqc_legacy = ecpy_hqc_legacy:list_manifests'}
 )
