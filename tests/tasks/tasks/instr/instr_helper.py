@@ -109,13 +109,13 @@ class InstrHelperStarter(object):
     """Dummy starter for instrument objects.
 
     """
-    def initialize(self, cls, connection, settings):
+    def start(self, cls, connection, settings):
         """simply create an instance.
 
         """
         return cls(connection, settings)
 
-    def finalize(self, instr):
+    def stop(self, instr):
         """Close the dummy connection.
 
         """
