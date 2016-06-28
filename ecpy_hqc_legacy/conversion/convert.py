@@ -23,10 +23,21 @@ TASK_DEP_TYPE = 'ecpy.task'
 INTERFACE_DEP_TYPE = 'ecpy.tasks.interface'
 
 #:
-TASKS = {}
+TASKS = {'ComplexTask': 'ecpy.ComplexTask',
+         'WhileTask': 'ecpy.WhileTask',
+         'ConditionalTask': 'ecpy.ConditionalTask',
+         'BreakTask': 'ecpy.BreakTask',
+         'ContinueTask': 'ecpy.ContinueTask',
+         'LoopTask':  'ecpy.LoopTask',
+         'LogTask': 'ecpy.LogTask',
+         'DefinitionTask': 'ecpy.DefinitionTask',
+         'FormulaTask': 'ecpy.FormulaTask',
+         'SleepTask': 'ecpy.SleepTask'}
+         # TODO add legacy tasks
 
 #:
-INTERFACES = {}
+INTERFACES = {'IterableLoopInterface': 'ecpy.IterableLoopInterface',
+              'LinspaceLoopInterface': 'ecpy.LinspaceLoopInterface'}
 
 #:
 MONITORS = {}
