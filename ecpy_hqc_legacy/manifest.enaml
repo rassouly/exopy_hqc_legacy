@@ -23,7 +23,7 @@ enamldef LegacyStarter(Starter):
     """Starter for legacy instruments.
 
     """
-    initialize => (driver_cls, connection, settings):
+    start => (driver_cls, connection, settings):
         c = format_connection_infos(connection)
         return driver_cls(c)
 
@@ -39,7 +39,7 @@ enamldef LegacyStarter(Starter):
     reset => (driver):
         driver.clear_cache()
 
-    finalize => (driver):
+    stop => (driver):
         driver.close_connection()
 
     func format_connection_infos(infos):
