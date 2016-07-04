@@ -48,6 +48,14 @@ class Agilent34410A(VisaInstrument):
     other models using the same SCPI commands.
 
     """
+    def open_connection(self, **para):
+        """Open the connection to the instr using the `connection_str`.
+
+        """
+        super(Agilent34410A, self).open_connection(**para)
+        self.write_termination = '\n'
+        self.read_termination = '\n'
+
     @secure_communication()
     def read_voltage_dc(self, mes_range='DEF', mes_resolution='DEF'):
         """Return the DC voltage measured by the instrument

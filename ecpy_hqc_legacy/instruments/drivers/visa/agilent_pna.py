@@ -737,6 +737,14 @@ class AgilentPNA(VisaInstrument):
                                          caching_permissions, auto_open)
         self.channels = {}
 
+    def open_connection(self, **para):
+        """Open the connection to the instr using the `connection_str`.
+
+        """
+        super(AgilentPNA, self).open_connection(**para)
+        self.write_termination = '\n'
+        self.read_termination = '\n'
+
     def get_channel(self, num):
         """
         """

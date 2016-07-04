@@ -48,6 +48,13 @@ class LockInSR7265(VisaInstrument):
     `_check_completion` method)
 
     """
+    def open_connection(self, **para):
+        """Open the connection to the instr using the `connection_str`.
+
+        """
+        super(LockInSR7265, self).open_connection(**para)
+        self.write_termination = '\n'
+        self.read_termination = '\n'
 
     @secure_communication()
     def read_x(self):

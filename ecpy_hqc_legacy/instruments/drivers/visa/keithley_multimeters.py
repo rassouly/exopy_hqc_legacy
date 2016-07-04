@@ -58,6 +58,14 @@ class Keithley2000(VisaInstrument):
 
     protocoles = {'GPIB': 'INSTR'}
 
+    def open_connection(self, **para):
+        """Open the connection to the instr using the `connection_str`.
+
+        """
+        super(Keithley2000, self).open_connection(**para)
+        self.write_termination = '\n'
+        self.read_termination = '\n'
+
     @instrument_property
     @secure_communication()
     def function(self):
