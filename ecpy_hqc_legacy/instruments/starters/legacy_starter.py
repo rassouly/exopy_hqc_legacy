@@ -40,19 +40,19 @@ class LegacyStarter(BaseStarter):
         return res, ('Instrument does not appear to be connected but no '
                      'exception was raised.')
 
-    def reset(driver):
+    def reset(self, driver):
         """Clear the driver cache.
 
         """
         driver.clear_cache()
 
-    def stop(driver):
+    def stop(self, driver):
         """Close the connection.
 
         """
         driver.close_connection()
 
-    def format_connection_infos(infos):
+    def format_connection_infos(self, infos):
         """Format the connection to match the expectancy of the driver.
 
         """
