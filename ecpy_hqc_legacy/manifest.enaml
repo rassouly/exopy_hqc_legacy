@@ -12,38 +12,12 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
-from traceback import format_exc
-
 from enaml.workbench.api import PluginManifest, Extension
 from ecpy.tasks.api import Tasks, Task, Interface
 from ecpy.instruments.api import Starter, Connection, Drivers, Driver
 
-
-enamldef LegacyStarter(Starter):
-    """Starter for legacy instruments.
-
-    """
-    start => (driver_cls, connection, settings):
-        c = format_connection_infos(connection)
-        return driver_cls(c)
-
-    check_infos => (driver_cls, connection, settings):
-        c = format_connection_infos(connection)
-        try:
-            res = driver_cls(c).connected
-        except Exception:
-            return False, format_exc()
-        return res, ('Instrument does not appear to be connected but no '
-                     'exception was raised.')
-
-    reset => (driver):
-        driver.clear_cache()
-
-    stop => (driver):
-        driver.close_connection()
-
-    func format_connection_infos(infos):
-        raise NotImplementedError()
+from .instruments.starters.legacy_starter import (VisaLegacyStarter,
+                                                  DllLegacyStarter)
 
 
 enamldef HqcLegacyManifest(PluginManifest):
@@ -55,23 +29,17 @@ enamldef HqcLegacyManifest(PluginManifest):
     Extension:
         id = 'instruments.starters'
         point = 'ecpy.instruments.starters'
-        LegacyStarter:
+        Starter:
             id = 'ecpy_hqc_legacy.starter.visa'
             description = ('Starter for legacy instrument relying on the VISA '
                           'protocol')
-            format_connection_infos => (infos):
-                from pyvisa.rname import assemble_canonical_name
-                return {'resource_name': assemble_canonical_name(**infos)}
+            starter = VisaLegacyStarter()
 
-        LegacyStarter:
+        Starter:
             id = 'ecpy_hqc_legacy.starter.dll'
             description = ('Starter for legacy instruments using a custom dll '
                            'for communication.')
-            format_connection_infos => (infos):
-                i = infos.copy()
-                i['instr_id'] = infos['serial_number']
-                del i['serial_number']
-                return i
+            starter = DllLegacyStarter()
 
     Extension:
         id = 'instruments.connections'
@@ -325,7 +293,7 @@ enamldef HqcLegacyManifest(PluginManifest):
                     task = 'set_dc_voltage_task:SetDCVoltageTask'
                     view = 'views.set_dc_voltage_view:SetDcVoltageView'
                     instruments = ['ecpy_hqc_legacy.Legacy.YokogawaGS200',
-                                   'ecpy_hqc_legacy.Legacy.Yogogawa7651']
+                                   'ecpy_hqc_legacy.Legacy.Yokogawa7651']
                     metadata = {'loopable': True}
                     Interface:
                         interface = ('set_dc_voltage_task:'

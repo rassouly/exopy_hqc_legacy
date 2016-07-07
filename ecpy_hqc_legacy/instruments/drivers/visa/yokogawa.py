@@ -44,6 +44,14 @@ class YokogawaGS200(VisaInstrument):
         State of the output 'ON'(True)/'OFF'(False).
 
     """
+    def open_connection(self, **para):
+        """Open the connection to the instr using the `connection_str`.
+
+        """
+        super(YokogawaGS200, self).open_connection(**para)
+        self.write_termination = '\n'
+        self.read_termination = '\n'
+
     @instrument_property
     @secure_communication()
     def voltage(self):
@@ -211,6 +219,14 @@ class Yokogawa7651(VisaInstrument):
         State of the output 'ON'(True)/'OFF'(False).
 
     """
+    def open_connection(self, **para):
+        """Open the connection to the instr using the `connection_str`.
+
+        """
+        super(Yokogawa7651, self).open_connection(**para)
+        self.write_termination = '\n'
+        self.read_termination = '\n'
+
     @instrument_property
     @secure_communication()
     def voltage(self):

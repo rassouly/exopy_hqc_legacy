@@ -57,11 +57,11 @@ class AgilentPSG(VisaInstrument):
     def __init__(self, connection_info, caching_allowed=True,
                  caching_permissions={}, auto_open=True):
 
-        super(AgilentPSGSignalGenerator, self).__init__(connection_info,
-                                                        caching_allowed,
-                                                        caching_permissions,
-                                                        auto_open)
+        super(AgilentPSG, self).__init__(connection_info, caching_allowed,
+                                         caching_permissions, auto_open)
         self.frequency_unit = 'GHz'
+        self.write_termination = '\n'
+        self.read_termination = '\n'
 
     @instrument_property
     @secure_communication()

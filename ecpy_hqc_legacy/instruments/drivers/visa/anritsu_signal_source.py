@@ -35,6 +35,14 @@ class AnritsuMG3694(VisaInstrument):
                                             caching_permissions,
                                             auto_open)
         self.frequency_unit = 'GHz'
+
+    def open_connection(self, **para):
+        """Open the connection to the instr using the `connection_str`.
+
+        """
+        super(AnritsuMG3694, self).open_connection(**para)
+        self.write_termination = '\n'
+        self.read_termination = '\n'
         self.write("DSPL 4")
         self.write("EBW3")  # if the external reference is very stable in phase
                             # the largest EBW must be chosen
