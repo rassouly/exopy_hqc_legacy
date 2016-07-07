@@ -42,6 +42,7 @@ TASKS = {'ComplexTask': 'ecpy.ComplexTask',
          'SaveFileTask': 'ecpy_hqc_legacy.SaveFileTask',
          'SaveFileHDF5Task': 'ecpy_hqc_legacy.SaveFileHDF5Task',
          'SaveArrayTask': 'ecpy_hqc_legacy.SaveArrayTask',
+         'LoadArrayTask': 'ecpy_hqc_legacy.LoadArrayTask',
          'ApplyMagFieldTask': 'ecpy_hqc_legacy.ApplyMagFieldTask',
          'LockInMeasureTask': 'ecpy_hqc_legacy.LockInMeasureTask',
          'MeasDCVoltageTask': 'ecpy_hqc_legacy.MeasDCVoltageTask',
@@ -53,7 +54,7 @@ TASKS = {'ComplexTask': 'ecpy.ComplexTask',
          'PNASweepTask': 'ecpy_hqc_legacy.PNASweepTask',
          'PNAGetTraces': 'ecpy_hqc_legacy.PNAGetTraces',
          'SetDCVoltageTask': 'ecpy_hqc_legacy.SetDCVoltageTask',
-         'SPDemodTask': 'ecpy_hqc_legacy.SPDemodTask'}
+         'DemodSPTask': 'ecpy_hqc_legacy.DemodSPTask'}
 
 #: Mapping between interface_class (in HQCMeas) and interface_id (in ecpy)
 INTERFACES = {'IterableLoopInterface':
