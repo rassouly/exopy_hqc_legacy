@@ -107,10 +107,10 @@ def update_task_interface(interface_config):
     """
     old_id = interface_config['interface_class']
     if old_id not in INTERFACES:
-        raise ValueError('Unknown or unsupported task found %s' % old_id)
+        raise ValueError('Unknown or unsupported interface found %s' % old_id)
     interface_config['interface_id'] = INTERFACES[old_id]
     del interface_config['interface_class']
-    interface_config['dep_type'] = TASK_DEP_TYPE
+    interface_config['dep_type'] = INTERFACE_DEP_TYPE
 
 
 def update_monitor(config):
@@ -118,14 +118,17 @@ def update_monitor(config):
 
     """
     del config['id']
-    undisp = literal_eval(config['undisplayed_entries'])
-    config['undisplayed_entries'] = repr(undisp + ['meas_name', 'meas_id',
-                                                   'meas_date'])
+    undisp = literal_eval(config['undisplayed'])
+    config['undisplayed'] = repr(undisp + ['meas_name', 'meas_id',
+                                           'meas_date'])
     for k in list(config):
         if k.startswith('rule_'):
             del config[k]
         elif k.startswith('custom_'):
             del config[k]
+
+    config['rule_0'] = 'Loop progress'
+    config['rule_1'] = 'Measure entries'
 
 
 def iterate_on_sections(section, action_mapping):
@@ -178,6 +181,7 @@ def convert_measure(meas_path, archive_folder=None, dest_folder=None):
     config = ConfigObj(meas_path)
 
     # Update the main task hierarchy.
+    update_task(config['root_task'])
     iterate_on_sections(config['root_task'],
                         {lambda x: 'task_class' in x: update_task,
                          lambda x: 'interface_class' in x:
@@ -188,7 +192,7 @@ def convert_measure(meas_path, archive_folder=None, dest_folder=None):
         m_config = config['monitor_%s' % i]
         if m_config['id'] not in MONITORS:
             raise ValueError('Unknown monitor: %s' % m_config['id'])
-        config.rename('monitor_%s', MONITORS[m_config['id']])
+        config.rename('monitor_%s' % i, MONITORS[m_config['id']])
         update_monitor(m_config)
 
     del config['monitors']
@@ -201,6 +205,7 @@ def convert_measure(meas_path, archive_folder=None, dest_folder=None):
     else:
         new_path = meas_path[:-4] + '.meas.ini'
 
+    print(config)
     with open(new_path, 'wb') as f:
         config.write(f)
 
