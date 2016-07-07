@@ -56,15 +56,22 @@ TASKS = {'ComplexTask': 'ecpy.ComplexTask',
          'SPDemodTask': 'ecpy_hqc_legacy.SPDemodTask'}
 
 #: Mapping between interface_class (in HQCMeas) and interface_id (in ecpy)
-INTERFACES = {'IterableLoopInterface': 'ecpy.IterableLoopInterface',
-              'LinspaceLoopInterface': 'ecpy.LinspaceLoopInterface',
+INTERFACES = {'IterableLoopInterface':
+              'ecpy.LoopTask:ecpy.IterableLoopInterface',
+              'LinspaceLoopInterface':
+              'ecpy.LoopTask:ecpy.LinspaceLoopInterface',
               'MultiChannelVoltageSourceInterface':
-                  'ecpy_hqc_legcy.MultiChannelVoltageSourceInterface',
+              ('ecpy_hqc_legacy.SetDCVoltageTask:'
+               'ecpy_hqc_legcy.MultiChannelVoltageSourceInterface'),
               'PNASetRFFrequencyInterface':
-                  'ecpy_hqc_legacy.PNASetRFFrequencyInterface',
+              ('ecpy_hqc_legacy.SetRFFrequencyTask:'
+               'ecpy_hqc_legacy.PNASetRFFrequencyInterface'),
               'PNASetRFPowerInterface':
-                  'ecpy_hqc_legacy.PNASetRFPowerInterface',
-              'CSVLoadInterface': 'ecpy_hqc_legacy.CSVLoadInterface'}
+              ('ecpy_hqc_legacy.SetRFPowerTask:'
+               'ecpy_hqc_legacy.PNASetRFPowerInterface'),
+              'CSVLoadInterface':
+              ('ecpy_hqc_legacy.LoadArrayTask:'
+               'ecpy_hqc_legacy.CSVLoadInterface')}
 
 #: Mapping between monitor_class and monitor_id
 MONITORS = {'hqc_meas.measure.monitors.text_monitor':
@@ -92,6 +99,13 @@ def update_task(task_config):
     for key in ['selected_driver', 'selected_profile']:
         if key in task_config:
             del task_config[key]
+
+    # XXX update access_exs
+    if 'access_exs' in task_config:
+        if task_config['access_exs'] == '[]':
+            del task_config['access_exs']
+        else:
+            raise RuntimeError('Cannot handle access_exs')
 
 
 def update_task_interface(interface_config):

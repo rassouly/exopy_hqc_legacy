@@ -27,6 +27,7 @@ from ecpy_hqc_legacy.conversion.convert import (update_task,
 
 with enaml.imports():
     from ecpy.tasks.manifest import TasksManagerManifest
+    from ecpy_hqc_legacy.manifest import HqcLegacyManifest
 
 
 pytest_plugins = str('ecpy.testing.measure.fixtures'),
@@ -61,7 +62,7 @@ def test_update_task_interface():
               'iterable': '[]'}
     update_task_interface(config)
     assert 'interface_class' not in config
-    assert config['interface_id'] == 'ecpy.IterableLoopInterface'
+    assert config['interface_id'] == 'ecpy.LoopTask:ecpy.IterableLoopInterface'
     assert 'dep_type' in config
     assert 'iterable' in config
 
@@ -226,6 +227,7 @@ def test_converting_a_measure(measure_workbench, meas_file, tmpdir):
 
     """
     measure_workbench.register(TasksManagerManifest())
+    measure_workbench.register(HqcLegacyManifest())
     plugin = measure_workbench.get_plugin('ecpy.measure')
 
     path = convert_measure(os.path.join(MEASURE_DIRECTORY, meas_file),
