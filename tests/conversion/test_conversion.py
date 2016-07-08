@@ -37,10 +37,11 @@ def test_update_task():
     """Test updating the informations about a task.
 
     """
-    config = {'task_class': 'SetDCVoltageTask',
-              'selected_driver': None,
-              'selected_profile': None,
-              'voltage': '1.0'}
+    config = ConfigObj({'task_name': 'decoy',
+                        'task_class': 'SetDCVoltageTask',
+                        'selected_driver': None,
+                        'selected_profile': None,
+                        'voltage': '1.0'})
     update_task(config)
     assert 'task_class' not in config
     assert config['task_id'] == 'ecpy_hqc_legacy.SetDCVoltageTask'

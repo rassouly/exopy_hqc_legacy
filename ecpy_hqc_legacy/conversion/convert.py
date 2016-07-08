@@ -79,6 +79,38 @@ MONITORS = {'hqc_meas.measure.monitors.text_monitor':
             'ecpy.text_monitor'}
 
 
+def fix_access_exs(task_config, ex, depth):
+    """Walk the secmtion of a task to fix an access exception.
+
+    In HQCMeas access _ex exists only on ComplexTask and can be chained (appear
+    at several level). IN Ecpy access_exs are stored on the task exporting
+    entry in a dict, and the value represents on how many level we should go
+    up.
+
+    """
+    task_name, entry = ex.split('_')
+    for s in task_config.sections:
+        s = task_config[s]
+        exs = literal_eval(s.get('access_exs', '[]'))
+        if ex in exs:
+            depth += 1
+            del exs[exs.index(ex)]
+            s['access_exs'] = repr(exs)
+            fix_access_exs(s, ex, depth)
+            continue
+        elif s.get('task_name') == task_name:
+            if (s['task_class'] == 'LoopTask' and
+                entry not in ('start', 'stop', 'step', 'points_number',
+                              'iterable')):
+                depth += 1
+                s = s['task']
+            exs = literal_eval(s.get('access_exs', '{}'))
+            if not isinstance(exs, dict):
+                raise RuntimeError('Too deeply nested access-exs.')
+            exs[entry] = depth
+            break
+
+
 def update_task(task_config):
     """Update the informations about a task.
 
@@ -96,17 +128,21 @@ def update_task(task_config):
     task_config['task_id'] = TASKS[old_id]
     del task_config['task_class']
     task_config['dep_type'] = TASK_DEP_TYPE
+    task_config.rename('task_name', 'name')
 
     for key in ['selected_driver', 'selected_profile']:
         if key in task_config:
             del task_config[key]
 
-    # XXX update access_exs
     if 'access_exs' in task_config:
         if task_config['access_exs'] == '[]':
             del task_config['access_exs']
+        elif '{' in task_config['access_exs']:
+            pass
         else:
-            raise RuntimeError('Cannot handle access_exs')
+            exs = literal_eval(task_config['access_exs'])
+            for ex in exs:
+                fix_access_exs(task_config, ex, 1)
 
 
 def update_task_interface(interface_config):
