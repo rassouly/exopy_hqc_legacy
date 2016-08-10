@@ -25,8 +25,8 @@ from enaml.validator import Validator
 
 from ecpy.tasks.api import EVALUATER_TOOLTIP
 from ecpy.utils.widgets.qt_completers import QtLineCompleter
-from ecpy.utils.widgets.dict_editor import DictEditor
 from ecpy_hqc_legacy.utils.layouts import auto_grid_layout
+from ecpy_hqc_legacy.utils.widgets.pair_editor import PairEditor
 from ...base_instr_view import InstrView
 
 
@@ -147,8 +147,8 @@ enamldef PNASinglePointView(InstrView): view:
     GroupBox: meas:
         title = 'Measures'
         padding = 1
-        DictEditor(MeasField): ed:
-            ed.mapping = task.measures
+        PairEditor(MeasField): ed:
+            ed.iterable := task.measures
             ed.operations = ('add', 'move', 'remove')
             ed.alignment = 'v_center'
 
@@ -168,9 +168,8 @@ enamldef PNASweepMeasView(InstrView): view:
 
     """
     constraints = [vbox(
-                    grid([instr_label, instr_label, cha_lab, if_lab, win_lab],
-                         [instr_selection, instr_val, cha_val, if_val,
-                          win_val]),
+                    grid([instr_label, cha_lab, if_lab, win_lab],
+                         [instr_selection, cha_val, if_val, win_val]),
                     grid([type_lab, start_lab, stop_lab, points_lab],
                          [type_val, start_val, stop_val, points_val]),
                     meas),
@@ -223,8 +222,8 @@ enamldef PNASweepMeasView(InstrView): view:
     GroupBox: meas:
         title = 'Measures'
         padding = 1
-        DictEditor(MeasField): ed:
-            ed.mapping = task.measures
+        PairEditor(MeasField): ed:
+            ed.iterable := task.measures
             ed.operations = ('add', 'move', 'remove')
             ed.alignment = 'v_center'
 
