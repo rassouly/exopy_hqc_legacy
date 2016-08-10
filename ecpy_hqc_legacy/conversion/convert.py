@@ -80,7 +80,7 @@ MONITORS = {'hqc_meas.measure.monitors.text_monitor':
 
 
 def fix_access_exs(task_config, ex, depth):
-    """Walk the secmtion of a task to fix an access exception.
+    """Walk the sections of a task to fix the access exception.
 
     In HQCMeas access _ex exists only on ComplexTask and can be chained (appear
     at several level). IN Ecpy access_exs are stored on the task exporting
@@ -129,6 +129,11 @@ def update_task(task_config):
     del task_config['task_class']
     task_config['dep_type'] = TASK_DEP_TYPE
     task_config.rename('task_name', 'name')
+    
+    i = 0
+    while 'children_task_%d' % i in task_config:
+        task_config.rename('children_task_%d' % i, 'children_%d' % i)
+        i += 1
 
     for key in ['selected_driver', 'selected_profile']:
         if key in task_config:
@@ -169,6 +174,7 @@ def update_monitor(config):
 
     """
     del config['id']
+    del config['measure_name']
     undisp = literal_eval(config['undisplayed'])
     config['undisplayed'] = repr(undisp + ['meas_name', 'meas_id',
                                            'meas_date'])
@@ -239,16 +245,21 @@ def convert_measure(meas_path, archive_folder=None, dest_folder=None):
                              update_task_interface})
 
     #: Update the monitors and delete the other non-existing tools
+    monitors = {}
     for i in range(int(config['monitors'])):
         m_config = config['monitor_%s' % i]
         if m_config['id'] not in MONITORS:
             raise ValueError('Unknown monitor: %s' % m_config['id'])
-        config.rename('monitor_%s' % i, MONITORS[m_config['id']])
+        new_id = MONITORS[m_config['id']]
         update_monitor(m_config)
+        monitors[new_id] = m_config.dict()
+        del config['monitor_%s' % i]
 
     del config['monitors']
     del config['checks']
     del config['headers']
+    config['monitors'] = {}
+    config['monitors'].update(monitors)
 
     if dest_folder:
         new_path = os.path.join(dest_folder,
@@ -256,7 +267,6 @@ def convert_measure(meas_path, archive_folder=None, dest_folder=None):
     else:
         new_path = meas_path[:-4] + '.meas.ini'
 
-    print(config)
     with open(new_path, 'wb') as f:
         config.write(f)
 

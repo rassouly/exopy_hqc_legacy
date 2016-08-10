@@ -26,6 +26,10 @@ def main():
 
     """
     app = QtApplication()
+    if sys.platform == 'win32':
+        import ctypes
+        myappid = 'ecpy.hqcmeas_converter' # arbitrary string
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     win = Main()
     win.show()
 

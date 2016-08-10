@@ -29,6 +29,8 @@ enamldef Main(Window): main:
     #: List of path of the measure to update
     attr paths : list = []
 
+    title = 'HQCMeas to Ecpy measure converter'
+
     Container:
 
         constraints = [hbox(vbox(ch, ls, old), vbox(log, con)),
@@ -40,11 +42,11 @@ enamldef Main(Window): main:
                 main.paths = FileDialogEx.get_open_file_names(main)
 
         QtListStrWidget: ls:
-            enabled = False
             items << [os.path.basename(p) for p in paths]
 
         CheckBox: old:
             text = 'Move old to _old subdirectory'
+            checked = True
 
         PushButton: con:
             text = 'Convert'
@@ -59,10 +61,12 @@ enamldef Main(Window): main:
                     try:
                         convert_measure(p, archive)
                     except Exception:
-                        msg = 'Failed to convert %s :\n%s\n'
+                        msg = '\nFailed to convert %s :\n%s\n'
                         log.text += msg % (p, format_exc())
                     else:
-                        msg = 'Converted %s' % p
+                        log.text += '\nConverted %s\n' % p
+                  
+                main.paths = []
 
         MultilineField: log:
             pass
