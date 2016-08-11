@@ -82,7 +82,7 @@ MONITORS = {'hqc_meas.measure.monitors.text_monitor':
 def fix_access_exs(task_config, ex, depth):
     """Walk the sections of a task to fix the access exception.
 
-    In HQCMeas access _ex exists only on ComplexTask and can be chained (appear
+    In HQCMeas access_exs exists only on ComplexTask and can be chained (appear
     at several level). IN Ecpy access_exs are stored on the task exporting
     entry in a dict, and the value represents on how many level we should go
     up.
@@ -108,6 +108,7 @@ def fix_access_exs(task_config, ex, depth):
             if not isinstance(exs, dict):
                 raise RuntimeError('Too deeply nested access-exs.')
             exs[entry] = depth
+            s['access_exs'] = repr(exs)
             break
 
 
@@ -129,7 +130,7 @@ def update_task(task_config):
     del task_config['task_class']
     task_config['dep_type'] = TASK_DEP_TYPE
     task_config.rename('task_name', 'name')
-    
+
     i = 0
     while 'children_task_%d' % i in task_config:
         task_config.rename('children_task_%d' % i, 'children_%d' % i)
@@ -148,6 +149,8 @@ def update_task(task_config):
             exs = literal_eval(task_config['access_exs'])
             for ex in exs:
                 fix_access_exs(task_config, ex, 1)
+            if '{' not in task_config['access_exs']:
+                del task_config['access_exs']
 
 
 def update_task_interface(interface_config):
@@ -174,7 +177,8 @@ def update_monitor(config):
 
     """
     del config['id']
-    del config['measure_name']
+    if 'measure_name' in config:
+        del config['measure_name']
     undisp = literal_eval(config['undisplayed'])
     config['undisplayed'] = repr(undisp + ['meas_name', 'meas_id',
                                            'meas_date'])

@@ -13,7 +13,6 @@ from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
 from multiprocessing import Event
-from collections import OrderedDict
 
 import pytest
 import enaml
@@ -219,7 +218,7 @@ class TestPNASinglePointMeasureTask(object):
         """Simply test that everything is ok.
 
         """
-        self.task.measures = OrderedDict([('S21', ''), ('S33', 'MLIN')])
+        self.task.measures = [('S21', ''), ('S33', 'MLIN')]
 
         c = self.root.run_time[PROFILES]['Test1']['connections']
         c['C'] = {'defined_channels': [[1]]}
@@ -232,7 +231,7 @@ class TestPNASinglePointMeasureTask(object):
         """Check handling a wrong channel.
 
         """
-        self.task.measures = OrderedDict([('S21', ''), ('S33', 'MLIN')])
+        self.task.measures = [('S21', ''), ('S33', 'MLIN')]
 
         c = self.root.run_time[PROFILES]['Test1']['connections']
         c['C'] = {'defined_channels': [[3]]}
@@ -245,7 +244,7 @@ class TestPNASinglePointMeasureTask(object):
         """Check handling a wrong S parameter.
 
         """
-        self.task.measures = OrderedDict([('S21', ''), ('SF3', 'MLIN')])
+        self.task.measures = [('S21', ''), ('SF3', 'MLIN')]
 
         c = self.root.run_time[PROFILES]['Test1']['connections']
         c['C'] = {'defined_channels': [[1]]}
@@ -283,7 +282,7 @@ def test_pna_single_point_view2(windows, root_view, task_workbench):
 
     """
     task = PNASinglePointMeasureTask(name='Test')
-    task.measures = OrderedDict([('S21', ''), ('S43', 'MLIN')])
+    task.measures = [('S21', ''), ('S43', 'MLIN')]
     root_view.task.add_child_task(0, task)
     show_and_close_widget(PNASinglePointView(task=task, root=root_view))
 
