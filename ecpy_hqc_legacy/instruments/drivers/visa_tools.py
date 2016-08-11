@@ -121,7 +121,7 @@ class VisaInstrument(BaseInstrument):
 
         """
         para = {'timeout': self._driver.timeout,
-                'delay': self._driver.delay,
+                'query_delay': self._driver.query_delay,
                 'write_termination': self._driver.write_termination,
                 'read_termination': self._driver.read_termination,
                 }
