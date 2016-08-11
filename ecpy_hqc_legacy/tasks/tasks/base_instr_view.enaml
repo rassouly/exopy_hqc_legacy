@@ -22,7 +22,7 @@ enamldef InstrView(InstrTaskView):
 
     """
     #: List of currently inserted interface widgets.
-    attr i_views
+    attr i_views = []
 
     #: Interfaces infos used to instantiate the views.
     attr _interfaces
@@ -50,7 +50,6 @@ enamldef InstrView(InstrTaskView):
                 i_v.destroy()
 
         if self.task.interface:
-
             self._insert_interface_views(self.task.interface)
 
     func _insert_interface_views(interface):
