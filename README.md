@@ -7,3 +7,6 @@ Ecpy Hqc Legacy
 Transition package to smooth transition from HQCMeas to Ecpy.
 
 WORK IN PROGRESS
+
+A GUI tool is provided to convert an HQCMeas measure file to the new format used
+by Ecpy. It can be started from the command line by typing hqcmeas_to_ecpy.
