@@ -6,7 +6,7 @@
 #
 # The full license is in the file LICENCE, distributed with this software.
 # -----------------------------------------------------------------------------
-"""Fix sys.path to run test locally.
+"""Load ecpy fixtures.
 
 """
 from __future__ import (division, unicode_literals, print_function,

@@ -38,7 +38,7 @@ enamldef HeaderDialog(Dialog): dial:
 
     Container:
         constraints = [vbox(field,
-                            hbox(default, spacer, cancel, ok))]
+                            hbox(spacer, cancel, ok))]
 
         QtTextCompleter: field:
             hug_height = 'weak'
@@ -143,7 +143,7 @@ enamldef SaveView(BaseTaskView):
                 text = 'Header'
                 hug_width = 'strong'
                 clicked ::
-                    dial = HeaderDialog(header = task.header, model = task)
+                    dial = HeaderDialog(header=task.header, task=task)
                     if dial.exec_():
                         task.header = dial.header
 
@@ -198,7 +198,7 @@ enamldef SaveFileView(BaseTaskView):
                 text = 'Header'
                 hug_width = 'strong'
                 clicked ::
-                    dial = HeaderDialog(header = task.header, model = task)
+                    dial = HeaderDialog(header=task.header, task=task)
                     if dial.exec_():
                         task.header = dial.header
 
@@ -255,7 +255,7 @@ enamldef SaveFileHDF5View(BaseTaskView):
                 text = 'Header'
                 hug_width = 'strong'
                 clicked ::
-                    dial = HeaderDialog(header = task.header, model = task)
+                    dial = HeaderDialog(header=task.header, task=task)
                     if dial.exec_():
                         task.header = dial.header
             Label: compression_lab:
@@ -328,7 +328,7 @@ enamldef SaveArrayView(BaseTaskView):
             text = 'Header'
             hug_width = 'strong'
             clicked ::
-                dial = HeaderDialog(header = task.header, model = task)
+                dial = HeaderDialog(header=task.header, task=task)
                 if dial.exec_():
                     task.header = dial.header
 

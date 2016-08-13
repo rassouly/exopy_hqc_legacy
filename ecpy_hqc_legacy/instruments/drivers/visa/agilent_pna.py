@@ -19,7 +19,7 @@ import numpy as np
 try:
     from visa import ascii, single, double
 except ImportError:
-    ascii = 0
+    ascii = 2
     single = 1
     double = 3
 
@@ -203,7 +203,7 @@ class AgilentPNAChannel(BaseInstrument):
             meas_name = meas[1:-1].split(',')[::2]
             param = meas.split(',')[1::2]
             aux = [{'name': meas_name[i-1], 'parameters': param[i-1]}
-                   for i in xrange(len(meas_name))]
+                   for i in range(len(meas_name))]
             return aux
         else:
             raise InstrIOError(cleandoc('''Agilent PNA did not return the

@@ -16,11 +16,10 @@ import time
 import re
 import numbers
 from inspect import cleandoc
-from collections import OrderedDict
 
 import numpy as np
-from atom.api import (Unicode, Int, Bool, Enum, set_default, Typed,
-                      Value)
+from atom.api import (Unicode, Int, Bool, Enum, set_default,
+                      Value, List)
 
 from ecpy.tasks.api import InstrumentTask, TaskInterface, validators
 from ecpy.utils.atom_util import ordered_dict_to_pref, ordered_dict_from_pref
@@ -178,8 +177,7 @@ class PNASinglePointMeasureTask(SingleChannelPNATask):
     channel = Int(1).tag(pref=True)
 
     #: Measures to perform.
-    measures = Typed(OrderedDict, ()).tag(pref=(ordered_dict_to_pref,
-                                                ordered_dict_from_pref))
+    measures = List().tag(pref=True)
 
     #: Bandwith for averaging.
     if_bandwidth = Int(2).tag(pref=True)
@@ -260,7 +258,7 @@ class PNASinglePointMeasureTask(SingleChannelPNATask):
                                 self).check(*args, **kwargs)
 
         pattern = re.compile('S[1-4][1-4]')
-        for i, meas in enumerate(self.measures):
+        for i, (meas, _) in enumerate(self.measures):
             match = pattern.match(meas)
             if not match:
                 path = self.get_error_path()
@@ -311,8 +309,7 @@ class PNASweepTask(SingleChannelPNATask):
     sweep_type = Enum('', 'Frequency', 'Power').tag(pref=True)
 
     #: Measures to perform.
-    measures = Typed(OrderedDict, ()).tag(pref=(ordered_dict_to_pref,
-                                                ordered_dict_from_pref))
+    measures = List().tag(pref=True)
 
     #: Bandwith for averaging.
     if_bandwidth = Int(2).tag(pref=True)
@@ -405,7 +402,7 @@ class PNASweepTask(SingleChannelPNATask):
         test, traceback = super(PNASweepTask, self).check(*args, **kwargs)
 
         pattern = re.compile('S[1-4][1-4]')
-        for i, meas in enumerate(self.measures):
+        for i, (meas, _) in enumerate(self.measures):
             match = pattern.match(meas)
             if not match:
                 path = self.task_path + '/' + self.name
@@ -415,7 +412,8 @@ class PNASweepTask(SingleChannelPNATask):
 
         data = [np.array([0.0, 1.0])] + \
             [np.array([0.0, 1.0]) for meas in self.measures]
-        names = [self.sweep_type] + ['_'.join(meas) for meas in self.measures]
+        names = [self.sweep_type] + ['_'.join(meas)
+                 for meas in self.measures]
         final_arr = np.rec.fromarrays(data, names=names)
 
         self.write_in_database('sweep_data', final_arr)
