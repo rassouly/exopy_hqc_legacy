@@ -66,15 +66,23 @@ class LockInMeasureTask(InstrumentTask):
         """ Update the database entries acording to the mode.
 
         """
+        entries = self.database_entries.copy()
+        for k in ('x', 'y', 'amplitude', 'phase'):
+            if k in entries:
+                del entries[k]
         if new == 'X':
-            self.database_entries = {'x': 1.0}
+            entries['x'] = 1.0
         elif new == 'Y':
-            self.database_entries = {'y': 1.0}
+            entries['y'] = 1.0
         elif new == 'X&Y':
-            self.database_entries = {'x': 1.0, 'y': 1.0}
+            entries['x'] = 1.0
+            entries['y'] = 1.0
         elif new == 'Amp':
-            self.database_entries = {'amplitude': 1.0}
+            entries['amplitude'] = 1.0
         elif new == 'Phase':
-            self.database_entries = {'phase': 1.0}
+            entries['phase'] = 1.0
         elif new == 'Amp&Phase':
-            self.database_entries = {'amplitude': 1.0, 'phase': 1.0}
+            entries['amplitude'] = 1.0
+            entries['phase'] = 1.0
+
+        self.database_entries = entries
