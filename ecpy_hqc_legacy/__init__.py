@@ -19,6 +19,17 @@ def list_manifests():
 
     """
     import enaml
+
     with enaml.imports():
         from .manifest import HqcLegacyManifest
-    return [HqcLegacyManifest]
+
+    manifests = [HqcLegacyManifest]
+
+    try:
+        with enaml.imports():
+            from .pulses.manifest import HqcLegacyPulsesManifest
+        manifests.append(HqcLegacyPulsesManifest)
+    except ImportError:
+        pass
+
+    return manifests
