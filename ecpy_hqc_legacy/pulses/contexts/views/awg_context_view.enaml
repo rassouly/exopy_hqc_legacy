@@ -12,28 +12,53 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
+from textwrap import fill
+
 from enaml.layout.api import hbox, vbox
-from enaml.widgets.api import (Label, ObjectCombo, Form)
-from enaml.core.api import Conditional, Include
+from enaml.widgets.api import (Label, ObjectCombo, CheckBox)
 from enaml.stdlib.fields import FloatField
 
-from ecpy.utils.widgets.qt_line_completer import QtLineCompleter
+from ecpy.utils.widgets.qt_completers import QtLineCompleter
+from ecpy_pulses.pulses.api import BaseContextView
 
 
-enamldef AWGContextView(BaseContextView): view:
+enamldef AWG5014ContextView(BaseContextView): view:
     """ View for a pulse item.
 
     """
     hug_height = 'strong'
 
-    Label:
+    constraints = [vbox(hbox(seq_lab, seq_val, uni_lab, uni_val),
+                        hbox(fre_lab, fre_val, sel, cle, run))]
+
+    Label: seq_lab:
+        text = 'Sequence name'
+    QtLineCompleter: seq_val:
+        value := context.sequence_name
+        tool_tip = fill('You can use curly braces to format a sequence '
+                        'variable in the name.')
+
+    Label: uni_lab:
         text = 'Time unit'
-    ObjectCombo:
+    ObjectCombo: uni_val:
         items = list(context.get_member('time_unit').items)
         selected := context.time_unit
 
-    Label:
+    Label: fre_lab:
         text = 'Sampling freq (Hz)'
-    FloatField:
+    FloatField: fre_lab:
         value := context.sampling_frequency
 
+    CheckBox: sel:
+        text = 'Select after transfer'
+        checked := context.select_after_transfer
+
+    CheckBox: cle:
+        text = 'Clean unused channels'
+        checked := context.clean_unused_channels
+        tool_tip = fill('Clean unused channel if the sequence is'
+                        ' selected after the transfer.')
+
+    CheckBox: run:
+        text = 'Run after transfer'
+        checked := context.run_after_transfer
