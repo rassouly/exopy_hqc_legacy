@@ -53,8 +53,7 @@ class AWG5014Context(BaseContext):
     logical_channels = set_default(('Ch1_M1', 'Ch2_M1', 'Ch3_M1', 'Ch4_M1',
                                     'Ch1_M2', 'Ch2_M2', 'Ch3_M2', 'Ch4_M2'))
 
-    def compile_and_transfer_sequence(self, items, sequence_duration=None,
-                                      driver=None):
+    def compile_and_transfer_sequence(self, sequence, driver=None):
         """Compile the pulse sequence and send it to the instruments.
 
         As this context does not support any special sequence it will always
@@ -62,8 +61,8 @@ class AWG5014Context(BaseContext):
 
         Parameters
         ----------
-        items : list
-            List of handable items to be compiled and transferrred.
+        sequence : RootSequence
+            Sequence to compile and transfer.
 
         driver : object, optional
             Instrument driver to use to transfer the sequence once compiled.
@@ -83,13 +82,19 @@ class AWG5014Context(BaseContext):
             Errors that occured during compilation.
 
         """
+        items, errors = self.preprocess_sequence(sequence)
+
+        if errors:
+            return False, {}, errors
+
         duration = max([pulse.stop for pulse in items])
+        if sequence.time_constrained:
         # Total length of the sequence to send to the AWG
-        if duration <= sequence_duration:
-            duration = sequence_duration
-        else:
-            return False, {'Sequence_duration':
-                           'Not all pulses fit in given duration'}
+            if duration <= sequence.duration:
+                duration = sequence.duration
+            else:
+                return False, {'Sequence_duration':
+                               'Not all pulses fit in given duration'}
 
         # Collect the channels used in the pulses' sequence
         used_channels = set([pulse.channel[:3] for pulse in items])
@@ -100,7 +105,7 @@ class AWG5014Context(BaseContext):
             self.sampling_frequency
 
         # Length of the sequence
-        sequence_length = int(round(sequence_duration * time_to_index))
+        sequence_length = int(round(duration * time_to_index))
 
         # create 3 array for each used_channels
         array_analog = {}
