@@ -48,6 +48,14 @@ class AWGChannel(BaseInstrument):
                                                             name)
                             )
 
+    @secure_communication()
+    def clear_sequence(self):
+        """Clear the sequence played by this channel.
+
+        """
+        with self.secure():
+            self._AWG.write('SOURCE{}:WAVEFORM ""'.format(self._channel))
+
     @contextmanager
     def secure(self):
         """ Lock acquire and release method

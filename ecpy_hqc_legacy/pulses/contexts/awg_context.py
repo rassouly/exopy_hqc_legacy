@@ -33,9 +33,9 @@ class AWG5014Context(BaseContext):
     #: Should the transferred sequences be selected on the matching channels.
     select_after_transfer = Bool(True).tag(pref=True)
 
-    #: Should the unused channels be cleaned (to avoid attempting to play an
+    #: Should the unused channels be cleared (to avoid attempting to play an
     #: old sequence).
-    clean_unused_channels = Bool(True).tag(pref=True)
+    clear_unused_channels = Bool(True).tag(pref=True)
 
     #: Should the instrument be made to run the sequences after a successful
     #: transfer.
@@ -230,12 +230,13 @@ class AWG5014Context(BaseContext):
                                sequences[ch_id])
 
         if self.select_after_transfer:
+            driver.sampling_frequency = self.sampling_frequency
             for ch_id in driver.defined_channels:
                 ch = driver.get_channel(ch_id)
                 if ch_id in sequences:
                     ch.select_sequence(infos['sequence_ch%s' % ch_id])
-                elif self.clean_unused_channels:
-                    ch.clean_sequence()
+                elif self.clear_unused_channels:
+                    ch.clear_sequence()
 
         if self.run_after_transfer:
             for ch_id in sequences:

@@ -54,8 +54,8 @@ enamldef AWG5014ContextView(BaseContextView): view:
         checked := context.select_after_transfer
 
     CheckBox: cle:
-        text = 'Clean unused channels'
-        checked := context.clean_unused_channels
+        text = 'Clear unused channels'
+        checked := context.clear_unused_channels
         tool_tip = fill('Clean unused channel if the sequence is'
                         ' selected after the transfer.')
 
