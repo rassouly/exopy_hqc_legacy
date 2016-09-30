@@ -26,8 +26,8 @@ enamldef HqcLegacyPulsesManifest(PluginManifest):
         point = 'ecpy.pulses.contexts'
         Contexts:
             path = 'ecpy_hqc_legacy.pulses.contexts'
-        Context:
-            context = 'awg_context:AWG5014Context'
-            view = 'views.awg_context_view:AWG5014ContextView'
-            instruments = ['ecpy_hqc_legacy.Legacy.AWG']
+            Context:
+                context = 'awg_context:AWG5014Context'
+                view = 'views.awg_context_view:AWG5014ContextView'
+                instruments = ['ecpy_hqc_legacy.Legacy.AWG']
 

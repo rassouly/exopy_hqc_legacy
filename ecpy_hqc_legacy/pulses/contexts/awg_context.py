@@ -15,7 +15,7 @@ from __future__ import (division, unicode_literals, print_function,
 import numpy as np
 from atom.api import Unicode, Float, Bool, set_default
 
-from ecpy.pulses.api import BaseContext, TIME_CONVERSION
+from ecpy_pulses.pulses.api import BaseContext, TIME_CONVERSION
 
 
 class AWG5014Context(BaseContext):
@@ -40,11 +40,6 @@ class AWG5014Context(BaseContext):
     #: Should the instrument be made to run the sequences after a successful
     #: transfer.
     run_after_transfer = Bool(True).tag(pref=True)
-
-    channels = set_default(('Ch1_A', 'Ch1_M1', 'Ch1_M2',
-                            'Ch2_A', 'Ch2_M1', 'Ch2_M2',
-                            'Ch3_A', 'Ch3_M1', 'Ch3_M2',
-                            'Ch4_A', 'Ch4_M1', 'Ch4_M2'))
 
     time_unit = set_default('mus')
 
@@ -90,11 +85,7 @@ class AWG5014Context(BaseContext):
         duration = max([pulse.stop for pulse in items])
         if sequence.time_constrained:
         # Total length of the sequence to send to the AWG
-            if duration <= sequence.duration:
-                duration = sequence.duration
-            else:
-                return False, {'Sequence_duration':
-                               'Not all pulses fit in given duration'}
+            duration = sequence.duration
 
         # Collect the channels used in the pulses' sequence
         used_channels = set([pulse.channel[:3] for pulse in items])
@@ -190,7 +181,7 @@ class AWG5014Context(BaseContext):
                      sequence_ch3='',
                      sequence_ch4='')
         for c in used_channels:
-            infos['sequence_ch%s' % c] = name + '_' + c
+            infos['sequence_ch%s' % c[2]] = name + '_' + c
 
         # In the absence of a driver we stop here
         if not driver:
@@ -240,7 +231,7 @@ class AWG5014Context(BaseContext):
 
         if self.run_after_transfer:
             for ch_id in sequences:
-                ch = driver.get_channel[ch_id]
+                ch = driver.get_channel(ch_id)
                 ch.output_state = 'ON'
             driver.running = True
 

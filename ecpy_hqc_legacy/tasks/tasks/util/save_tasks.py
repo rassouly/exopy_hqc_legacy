@@ -105,8 +105,8 @@ class SaveTask(SimpleTask):
                     self.file_object = open(full_path, mode)
                 except IOError as e:
                     log = logging.getLogger()
-                    mes = cleandoc('''In {}, failed to open the specified
-                                    file {}'''.format(self.name, e))
+                    mes = ('In {}, failed to open the specified '
+                           'file {}').format(self.name, e)
                     log.error(mes)
                     self.root.should_stop.set()
 
@@ -178,8 +178,8 @@ class SaveTask(SimpleTask):
             if self.file_mode == 'New' and os.path.isfile(full_path):
                 overwrite = True
                 traceback[err_path + '-file'] = \
-                    cleandoc('''File already exists, running the measure will
-                    override it.''')
+                    ('File already exists, running the measure will '
+                     'override it.')
 
             try:
                 f = open(full_path, 'ab')
