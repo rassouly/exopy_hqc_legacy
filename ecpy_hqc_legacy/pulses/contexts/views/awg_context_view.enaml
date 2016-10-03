@@ -23,7 +23,7 @@ from ecpy_pulses.pulses.api import BaseContextView
 
 
 enamldef AWG5014ContextView(BaseContextView): view:
-    """ View for a pulse item.
+    """View for a pulse item.
 
     """
     hug_height = 'strong'
@@ -34,7 +34,9 @@ enamldef AWG5014ContextView(BaseContextView): view:
     Label: seq_lab:
         text = 'Sequence name'
     QtLineCompleter: seq_val:
-        value := context.sequence_name
+        text := context.sequence_name
+        # XXX add autocompletion (need the context to access the sequence, or
+        # at least the view)
         tool_tip = fill('You can use curly braces to format a sequence '
                         'variable in the name.')
 
@@ -46,7 +48,7 @@ enamldef AWG5014ContextView(BaseContextView): view:
 
     Label: fre_lab:
         text = 'Sampling freq (Hz)'
-    FloatField: fre_lab:
+    FloatField: fre_val:
         value := context.sampling_frequency
 
     CheckBox: sel:

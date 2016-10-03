@@ -12,15 +12,21 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
-import numpy as np
 import pytest
+import enaml
+import numpy as np
+
+from ecpy.testing.util import show_and_close_widget
+
 from ecpy_pulses.pulses.sequences.base_sequences import RootSequence, BaseSequence
 from ecpy_pulses.pulses.pulse import Pulse
 from ecpy_pulses.pulses.shapes.square_shape import SquareShape
 from ecpy_pulses.pulses.shapes.modulation import Modulation
 
 from ecpy_hqc_legacy.pulses.contexts.awg_context import AWG5014Context
-
+with enaml.imports():
+    from ecpy_hqc_legacy.pulses.contexts.views.awg_context_view\
+        import AWG5014ContextView
 
 class DummyChannel(object):
     """Dummy AWG channel.
@@ -328,3 +334,13 @@ class TestAWGContext(object):
         for i in (1, 2, 3):
             assert (self.driver.channels[i].array is
                     self.driver.sequences['Test_Ch%d' % i])
+
+def test_awg5014_context_view(windows):
+    """Test displaying the context view.
+    
+    """
+    root = RootSequence()
+    context = AWG5014Context(sequence_name='Test')
+    root.context = context
+    show_and_close_widget(AWG5014ContextView(context=context))#, sequence=root)
+    
