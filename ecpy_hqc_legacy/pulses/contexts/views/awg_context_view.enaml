@@ -35,8 +35,7 @@ enamldef AWG5014ContextView(BaseContextView): view:
         text = 'Sequence name'
     QtLineCompleter: seq_val:
         text := context.sequence_name
-        # XXX add autocompletion (need the context to access the sequence, or
-        # at least the view)
+        entries_updater = sequence.get_accessible_vars
         tool_tip = fill('You can use curly braces to format a sequence '
                         'variable in the name.')
 
