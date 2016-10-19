@@ -15,6 +15,7 @@ requirements:
     - python
     - future
   run:
+    - python
     - ecpy
     - numpy
     - h5py

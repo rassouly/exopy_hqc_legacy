@@ -25,6 +25,16 @@ TASK_DEP_TYPE = 'ecpy.task'
 #: Dependency id for task interfaces.
 INTERFACE_DEP_TYPE = 'ecpy.tasks.interface'
 
+#: Dependency id for the pulse sequences items.
+ITEM_DEP_TYPE = 'ecpy.pulses.item'
+
+#: Dependency id for the pulse sequences shapes.
+SHAPE_DEP_TYPE = 'ecpy.pulses.shape'
+
+#: Dependency id for pulse sequence contexts.
+CONTEXT_DEP_TYPE = 'ecpy.pulses.context'
+
+
 #: Mapping between task_class (in HQCMeas) and task_id (in ecpy)
 TASKS = {'ComplexTask': 'ecpy.ComplexTask',
          'WhileTask': 'ecpy.WhileTask',
@@ -54,7 +64,8 @@ TASKS = {'ComplexTask': 'ecpy.ComplexTask',
          'PNASweepTask': 'ecpy_hqc_legacy.PNASweepTask',
          'PNAGetTraces': 'ecpy_hqc_legacy.PNAGetTraces',
          'SetDCVoltageTask': 'ecpy_hqc_legacy.SetDCVoltageTask',
-         'DemodSPTask': 'ecpy_hqc_legacy.DemodSPTask'}
+         'DemodSPTask': 'ecpy_hqc_legacy.DemodSPTask',
+         'TransferPulseSequenceTask': 'ecpy_pulses.TransferPulseSequenceTask'}
 
 #: Mapping between interface_class (in HQCMeas) and interface_id (in ecpy)
 INTERFACES = {'IterableLoopInterface':
@@ -73,6 +84,18 @@ INTERFACES = {'IterableLoopInterface':
               'CSVLoadInterface':
               ('ecpy_hqc_legacy.LoadArrayTask:'
                'ecpy_hqc_legacy.CSVLoadInterface')}
+
+#: Mapping between item_class (in HQCMeas) and item_id (in ecpy_pulses)
+ITEMS = {'Pulse': 'ecpy_pulses.Pulse',
+         'Sequence': 'ecpy_pulses.BaseSequence',
+         'ConditionalSequence': 'ecpy_pulses.ConditionalSequence',
+         'RootSequence': 'ecpy_pulses.RootSequence'}
+
+#: Mapping between shape_class (in HQCMeas) and shape_id (in ecpy_pulses)
+SHAPES = {'SquareShape': 'ecpy_pulses.SquareShape'}
+
+#: Mapping between context_class (in HQCMeas) and context_id (in ecpy_pulses)
+CONTEXTS = {'AWGContext': 'ecpy_hqc_legacy.AWG5014Context'}
 
 #: Mapping between monitor_class and monitor_id
 MONITORS = {'hqc_meas.measure.monitors.text_monitor':
@@ -165,11 +188,57 @@ def update_task_interface(interface_config):
 
     """
     old_id = interface_config['interface_class']
+    if old_id in ('AWGTransferInterface', 'TaborTransferInterface'):
+        interface_config['__to_clear__'] = True
+        return
+
     if old_id not in INTERFACES:
         raise ValueError('Unknown or unsupported interface found %s' % old_id)
     interface_config['interface_id'] = INTERFACES[old_id]
     del interface_config['interface_class']
     interface_config['dep_type'] = INTERFACE_DEP_TYPE
+
+
+def update_item(item_config):
+    """Update a pulse sequence item.
+
+    """
+    old_id = item_config['item_class']
+    if old_id not in ITEMS:
+        raise ValueError('Unknown or unsupported sequence found %s' % old_id)
+    item_config['item_id'] = ITEMS[old_id]
+    del item_config['item_class']
+    item_config['dep_type'] = ITEM_DEP_TYPE
+
+    if old_id == 'Pulse':
+        if 'modulation' in item_config:
+            mod = item_config['modulation']
+            mod['dep_type'] = 'ecpy.pulses.modulation'
+            mod['modulation_id'] = 'ecpy_pulses.Modulation'
+
+
+def update_shape(shape_config):
+    """Update a pulse shape.
+
+    """
+    old_id = shape_config['shape_class']
+    if old_id not in SHAPES:
+        raise ValueError('Unknown or unsupported shape found %s' % old_id)
+    shape_config['shape_id'] = SHAPES[old_id]
+    del shape_config['shape_class']
+    shape_config['dep_type'] = SHAPE_DEP_TYPE
+
+
+def update_context(context_config):
+    """Update a sequence context.
+
+    """
+    old_id = context_config['context_class']
+    if old_id not in CONTEXTS:
+        raise ValueError('Unknown or unsupported context found %s' % old_id)
+    context_config['context_id'] = CONTEXTS[old_id]
+    del context_config['context_class']
+    context_config['dep_type'] = CONTEXT_DEP_TYPE
 
 
 def update_monitor(config):
@@ -206,17 +275,19 @@ def iterate_on_sections(section, action_mapping):
         section under inspection.
 
     """
-    for s in section.sections:
-        s = section[s]
+    for s in list(section.sections):
+        s_config = section[s]
         action = None
         for t in action_mapping:
-            if t(s):
+            if t(s_config):
                 action = action_mapping[t]
                 break
         if action is None:
             raise ValueError('No matching action could be found for %s' % s)
-        action(s)
-        iterate_on_sections(s, action_mapping)
+        action(s_config)
+        if '__to_clear__' in s_config:
+            del section[s]
+        iterate_on_sections(s_config, action_mapping)
 
 
 def convert_measure(meas_path, archive_folder=None, dest_folder=None):
@@ -246,7 +317,11 @@ def convert_measure(meas_path, archive_folder=None, dest_folder=None):
     iterate_on_sections(config['root_task'],
                         {lambda x: 'task_class' in x: update_task,
                          lambda x: 'interface_class' in x:
-                             update_task_interface})
+                             update_task_interface,
+                         lambda x: 'item_class' in x: update_item,
+                         lambda x: 'shape_class' in x: update_shape,
+                         lambda x: 'context_class' in x: update_context,
+                         lambda x: 'modulation_id' in x: lambda x: x})
 
     #: Update the monitors and delete the other non-existing tools
     monitors = {}

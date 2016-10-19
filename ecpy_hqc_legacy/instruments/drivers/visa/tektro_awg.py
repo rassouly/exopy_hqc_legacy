@@ -48,6 +48,14 @@ class AWGChannel(BaseInstrument):
                                                             name)
                             )
 
+    @secure_communication()
+    def clear_sequence(self):
+        """Clear the sequence played by this channel.
+
+        """
+        with self.secure():
+            self._AWG.write('SOURCE{}:WAVEFORM ""'.format(self._channel))
+
     @contextmanager
     def secure(self):
         """ Lock acquire and release method
@@ -431,26 +439,20 @@ class AWG(VisaInstrument):
             return channel
 
     @secure_communication()
-    def to_send(self, name, waveform, initialized):
+    def to_send(self, name, waveform):
         """Command to send to the instrument. waveform = string of a bytearray
 
         """
         numbyte = len(waveform)
         looplength = numbyte//2
-        if not initialized:
-            self.write("WLIST:WAVEFORM:DELETE '{}'".format(name))
-            self.write("WLIST:WAVEFORM:NEW '{}' , {}, INTeger" .format(name,
-                                                                       looplength))
-            initialized = True
+        self.write("WLIST:WAVEFORM:DELETE '{}'".format(name))
+        self.write("WLIST:WAVEFORM:NEW '{}' , {}, INTeger" .format(name,
+                                                                   looplength))
 
-        numApresDiese = len('{}'.format(numbyte))
-        header = "WLIS:WAV:DATA '{}',0,{},#{}{}".format(name, looplength,
-                                                        numApresDiese,
-                                                        numbyte)
-        self.write('{}{}'.format(header, waveform))
+        header = "WLIS:WAV:DATA '{}',0,{},".format(name, looplength)
+        # 
+        self._driver.write_binary_values(header, waveform, datatype='B')
         self.write('*WAI')
-
-        return initialized
 
     @instrument_property
     @secure_communication()
