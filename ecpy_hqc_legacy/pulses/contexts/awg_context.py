@@ -259,5 +259,5 @@ class AWG5014Context(BaseContext):
         """Reset the sampling_time property.
 
         """
-        member = self.get_member('sampling_time')
+        member = self.get_member(str('sampling_time'))  # HINT C API
         member.reset(self)

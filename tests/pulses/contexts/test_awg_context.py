@@ -71,7 +71,7 @@ class TestAWGContext(object):
         self.compile = self.context.compile_and_transfer_sequence
         self.driver = DummyDriver()
         self.root.context = self.context
-        
+
     def test_changing_unit(self):
         time = self.context.sampling_time
         self.context.time_unit = 'ms'
@@ -337,10 +337,9 @@ class TestAWGContext(object):
 
 def test_awg5014_context_view(windows):
     """Test displaying the context view.
-    
+
     """
     root = RootSequence()
     context = AWG5014Context(sequence_name='Test')
     root.context = context
-    show_and_close_widget(AWG5014ContextView(context=context))#, sequence=root)
-    
+    show_and_close_widget(AWG5014ContextView(context=context, sequence=root))
