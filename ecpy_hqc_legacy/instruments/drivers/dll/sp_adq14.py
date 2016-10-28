@@ -1,26 +1,24 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : alazar935x.py
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
-"""
-
-This module defines drivers for SP devices cards using the ADQAPI.dll.
-
-:Contains:
-    SPADQ14
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Driver for the ADQ14 digitizer card.
 
 """
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
 import os
 import time
 import atexit
 import ctypes
-import timeit
 import numpy as np
 from future.builtins import str
 
-from pyclibrary import CLibrary, build_array, cast_to
+from pyclibrary import CLibrary
 
 from ..dll_tools import DllInstrument
 
@@ -66,7 +64,8 @@ class ADQControlUnit(object):
         return self._boards.index(board_id) + 1
 
     def destroy_board(self, b_id):
-        """
+        """Destroy the specified board.
+
         """
         self.library.ControlUnit_DeleteADQ(self.id, b_id)
         del self._boards[b_id-1]
@@ -82,8 +81,9 @@ class ADQControlUnit(object):
 
 
 class SPADQ14(DllInstrument):
+    """Driver for the SP Devices ADQ 14 card 2 channel AC coupled.
 
-    library = 'ADQAPI.dll'
+    """
 
     def __init__(self, connection_info, caching_allowed=True,
                  caching_permissions={}, auto_open=True):
@@ -91,15 +91,7 @@ class SPADQ14(DllInstrument):
         super(SPADQ14, self).__init__(connection_info, caching_allowed,
                                       caching_permissions, auto_open)
         self._infos = connection_info
-        cache_path = str(os.path.join(os.path.dirname(__file__),
-                                      'adq14.pycctypes.libc'))
-        library_dir = os.path.join(self._infos.get('lib_dir', ''),
-                                   'ADQAPI.dll')
-        header_dir = os.path.join(self._infos.get('header_dir', ''),
-                                  'ADQAPI.h')
-
-        self._dll = CLibrary(library_dir, [header_dir], cache=cache_path,
-                             prefix=['ADQ',  'ADQ_'], convention='cdll')
+        self._setup_library()
         self._id = None
 
         if auto_open:
@@ -130,10 +122,6 @@ class SPADQ14(DllInstrument):
         self._cu_id = cu.id
         self._id = board_id
 
-        import os
-        self._dll.ADQControlUnit_EnableErrorTrace(cu.id, 3,
-                                                  os.path.dirname(__file__).encode('utf-8'))
-
     def close_connection(self):
         """Do not explicitly close the board as it may re-arrange the boards
         indexes.
@@ -157,7 +145,7 @@ class SPADQ14(DllInstrument):
         # Set external trigger to triger on rising edge.
         self._dll.SetTriggerEdge(self._cu_id, self._id, 2, 1)
 
-    def get_traces(self, duration, delay, records_per_capture):
+    def get_traces(self, channels, duration, delay, records_per_capture):
         """Acquire the average signal on both channels.
 
         Parameters
@@ -182,29 +170,27 @@ class SPADQ14(DllInstrument):
         samples_per_sec = 500e6
         samples_per_record = int(round(samples_per_sec*duration))
 
-        assert self._dll.MultiRecordSetChannelMask(self._cu_id, self._id, 0x01)
+        mask = 0x01 if channels[0] else 0 + 0x02 if channels[1] else 0
+        assert self._dll.MultiRecordSetChannelMask(self._cu_id, self._id, mask)
         assert self._dll.MultiRecordSetup(self._cu_id, self._id,
                                           records_per_capture,
                                           samples_per_record)()
 
         # Alloc memory for both channels (using numpy arrays)
         buffer_size = samples_per_record*records_per_capture
-        ch1_buff = np.ascontiguousarray(np.empty(buffer_size, dtype=np.uint16))
-        ch2_buff = np.ascontiguousarray(np.empty(buffer_size, dtype=np.uint16))
-        buffers = (ctypes.c_void_p*2)(ch1_buff.ctypes.data_as(ctypes.c_void_p),
-                                      ch2_buff.ctypes.data_as(ctypes.c_void_p))
-#        buffers = (ctypes.c_void_p*2)(cast_to(self._dll, ch1_buff.ctypes.data,
-#                                              ctypes.c_void_p),
-#                                      cast_to(self._dll, ch1_buff.ctypes.data,
-#                                              ctypes.c_void_p))
-#        buffers = build_array(self._dll, ctypes.c_void_p, 2,
-#                              [cast_to(self._dll, ch1_buff.ctypes.data,
-#                                       ctypes.c_void_p),
-#                               cast_to(self._dll, ch2_buff.ctypes.data,
-#                                       ctypes.c_void_p)
-#                               ])
+        buffers = []
+        avg = []
+        for i, c in enumerate(channels):
+            buf = (np.ascontiguousarray(np.empty(buffer_size, dtype=np.uint16))
+                   if c else np.empty(1, dtype=np.uint16))
+            buffers.append(buf)
+            avg.append(np.zeros(samples_per_record) if c else np.zeros(1))
 
-        ch1_avg = np.zeros(samples_per_record)
+        chs = tuple([i for i, c in enumerate(channels) if c])
+        buffers = tuple(buffers)
+        avg = avg
+        buffers_ptr = (ctypes.c_void_p*2)(*(b.ctypes.data_as(ctypes.c_void_p)
+                                            for b in buffers))
 
         cu = self._cu_id
         id_ = self._id
@@ -223,110 +209,60 @@ class SPADQ14(DllInstrument):
             n_records = (acq_records(cu, id_) - retrieved_records)
             if not n_records:
                 continue
-            if not get_data(cu, id_, buffers,
+            if not get_data(cu, id_, buffers_ptr,
                             n_records*samples_per_record,
                             bytes_per_sample,
                             retrieved_records,
                             n_records,
-                            0x03,
+                            mask,
                             0,
                             samples_per_record,
                             0x00):
-                del ch1_avg, ch1_buff, ch2_buff, buffers
+                del avg, buffers
                 self._dll.DisarmTrigger(self._cu_id, self._id)
                 self._dll.MultiRecordClose(self._cu_id, self._id)
                 self.close_connection()
-                cache_path = unicode(os.path.join(os.path.dirname(__file__),
-                                     'cache/adq14.pycctypes.libc'))
-                self._dll = CLibrary('ADQAPI.dll', ['ADQAPI.h'],
-                                     cache=cache_path, prefix=['ADQ_', 'ADQ'],
-                                     convention='cdll')
+                self._setup_library()
                 self.open_connection()
                 self.configure_board()
-                return self.get_traces(duration, delay, records_per_capture)
+                return self.get_traces(channels, duration, delay,
+                                       records_per_capture)
 
-            ch1_avg += np.sum(np.reshape(ch1_buff,
-                                         (-1, samples_per_record))[:n_records],
-                              0)
+            for c in chs:
+                avg[c] += np.sum(
+                    np.reshape(buffers[c],
+                               (-1, samples_per_record))[:n_records], 0)
+
             retrieved_records += n_records
 
-        ch1_avg /= records_per_capture
+        for c in chs:
+            avg[c] /= records_per_capture
 
         self._dll.DisarmTrigger(self._cu_id, self._id)
         self._dll.MultiRecordClose(self._cu_id, self._id)
 
         # Get the offset in volt for each channel (range is 1 V)
-        ch1_offset = float(self._dll.GetAdjustableBias(cu, id_, 1)[3])/2**15*1
-#        ch2_offset = float(self._dll.GetAdjustableBias(cu, id_, 2)[3])/2**15*1
+        for c in channels:
+            i = c + 1
+            offset = float(self._dll.GetAdjustableBias(cu, id_, i)[3])/2**15*1
 
-        # Get the real values in volt
-        ch1_avg -= 2**15
-        ch1_avg /= 65535
-        ch1_avg += ch1_offset
-#        ch2_avg -= 2**15
-#        ch2_avg /= 65535
-#        ch2_avg += ch2_offset
+            # Get the real values in volt
+            avg[c] -= 2**15
+            avg[c] /= 65535
+            avg[c] += offset
 
-        return ch1_avg, None
+        return avg
 
-# Pseudo streaming version
-## Alloc memory for both channels (using numpy arrays) so that we get
-## records one by one and average them in numpy arrays (float)
-#ch1_buff = np.empty(samples_per_record, dtype=np.int16)
-#ch2_buff = np.empty(samples_per_record, dtype=np.int16)
-#buffers = build_array(self._dll, ctypes.c_void_p, 2,
-#                      [cast_to(self._dll, ch1_buff.ctypes.data,
-#                               ctypes.c_void_p),
-#                       cast_to(self._dll, ch2_buff.ctypes.data,
-#                               ctypes.c_void_p)
-#                       ])
-#ch1_avg = np.zeros(samples_per_record)
-#ch2_avg = np.zeros(samples_per_record)
-#
-#
-#retrieved_records = 0
-#cu = self._cu_id
-#id_ = self._id
-#t = 1.* samples_per_record/samples_per_sec/3
-#bytes_per_sample = self._dll.GetNofBytesPerSample(cu, id_)[2]
-#
-#self._dll.DisarmTrigger(self._cu_id, self._id)
-#while not self._dll.ArmTrigger(self._cu_id, self._id)():
-#    time.sleep(0.0001)
-#
-#while retrieved_records < records_per_capture:
-#    # Wait for a record to be acquired.
-#    total_time = 0
-#    while not self._dll.GetAcquiredAll(cu, id_)():
-#        time.sleep(t)
-#        total_time += t
-#        if total_time > 1:
-#            raise Exception('Timeout')
-#    self._dll.GetData(cu, id_, buffers,
-#                      samples_per_record, bytes_per_sample, 0,
-#                      1, 0x3, 0, samples_per_record, 0x00)
-#    ch1_avg += ch1_buff
-#    ch2_avg += ch2_buff
-#    retrieved_records += 1
-#
-#self._dll.DisarmTrigger(self._cu_id, self._id)
-#self._dll.MultiRecordClose(self._cu_id, self._id)
-#
-#ch1_avg /= records_per_capture
-#ch2_avg /= records_per_capture
-#
-## Get the offset in volt for each channel (range is 1 V)
-#ch1_offset = float(self._dll.GetAdjustableBias(cu, id_, 1)[3])/2**15*1
-#ch2_offset = float(self._dll.GetAdjustableBias(cu, id_, 2)[3])/2**15*1
-#
-## Get the real values in volt
-#ch1_avg -= 2**15
-#ch1_avg /= 65535
-#ch1_avg += ch1_offset
-#ch2_avg -= 2**15
-#ch2_avg /= 65535
-#ch2_avg += ch2_offset
-#
-#return ch1_avg, ch2_avg
+    def _setup_library(self):
+        """Load and initialize the dll.
 
-DRIVERS = {'ADQ14': SPADQ14}
+        """
+        cache_path = str(os.path.join(os.path.dirname(__file__),
+                                      'adq14.pycctypes.libc'))
+        library_dir = os.path.join(self._infos.get('lib_dir', ''),
+                                   'ADQAPI.dll')
+        header_dir = os.path.join(self._infos.get('header_dir', ''),
+                                  'ADQAPI.h')
+
+        self._dll = CLibrary(library_dir, [header_dir], cache=cache_path,
+                             prefix=['ADQ',  'ADQ_'], convention='cdll')
