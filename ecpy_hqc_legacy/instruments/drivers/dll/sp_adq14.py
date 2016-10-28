@@ -170,7 +170,7 @@ class SPADQ14(DllInstrument):
         samples_per_sec = 500e6
         samples_per_record = int(round(samples_per_sec*duration))
 
-        mask = 0x01 if channels[0] else 0 + 0x02 if channels[1] else 0
+        mask = (0x01 if channels[0] else 0) + (0x02 if channels[1] else 0)
         assert self._dll.MultiRecordSetChannelMask(self._cu_id, self._id, mask)
         assert self._dll.MultiRecordSetup(self._cu_id, self._id,
                                           records_per_capture,
@@ -181,13 +181,13 @@ class SPADQ14(DllInstrument):
         buffers = []
         avg = []
         for i, c in enumerate(channels):
-            buf = (np.ascontiguousarray(np.empty(buffer_size, dtype=np.uint16))
-                   if c else np.empty(1, dtype=np.uint16))
+            buf = (np.ascontiguousarray(np.empty(buffer_size, dtype=np.int16))
+                   if c else np.zeros(1, dtype=np.uint16))
             buffers.append(buf)
             avg.append(np.zeros(samples_per_record) if c else np.zeros(1))
 
         chs = tuple([i for i, c in enumerate(channels) if c])
-        buffers = tuple(buffers)
+        buffers = buffers
         avg = avg
         buffers_ptr = (ctypes.c_void_p*2)(*(b.ctypes.data_as(ctypes.c_void_p)
                                             for b in buffers))
@@ -241,15 +241,10 @@ class SPADQ14(DllInstrument):
         self._dll.DisarmTrigger(self._cu_id, self._id)
         self._dll.MultiRecordClose(self._cu_id, self._id)
 
-        # Get the offset in volt for each channel (range is 1 V)
-        for c in channels:
-            i = c + 1
-            offset = float(self._dll.GetAdjustableBias(cu, id_, i)[3])/2**15*1
-
-            # Get the real values in volt
-            avg[c] -= 2**15
-            avg[c] /= 65535
-            avg[c] += offset
+        # Get the offset in volt for each channel is ignored.
+        # The range is 1.9 V according to the data sheet
+        for c in chs:
+            avg[c] *= 1.9/65535
 
         return avg
 
