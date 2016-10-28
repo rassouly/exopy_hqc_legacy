@@ -19,6 +19,8 @@ requirements:
     - ecpy
     - numpy
     - h5py
+    - pyvisa
+    - pyclibrary
 
 test:
   imports:
