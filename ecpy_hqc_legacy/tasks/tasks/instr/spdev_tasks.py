@@ -93,22 +93,25 @@ class DemodSPTask(InstrumentTask):
         channels = (self.ch1_enabled, self.ch2_enabled)
         ch1, ch2 = self.driver.get_traces(channels, duration, delay,
                                           records_number)
-
         if self.ch1_enabled:
-            f1 = self.format_and_eval_string(self.freq_1)
+            f1 = self.format_and_eval_string(self.freq_1)*1e6
             phi1 = np.linspace(0, 2*np.pi*f1*duration, len(ch1))
             c1 = np.cos(phi1)
             s1 = np.sin(phi1)
-            self.write_in_database('Ch1_I', np.mean(ch1*c1))
-            self.write_in_database('Ch1_Q', np.mean(ch1*s1))
+            # The mean value of cos^2 is 0.5 hence the factor 2 to get the
+            # amplitude.
+            self.write_in_database('Ch1_I', 2*np.mean(ch1*c1))
+            self.write_in_database('Ch1_Q', 2*np.mean(ch1*s1))
 
         if self.ch2_enabled:
-            f2 = self.format_and_eval_string(self.freq_2)
+            f2 = self.format_and_eval_string(self.freq_2)*1e6
             phi2 = np.linspace(0, 2*np.pi*f2*duration, len(ch2))
             c2 = np.cos(phi2)
             s2 = np.sin(phi2)
-            self.write_in_database('Ch2_I', np.mean(ch2*c2))
-            self.write_in_database('Ch2_Q', np.mean(ch2*s2))
+            # The mean value of cos^2 is 0.5 hence the factor 2 to get the
+            # amplitude.
+            self.write_in_database('Ch2_I', 2*np.mean(ch2*c2))
+            self.write_in_database('Ch2_Q', 2*np.mean(ch2*s2))
 
     def _post_setattr_ch1_enabled(self, old, new):
         """Update the database entries based on the enabled channels.
