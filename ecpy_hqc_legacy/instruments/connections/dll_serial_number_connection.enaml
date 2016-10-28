@@ -12,45 +12,71 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
-from enaml.widgets.api import Field, Label, ToolButton
+import os
+from textwrap import fill
+
+from enaml.widgets.api import Field, Label, ToolButton, FileDialogEx
 from enaml.layout.api import hbox, vbox, grid, align
+from ecpy.instruments.api import BaseConnection
 
-from .base_connection import BaseConnection
 
-
-enamldef DLLSerialNumberConnection(BaseConnection):
+enamldef DLLConnection(BaseConnection):
     """Connection for instruments communicating via a DLL and identified by
     their serial number.
 
     """
-    #: Path to the DLL used to communicate with the instrument.
-    alias lib_path : path_val.text
+    #: Directory of the DLL used to communicate with the instrument.
+    alias lib_dir : lib_val.text
+
+    #: Directory  of the Headers file
+    alias header_dir : header_val.text
 
     #: Serial number of the instrument with which the connection should be
     #: established. Specified as text.
     alias serial_number : sr_val.text
 
-    gather_infos => ():
-        return {'lib_path': lib_path, 'serial_number': serial_number}
+    enabled << not read_only
+    title = self.declaration.id
 
-    constraints = [grid([path_lab, path_val, path_exp],
+    gather_infos => ():
+        return {'lib_dir': lib_dir, 'header_dir': header_dir,
+                'serial_number': serial_number}
+
+    constraints = [grid([lib_lab, lib_val, lib_exp],
+                        [header_lab, header_val, header_exp],
                         [sr_lab, sr_val, sr_val])]
 
-    Label: path_lab:
-        text = 'Library path'
-    Field: path_val:
+    Label: lib_lab:
+        text = 'Library directory'
+    Field: lib_val:
         tool_tip = ('If left empty the program will look for it in the usual '
                     'used by your operating system')
-    ToolButton: path_exp:
+    ToolButton: lib_exp:
         hug_width = 'strong'
         text = 'E'
         clicked ::
-            filt = ['.dll', '.lib', '.so']
+            filt = ['*.dll', '*.lib', '*.so']
             path = FileDialogEx.get_open_file_name(name_filters=filt)
             if path:
-                path_val.text = path
+                lib_val.text = os.path.dirname(path)
+
+    Label: header_lab:
+        text = 'Header directory'
+    Field: header_val:
+        tool_tip = ('If left empty the program will look for it in the usual '
+                    'used by your operating system')
+    ToolButton: header_exp:
+        hug_width = 'strong'
+        text = 'E'
+        clicked ::
+            filt = ['*.h']
+            path = FileDialogEx.get_open_file_name(name_filters=filt)
+            if path:
+                header_val.text = os.path.dirname(path)
 
     Label: sr_lab:
-        text = 'Serial Number'
+        text = 'Instr id'
     Field: sr_val:
-        pass
+        tool_tip = fill('This is instrument dependent please refer to the '
+                        'instrument driver. This is generally the instrument '
+                        'serial number.')
