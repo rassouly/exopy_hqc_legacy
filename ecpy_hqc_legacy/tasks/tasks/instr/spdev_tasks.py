@@ -41,10 +41,10 @@ class DemodSPTask(InstrumentTask):
     #: Frequency of the signal sent to channel 2 in MHz
     freq_2 = Unicode('20').tag(pref=True, feval=VAL_REAL)
 
-    #: Time during which to acquire data after a trigger (s).
+    #: Time during which to acquire data after a trigger (ns).
     duration = Unicode('0').tag(pref=True, feval=VAL_REAL)
 
-    #: Time to wait after a trigger before starting acquisition (s).
+    #: Time to wait after a trigger before starting acquisition (ns).
     delay = Unicode('0').tag(pref=True, feval=VAL_REAL)
 
     #: Number of records to acquire (one per trig)
@@ -57,7 +57,6 @@ class DemodSPTask(InstrumentTask):
         """Check that parameters make sense.
 
         """
-        print('Running checks')
         test, traceback = super(DemodSPTask, self).check(*args, **kwargs)
 
         if not test:
@@ -82,28 +81,22 @@ class DemodSPTask(InstrumentTask):
         siganl for both channels.
 
         """
-        print('rr')
         if self.driver.owner != self.name:
             self.driver.owner = self.name
 
             self.driver.configure_board()
 
         records_number = self.format_and_eval_string(self.records_number)
-        delay = self.format_and_eval_string(self.delay)
-        duration = self.format_and_eval_string(self.duration)
+        delay = self.format_and_eval_string(self.delay)*1e-9
+        duration = self.format_and_eval_string(self.duration)*1e-9
 
         channels = (self.ch1_enabled, self.ch2_enabled)
-        try:
-            ch1, ch2 = self.driver.get_traces(channels, duration, delay,
-                                              records_number)
-        except Exception:
-            from traceback import print_exc
-            print_exc()
-            raise
+        ch1, ch2 = self.driver.get_traces(channels, duration, delay,
+                                          records_number)
 
         if self.ch1_enabled:
             f1 = self.format_and_eval_string(self.freq_1)
-            phi1 = np.arange(0, 2*np.pi*f1*duration, 2e-9)
+            phi1 = np.linspace(0, 2*np.pi*f1*duration, len(ch1))
             c1 = np.cos(phi1)
             s1 = np.sin(phi1)
             self.write_in_database('Ch1_I', np.mean(ch1*c1))
@@ -111,7 +104,7 @@ class DemodSPTask(InstrumentTask):
 
         if self.ch2_enabled:
             f2 = self.format_and_eval_string(self.freq_2)
-            phi2 = np.arange(0, 2*np.pi*f2*duration, 2e-9)
+            phi2 = np.linspace(0, 2*np.pi*f2*duration, len(ch2))
             c2 = np.cos(phi2)
             s2 = np.sin(phi2)
             self.write_in_database('Ch2_I', np.mean(ch2*c2))

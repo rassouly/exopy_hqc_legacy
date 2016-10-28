@@ -182,7 +182,7 @@ class SPADQ14(DllInstrument):
         samples_per_sec = 500e6
         samples_per_record = int(round(samples_per_sec*duration))
 
-#        assert self._dll.MultiRecordSetChannelMask(self._cu_id, self._id, 0x01)
+        assert self._dll.MultiRecordSetChannelMask(self._cu_id, self._id, 0x01)
         assert self._dll.MultiRecordSetup(self._cu_id, self._id,
                                           records_per_capture,
                                           samples_per_record)()
@@ -223,7 +223,6 @@ class SPADQ14(DllInstrument):
             n_records = (acq_records(cu, id_) - retrieved_records)
             if not n_records:
                 continue
-            print('Getting data')
             if not get_data(cu, id_, buffers,
                             n_records*samples_per_record,
                             bytes_per_sample,
@@ -233,7 +232,7 @@ class SPADQ14(DllInstrument):
                             0,
                             samples_per_record,
                             0x00):
-                del ch1_avg, ch1_buff, ch2_buff
+                del ch1_avg, ch1_buff, ch2_buff, buffers
                 self._dll.DisarmTrigger(self._cu_id, self._id)
                 self._dll.MultiRecordClose(self._cu_id, self._id)
                 self.close_connection()
