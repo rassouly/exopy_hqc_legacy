@@ -15,7 +15,7 @@ from __future__ import (division, unicode_literals, print_function,
 import numbers
 
 import numpy as np
-from atom.api import (Unicode, set_default)
+from atom.api import (Bool, Unicode, set_default)
 
 from ecpy.tasks.api import InstrumentTask, validators
 
@@ -29,19 +29,25 @@ class DemodSPTask(InstrumentTask):
     """Get the averaged quadratures of the signal.
 
     """
-    # Frequency of the signal sent to channel 1 in MHz
+    #: Should the acquisition on channel 1 be enabled
+    ch1_enabled = Bool(True).tag(pref=True)
+
+    #: Should the acquisition on channel 1 be enabled
+    ch2_enabled = Bool(True).tag(pref=True)
+
+    #: Frequency of the signal sent to channel 1 in MHz
     freq_1 = Unicode('20').tag(pref=True, feval=VAL_REAL)
 
-    # Frequency of the signal sent to channel 2 in MHz
+    #: Frequency of the signal sent to channel 2 in MHz
     freq_2 = Unicode('20').tag(pref=True, feval=VAL_REAL)
 
-    # Time during which to acquire data after a trigger (s).
+    #: Time during which to acquire data after a trigger (s).
     duration = Unicode('0').tag(pref=True, feval=VAL_REAL)
 
-    # Time to wait after a trigger before starting acquisition (s).
+    #: Time to wait after a trigger before starting acquisition (s).
     delay = Unicode('0').tag(pref=True, feval=VAL_REAL)
 
-    # Number of records to acquire (one per trig)
+    #: Number of records to acquire (one per trig)
     records_number = Unicode('1000').tag(pref=True, feval=VAL_INT)
 
     database_entries = set_default({'Ch1_I': 1.0, 'Ch1_Q': 1.0,
@@ -51,6 +57,7 @@ class DemodSPTask(InstrumentTask):
         """Check that parameters make sense.
 
         """
+        print('Running checks')
         test, traceback = super(DemodSPTask, self).check(*args, **kwargs)
 
         if not test:
@@ -75,6 +82,7 @@ class DemodSPTask(InstrumentTask):
         siganl for both channels.
 
         """
+        print('rr')
         if self.driver.owner != self.name:
             self.driver.owner = self.name
 
@@ -84,18 +92,52 @@ class DemodSPTask(InstrumentTask):
         delay = self.format_and_eval_string(self.delay)
         duration = self.format_and_eval_string(self.duration)
 
-        ch1, ch2 = self.driver.get_traces(duration, delay, records_number)
+        channels = (self.ch1_enabled, self.ch2_enabled)
+        try:
+            ch1, ch2 = self.driver.get_traces(channels, duration, delay,
+                                              records_number)
+        except Exception:
+            from traceback import print_exc
+            print_exc()
+            raise
 
-        f1 = self.format_and_eval_string(self.freq_1)
-        phi1 = np.arange(0, 2*np.pi*f1*duration, 2e-9)
-        c1 = np.cos(phi1)
-        s1 = np.sin(phi1)
-        self.write_in_database('Ch1_I', np.mean(ch1*c1))
-        self.write_in_database('Ch1_Q', np.mean(ch1*s1))
+        if self.ch1_enabled:
+            f1 = self.format_and_eval_string(self.freq_1)
+            phi1 = np.arange(0, 2*np.pi*f1*duration, 2e-9)
+            c1 = np.cos(phi1)
+            s1 = np.sin(phi1)
+            self.write_in_database('Ch1_I', np.mean(ch1*c1))
+            self.write_in_database('Ch1_Q', np.mean(ch1*s1))
 
-#        f2 = self.format_and_eval_string(self.freq_2)
-#        phi2 = np.arange(0, 2*np.pi*f2*duration, 2e-9)
-#        c2 = np.cos(phi2)
-#        s2 = np.sin(phi2)
-#        self.write_in_database('Ch2_I', np.mean(ch2*c2))
-#        self.write_in_database('Ch2_Q', np.mean(ch2*s2))
+        if self.ch2_enabled:
+            f2 = self.format_and_eval_string(self.freq_2)
+            phi2 = np.arange(0, 2*np.pi*f2*duration, 2e-9)
+            c2 = np.cos(phi2)
+            s2 = np.sin(phi2)
+            self.write_in_database('Ch2_I', np.mean(ch2*c2))
+            self.write_in_database('Ch2_Q', np.mean(ch2*s2))
+
+    def _post_setattr_ch1_enabled(self, old, new):
+        """Update the database entries based on the enabled channels.
+
+        """
+        self._update_entries(new, {'Ch1_I': 1.0, 'Ch1_Q': 1.0})
+
+    def _post_setattr_ch2_enabled(self, old, new):
+        """Update the database entries based on the enabled channels.
+
+        """
+        self._update_entries(new, {'Ch2_I': 1.0, 'Ch2_Q': 1.0})
+
+    def _update_entries(self, new, defaults):
+        """Update database entries.
+
+        """
+        entries = self.database_entries.copy()
+        if new:
+            entries.update(defaults)
+        else:
+            for e in defaults:
+                if e in entries:
+                    del entries[e]
+        self.database_entries = entries
