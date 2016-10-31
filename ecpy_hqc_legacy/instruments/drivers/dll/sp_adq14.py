@@ -242,7 +242,7 @@ class SPADQ14(DllInstrument):
         self._dll.MultiRecordClose(self._cu_id, self._id)
 
         # Get the offset in volt for each channel is ignored.
-        # The range is 1.9 V according to the data sheet
+        # The range is 1.9 Vpp according to the data sheet 2**16 = 65536
         for c in chs:
             avg[c] *= 1.9/65535
 
