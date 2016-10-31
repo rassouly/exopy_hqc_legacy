@@ -32,8 +32,14 @@ class DemodSPTask(InstrumentTask):
     #: Should the acquisition on channel 1 be enabled
     ch1_enabled = Bool(True).tag(pref=True)
 
-    #: Should the acquisition on channel 1 be enabled
+    #: Should the acquisition on channel 2 be enabled
     ch2_enabled = Bool(True).tag(pref=True)
+
+    #: Should the full trace be written in the database
+    ch1_trace = Bool(False).tag(pref=True)
+
+    #: Should the full trace be written in the database
+    ch2_trace = Bool(False).tag(pref=True)
 
     #: Frequency of the signal sent to channel 1 in MHz
     freq_1 = Unicode('20').tag(pref=True, feval=VAL_REAL)
@@ -63,16 +69,25 @@ class DemodSPTask(InstrumentTask):
             return test, traceback
 
         locs = {}
-        for n in ('freq_1', 'freq_2', 'duration'):
+        to_eval = (('duration',) + (('freq_1',) if self.ch1_enabled else ()) +
+                   (('freq_2',) if self.ch2_enabled else ()))
+        for n in to_eval:
             locs[n] = self.format_and_eval_string(getattr(self, n))
 
-        p1 = locs['freq_1']*1e6*locs['duration']
-        p2 = locs['freq_2']*1e6*locs['duration']
+        p1 = locs['freq_1']*1e6*locs['duration'] if self.ch1_enabled else 1.
+        p2 = locs['freq_2']*1e6*locs['duration'] if self.ch2_enabled else 1.
         if (not p1.is_integer() or not p2.is_integer()):
             test = False
             msg = ('The duration must be an integer times the period of the '
                    'demodulations.')
             traceback[self.get_error_path() + '-' + n] = msg
+
+        if self.ch1_enabled and self.ch1_trace:
+            phi1 = np.linspace(0, 2*np.pi*locs['freq_1']*locs['duration'], p1)
+            self.write_in_database('Ch1_trace', np.sin(phi1))
+        if self.ch2_enabled and self.ch2_trace:
+            phi2 = np.linspace(0, 2*np.pi*locs['freq_2']*locs['duration'], p1)
+            self.write_in_database('Ch2_trace', np.sin(phi2))
 
         return test, traceback
 
@@ -102,6 +117,8 @@ class DemodSPTask(InstrumentTask):
             # amplitude.
             self.write_in_database('Ch1_I', 2*np.mean(ch1*c1))
             self.write_in_database('Ch1_Q', 2*np.mean(ch1*s1))
+            if self.ch1_trace:
+                self.write_in_database('Ch1_trace', ch1)
 
         if self.ch2_enabled:
             f2 = self.format_and_eval_string(self.freq_2)*1e6
@@ -112,18 +129,42 @@ class DemodSPTask(InstrumentTask):
             # amplitude.
             self.write_in_database('Ch2_I', 2*np.mean(ch2*c2))
             self.write_in_database('Ch2_Q', 2*np.mean(ch2*s2))
+            if self.ch2_trace:
+                self.write_in_database('Ch2_trace', ch2)
 
     def _post_setattr_ch1_enabled(self, old, new):
         """Update the database entries based on the enabled channels.
 
         """
-        self._update_entries(new, {'Ch1_I': 1.0, 'Ch1_Q': 1.0})
+        entries = {'Ch1_I': 1.0, 'Ch1_Q': 1.0}
+        if self.ch2_trace:
+            entries['Ch1_trace'] = np.array([0, 1])
+        self._update_entries(new, entries)
 
     def _post_setattr_ch2_enabled(self, old, new):
         """Update the database entries based on the enabled channels.
 
         """
-        self._update_entries(new, {'Ch2_I': 1.0, 'Ch2_Q': 1.0})
+        entries = {'Ch2_I': 1.0, 'Ch2_Q': 1.0}
+        if self.ch2_trace:
+            entries['Ch2_trace'] = np.array([0, 1])
+        self._update_entries(new, entries)
+
+    def _post_setattr_ch1_trace(self, old, new):
+        """Update the database entries based on the trace setting.
+
+        """
+        if new and not self.ch1_enabled:
+            return
+        self._update_entries(new, {'Ch1_trace': np.array([0, 1])})
+
+    def _post_setattr_ch2_trace(self, old, new):
+        """Update the database entries based on the trace settings.
+
+        """
+        if new and not self.ch2_enabled:
+            return
+        self._update_entries(new, {'Ch2_trace': np.array([0, 1])})
 
     def _update_entries(self, new, defaults):
         """Update database entries.
