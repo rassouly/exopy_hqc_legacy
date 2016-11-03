@@ -73,6 +73,7 @@ class VisaLegacyStarter(LegacyStarter):
 
         """
         from pyvisa.rname import assemble_canonical_name
+        infos = {k: v for k, v in infos.items() if v}
         return {'resource_name': assemble_canonical_name(**infos)}
 
 
