@@ -45,8 +45,8 @@ before_install:
   - cd ..
 
   # Install ecpy dependencies
-  - $CONDA_INSTALL pyqt=4 numpy ecpy h5py ecpy_pulses
-  - $PIP_INSTALL pyvisa
+  - $CONDA_INSTALL pyqt=4 numpy ecpy h5py ecpy_pulses pyclibrary
+  - $CONDA_INSTALL pyvisa -c conda-forge
 
   # Intall test tools
   - $CONDA_INSTALL pytest
