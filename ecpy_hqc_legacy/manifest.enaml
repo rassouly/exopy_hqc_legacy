@@ -84,7 +84,7 @@ enamldef HqcLegacyManifest(PluginManifest):
                                                            ''),
                                 header_dir=defaults.get('header_dir',''))
                 return DLLConnection(read_only=read_only, declaration=self,
-                                     **defaults)
+                                     workbench=workbench, **defaults)
 
     Extension:
         id = 'instruments.drivers'

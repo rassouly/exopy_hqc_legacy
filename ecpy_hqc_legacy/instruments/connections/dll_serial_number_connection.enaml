@@ -18,6 +18,7 @@ from textwrap import fill
 from enaml.widgets.api import Field, Label, ToolButton, FileDialogEx
 from enaml.layout.api import hbox, vbox, grid, align
 from ecpy.instruments.api import BaseConnection
+from ecpy.app.icons.api import get_icon
 
 
 enamldef DLLConnection(BaseConnection):
@@ -25,6 +26,9 @@ enamldef DLLConnection(BaseConnection):
     their serial number.
 
     """
+    #: Reference to the application workbench.
+    attr workbench
+
     #: Directory of the DLL used to communicate with the instrument.
     alias lib_dir : lib_val.text
 
@@ -53,7 +57,7 @@ enamldef DLLConnection(BaseConnection):
                     'used by your operating system')
     ToolButton: lib_exp:
         hug_width = 'strong'
-        text = 'E'
+        icon = get_icon(workbench, 'folder-open')
         clicked ::
             filt = ['*.dll', '*.lib', '*.so']
             path = FileDialogEx.get_open_file_name(name_filters=filt)
