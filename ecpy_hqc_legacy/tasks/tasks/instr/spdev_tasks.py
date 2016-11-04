@@ -74,8 +74,8 @@ class DemodSPTask(InstrumentTask):
         for n in to_eval:
             locs[n] = self.format_and_eval_string(getattr(self, n))
 
-        p1 = locs['freq_1']*1e6*locs['duration'] if self.ch1_enabled else 1.
-        p2 = locs['freq_2']*1e6*locs['duration'] if self.ch2_enabled else 1.
+        p1 = locs['freq_1']*locs['duration']*1e-3 if self.ch1_enabled else 1.
+        p2 = locs['freq_2']*locs['duration']*1e-3 if self.ch2_enabled else 1.
         if (not p1.is_integer() or not p2.is_integer()):
             test = False
             msg = ('The duration must be an integer times the period of the '
@@ -86,7 +86,7 @@ class DemodSPTask(InstrumentTask):
             phi1 = np.linspace(0, 2*np.pi*locs['freq_1']*locs['duration'], p1)
             self.write_in_database('Ch1_trace', np.sin(phi1))
         if self.ch2_enabled and self.ch2_trace:
-            phi2 = np.linspace(0, 2*np.pi*locs['freq_2']*locs['duration'], p1)
+            phi2 = np.linspace(0, 2*np.pi*locs['freq_2']*locs['duration'], p2)
             self.write_in_database('Ch2_trace', np.sin(phi2))
 
         return test, traceback
