@@ -111,7 +111,10 @@ class TestAWGContext(object):
         self.root.sequence_duration = '1'
         pulse = Pulse(kind='Logical', def_1='0.1', def_2='0.5',
                       channel='Ch1_M1')
+        pulse2 = Pulse(kind='Logical', def_1='0.1', def_2='0.1',
+                      channel='Ch1_M1')
         self.root.add_child_item(0, pulse)
+        self.root.add_child_item(1, pulse2)
 
         res, infos, errors = self.compile(self.root, self.driver)
         print(errors)
