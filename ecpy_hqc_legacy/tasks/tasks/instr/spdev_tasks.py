@@ -92,8 +92,8 @@ class DemodSPTask(InstrumentTask):
         return test, traceback
 
     def perform(self):
-        """Acquire a number of traces average them and compute the demodualted
-        siganl for both channels.
+        """Acquire the averaged trace and compute the demodualted
+        signal for both channels.
 
         """
         if self.driver.owner != self.name:
@@ -137,7 +137,7 @@ class DemodSPTask(InstrumentTask):
 
         """
         entries = {'Ch1_I': 1.0, 'Ch1_Q': 1.0}
-        if self.ch2_trace:
+        if self.ch1_trace:
             entries['Ch1_trace'] = np.array([0, 1])
         self._update_entries(new, entries)
 
