@@ -145,11 +145,15 @@ class SPADQ14(DllInstrument):
         # Set external trigger to triger on rising edge.
         self._dll.SetTriggerEdge(self._cu_id, self._id, 2, 1)
 
-    def get_traces(self, channels, duration, delay, records_per_capture):
+    def get_traces(self, channels, duration, delay, records_per_capture,
+                   retry=True):
         """Acquire the average signal on both channels.
 
         Parameters
         ----------
+        channels : tuple
+            Tuple of boolean indicating which channels are active.
+
         duration : float
             Time during which to acquire the data (in seconds)
 
@@ -159,6 +163,9 @@ class SPADQ14(DllInstrument):
 
         records_per_capture : int
             Number of records to acquire (per channel)
+
+        retry : bool, optional
+            Should acquisition be tried again if data recuperation fails.
 
         """
         # Set trigger delay
@@ -201,19 +208,58 @@ class SPADQ14(DllInstrument):
             time.sleep(0.0001)
 
         # Wait for all records to be acquired.
-        retrieved_records = 0
         acq_records = self._dll.GetAcquiredRecords.func
         get_data = self._dll.GetData.func
-        while retrieved_records < records_per_capture:
-            # Wait for a record to be acquired.
-            n_records = (acq_records(cu, id_) - retrieved_records)
-            if not n_records:
-                continue
+        # For long duration ( > 1 mus) stream the data.
+        if duration >= 1e-6:
+            retrieved_records = 0
+            while retrieved_records < records_per_capture:
+                # Wait for a record to be acquired.
+                n_records = (acq_records(cu, id_) - retrieved_records)
+                if not n_records:
+                    time.sleep(1e-6)
+                    continue
+                if not get_data(cu, id_, buffers_ptr,
+                                n_records*samples_per_record,
+                                bytes_per_sample,
+                                retrieved_records,
+                                n_records,
+                                mask,
+                                0,
+                                samples_per_record,
+                                0x00):
+                    print(retrieved_records)
+                    del avg, buffers
+                    self._dll.DisarmTrigger(self._cu_id, self._id)
+                    self._dll.MultiRecordClose(self._cu_id, self._id)
+                    self.close_connection()
+                    self._setup_library()
+                    self.open_connection()
+                    self.configure_board()
+                    if retry:
+                        return self.get_traces(channels, duration, delay,
+                                               records_per_capture, False)
+                    else:
+                        msg = 'Failed to retrieve data from ADQ14'
+                        raise RuntimeError(msg)
+
+                for c in chs:
+                    avg[c] += np.sum(
+                        np.reshape(buffers[c],
+                                   (-1, samples_per_record))[:n_records], 0)
+
+                retrieved_records += n_records
+
+        # For short traces wait for all traces.
+        else:
+            while acq_records(cu, id_) < records_per_capture:
+                time.sleep(duration)
+
             if not get_data(cu, id_, buffers_ptr,
-                            n_records*samples_per_record,
+                            records_per_capture*samples_per_record,
                             bytes_per_sample,
-                            retrieved_records,
-                            n_records,
+                            0,
+                            records_per_capture,
                             mask,
                             0,
                             samples_per_record,
@@ -225,15 +271,16 @@ class SPADQ14(DllInstrument):
                 self._setup_library()
                 self.open_connection()
                 self.configure_board()
-                return self.get_traces(channels, duration, delay,
-                                       records_per_capture)
+                if retry:
+                    return self.get_traces(channels, duration, delay,
+                                           records_per_capture, False)
+                else:
+                    raise RuntimeError('Failed to retrieve data from ADQ14')
 
             for c in chs:
                 avg[c] += np.sum(
                     np.reshape(buffers[c],
-                               (-1, samples_per_record))[:n_records], 0)
-
-            retrieved_records += n_records
+                               (-1, samples_per_record)), 0)
 
         for c in chs:
             avg[c] /= records_per_capture
