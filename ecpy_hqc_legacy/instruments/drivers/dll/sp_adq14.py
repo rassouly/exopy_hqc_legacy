@@ -226,7 +226,6 @@ class SPADQ14(DllInstrument):
                             0,
                             samples_per_record,
                             0x00):
-                print(retrieved_records)
                 del avg, buffers
                 self._dll.DisarmTrigger(self._cu_id, self._id)
                 self._dll.MultiRecordClose(self._cu_id, self._id)
