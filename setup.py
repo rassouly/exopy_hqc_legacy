@@ -31,7 +31,7 @@ setup(
     zip_safe=False,
     packages=find_packages(exclude=['tests', 'tests.*']),
     package_data={'': ['*.enaml']},
-    requires=['ecpy', 'pyvisa', 'h5py', 'numpy'],
+    requires=['ecpy', 'pyvisa', 'h5py', 'numpy', 'pyclibrary'],
     install_requires=['setuptools', 'ecpy', 'pyvisa', 'h5py', 'numpy'],
     entry_points={
         'gui_scripts':

@@ -12,7 +12,11 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
+import os
+
+import enaml
 from enaml.workbench.api import PluginManifest, Extension
+from ecpy.app.api import AppStartup
 from ecpy.tasks.api import Tasks, Task, Interface
 from ecpy.instruments.api import Starter, Connection, Drivers, Driver
 
@@ -25,6 +29,29 @@ enamldef HqcLegacyManifest(PluginManifest):
 
     """
     id = 'ecpy_hqc_legacy'
+
+    Extension:
+        id = 'startup'
+        point = 'ecpy.app.startup'
+        AppStartup:
+            id = 'ecpy_hqc_legacy.instruments.directories'
+            priority = 50
+            run => (workbench, cmd_args):
+                core = workbench.get_plugin('enaml.workbench.core')
+                state = core.invoke_command('ecpy.app.states.get',
+                                            {'state_id': 'ecpy.app.directory'})
+
+                h_dir = os.path.join(state.app_directory, 'instruments',
+                                     'connections', 'headers')
+                # Create instruments subfolder if it does not exist.
+                if not os.path.isdir(h_dir):
+                    os.makedirs(h_dir)
+
+                l_dir = os.path.join(state.app_directory, 'instruments',
+                                     'connections', 'dll')
+                # Create instruments subfolder if it does not exist.
+                if not os.path.isdir(l_dir):
+                    os.makedirs(l_dir)
 
     Extension:
         id = 'instruments.starters'
@@ -45,15 +72,19 @@ enamldef HqcLegacyManifest(PluginManifest):
         id = 'instruments.connections'
         point = 'ecpy.instruments.connections'
         Connection:
-            id = 'ecpy_hqc_legacy.dll_serial_number_connection'
+            id = 'LegacyDLLConnection'
             description = ('Connection for instruments communicating via a '
                            'DLL and identified by their serial number.')
-            new => (workbench, defaults):
-                from .instruments.connections.dll_serial_number_connection\
-                    import DLLSerialNumberConnection
-                defaults = dict(lib_path=defaults.get('lib_path', ''),
-                                serial_number=default.get('serial_number', ''))
-                return DLLSerialNumberConnection(**defaults)
+            new => (workbench, defaults, read_only):
+                with enaml.imports():
+                    from .instruments.connections.dll_serial_number_connection\
+                        import DLLConnection
+                defaults = dict(lib_dir=defaults.get('lib_dir', ''),
+                                serial_number=defaults.get('serial_number',
+                                                           ''),
+                                header_dir=defaults.get('header_dir',''))
+                return DLLConnection(read_only=read_only, declaration=self,
+                                     workbench=workbench, **defaults)
 
     Extension:
         id = 'instruments.drivers'
@@ -107,7 +138,7 @@ enamldef HqcLegacyManifest(PluginManifest):
                         kind = 'DC source'
                         connections = {'VisaGPIB': {'resource_class': 'INSTR'},
                                        'VisaRS232':
-                                           {'ressource_class': 'INSTR'}
+                                           {'resource_class': 'INSTR'}
                                        }
                 Drivers:
                     manufacturer = 'Keithley'
@@ -117,7 +148,7 @@ enamldef HqcLegacyManifest(PluginManifest):
                         kind = 'Multimeter'
                         connections = {'VisaGPIB': {'resource_class': 'INSTR'},
                                        'VisaRS232':
-                                           {'ressource_class': 'INSTR'}
+                                           {'resource_class': 'INSTR'}
                                        }
                 Drivers:
                     manufacturer = 'Oxford'
@@ -126,7 +157,7 @@ enamldef HqcLegacyManifest(PluginManifest):
                         model  = 'IPS120-10'
                         connections = {'VisaGPIB': {'resource_class': 'INSTR'},
                                        'VisaRS232':
-                                           {'ressource_class': 'INSTR'}
+                                           {'resource_class': 'INSTR'}
                                        }
                 Drivers:
                     manufacturer = 'Tektronix'
@@ -147,7 +178,7 @@ enamldef HqcLegacyManifest(PluginManifest):
                         kind = 'Lock-in'
                         connections = {'VisaGPIB': {'resource_class': 'INSTR'},
                                        'VisaRS232':
-                                           {'ressource_class': 'INSTR'}
+                                           {'resource_class': 'INSTR'}
                                        }
                     Driver:
                         driver = 'lock_in_sr72_series:LockInSR7270'
@@ -183,13 +214,12 @@ enamldef HqcLegacyManifest(PluginManifest):
                         kind = 'Lock-in'
                         connections = {'VisaGPIB': {'resource_class': 'INSTR'},
                                        'VisaRS232':
-                                           {'ressource_class': 'INSTR'}
+                                           {'resource_class': 'INSTR'}
                                        }
             Drivers:
                 path = 'dll'
                 starter = 'ecpy_hqc_legacy.starter.dll'
-                connections = {'ecpy_hqc_legacy.dll_serial_number_connection':
-                               {}}
+                connections = {'LegacyDLLConnection': {}}
                 Driver:
                     driver = 'sp_adq14:SPADQ14'
                     manufacturer = 'SPDevices'
@@ -307,4 +337,4 @@ enamldef HqcLegacyManifest(PluginManifest):
                 Task:
                     task = 'spdev_tasks:DemodSPTask'
                     view = 'views.spdev_views:DemodSpView'
-                    instruments = ['ecpy_hqc_legacy.Legacy.ADQ14']
+                    instruments = ['ecpy_hqc_legacy.Legacy.SPADQ14']

@@ -84,7 +84,7 @@ class AWG5014Context(BaseContext):
 
         duration = max([pulse.stop for pulse in items])
         if sequence.time_constrained:
-        # Total length of the sequence to send to the AWG
+            # Total length of the sequence to send to the AWG
             duration = sequence.duration
 
         # Collect the channels used in the pulses' sequence
@@ -111,7 +111,7 @@ class AWG5014Context(BaseContext):
             # numpy array for marker2 init False. For AWG M2 = 0 = off
             array_M2[channel] = np.zeros(sequence_length, dtype=np.int8)
 
-        for pulse in items:
+        for pulse in [i for i in items if i.duration != 0.0]:
 
             waveform = pulse.waveform
             channel = pulse.channel[:3]

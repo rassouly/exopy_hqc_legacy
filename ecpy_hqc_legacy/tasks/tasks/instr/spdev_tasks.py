@@ -15,7 +15,7 @@ from __future__ import (division, unicode_literals, print_function,
 import numbers
 
 import numpy as np
-from atom.api import (Unicode, set_default)
+from atom.api import (Bool, Unicode, set_default)
 
 from ecpy.tasks.api import InstrumentTask, validators
 
@@ -29,19 +29,31 @@ class DemodSPTask(InstrumentTask):
     """Get the averaged quadratures of the signal.
 
     """
-    # Frequency of the signal sent to channel 1 in MHz
+    #: Should the acquisition on channel 1 be enabled
+    ch1_enabled = Bool(True).tag(pref=True)
+
+    #: Should the acquisition on channel 2 be enabled
+    ch2_enabled = Bool(True).tag(pref=True)
+
+    #: Should the full trace be written in the database
+    ch1_trace = Bool(False).tag(pref=True)
+
+    #: Should the full trace be written in the database
+    ch2_trace = Bool(False).tag(pref=True)
+
+    #: Frequency of the signal sent to channel 1 in MHz
     freq_1 = Unicode('20').tag(pref=True, feval=VAL_REAL)
 
-    # Frequency of the signal sent to channel 2 in MHz
+    #: Frequency of the signal sent to channel 2 in MHz
     freq_2 = Unicode('20').tag(pref=True, feval=VAL_REAL)
 
-    # Time during which to acquire data after a trigger (s).
+    #: Time during which to acquire data after a trigger (ns).
     duration = Unicode('0').tag(pref=True, feval=VAL_REAL)
 
-    # Time to wait after a trigger before starting acquisition (s).
+    #: Time to wait after a trigger before starting acquisition (ns).
     delay = Unicode('0').tag(pref=True, feval=VAL_REAL)
 
-    # Number of records to acquire (one per trig)
+    #: Number of records to acquire (one per trig)
     records_number = Unicode('1000').tag(pref=True, feval=VAL_INT)
 
     database_entries = set_default({'Ch1_I': 1.0, 'Ch1_Q': 1.0,
@@ -57,22 +69,31 @@ class DemodSPTask(InstrumentTask):
             return test, traceback
 
         locs = {}
-        for n in ('freq_1', 'freq_2', 'duration'):
+        to_eval = (('duration',) + (('freq_1',) if self.ch1_enabled else ()) +
+                   (('freq_2',) if self.ch2_enabled else ()))
+        for n in to_eval:
             locs[n] = self.format_and_eval_string(getattr(self, n))
 
-        p1 = locs['freq_1']*1e6*locs['duration']
-        p2 = locs['freq_2']*1e6*locs['duration']
+        p1 = locs['freq_1']*locs['duration']*1e-3 if self.ch1_enabled else 1.
+        p2 = locs['freq_2']*locs['duration']*1e-3 if self.ch2_enabled else 1.
         if (not p1.is_integer() or not p2.is_integer()):
             test = False
             msg = ('The duration must be an integer times the period of the '
                    'demodulations.')
             traceback[self.get_error_path() + '-' + n] = msg
 
+        if self.ch1_enabled and self.ch1_trace:
+            phi1 = np.linspace(0, 2*np.pi*locs['freq_1']*locs['duration'], p1)
+            self.write_in_database('Ch1_trace', np.sin(phi1))
+        if self.ch2_enabled and self.ch2_trace:
+            phi2 = np.linspace(0, 2*np.pi*locs['freq_2']*locs['duration'], p2)
+            self.write_in_database('Ch2_trace', np.sin(phi2))
+
         return test, traceback
 
     def perform(self):
-        """Acquire a number of traces average them and compute the demodualted
-        siganl for both channels.
+        """Acquire the averaged trace and compute the demodualted
+        signal for both channels.
 
         """
         if self.driver.owner != self.name:
@@ -81,21 +102,79 @@ class DemodSPTask(InstrumentTask):
             self.driver.configure_board()
 
         records_number = self.format_and_eval_string(self.records_number)
-        delay = self.format_and_eval_string(self.delay)
-        duration = self.format_and_eval_string(self.duration)
+        delay = self.format_and_eval_string(self.delay)*1e-9
+        duration = self.format_and_eval_string(self.duration)*1e-9
 
-        ch1, ch2 = self.driver.get_traces(duration, delay, records_number)
+        channels = (self.ch1_enabled, self.ch2_enabled)
+        ch1, ch2 = self.driver.get_traces(channels, duration, delay,
+                                          records_number)
+        if self.ch1_enabled:
+            f1 = self.format_and_eval_string(self.freq_1)*1e6
+            phi1 = np.linspace(0, 2*np.pi*f1*duration, len(ch1))
+            c1 = np.cos(phi1)
+            s1 = np.sin(phi1)
+            # The mean value of cos^2 is 0.5 hence the factor 2 to get the
+            # amplitude.
+            self.write_in_database('Ch1_I', 2*np.mean(ch1*c1))
+            self.write_in_database('Ch1_Q', 2*np.mean(ch1*s1))
+            if self.ch1_trace:
+                self.write_in_database('Ch1_trace', ch1)
 
-        f1 = self.format_and_eval_string(self.freq_1)
-        phi1 = np.arange(0, 2*np.pi*f1*duration, 2e-9)
-        c1 = np.cos(phi1)
-        s1 = np.sin(phi1)
-        self.write_in_database('Ch1_I', np.mean(ch1*c1))
-        self.write_in_database('Ch1_Q', np.mean(ch1*s1))
+        if self.ch2_enabled:
+            f2 = self.format_and_eval_string(self.freq_2)*1e6
+            phi2 = np.linspace(0, 2*np.pi*f2*duration, len(ch2))
+            c2 = np.cos(phi2)
+            s2 = np.sin(phi2)
+            # The mean value of cos^2 is 0.5 hence the factor 2 to get the
+            # amplitude.
+            self.write_in_database('Ch2_I', 2*np.mean(ch2*c2))
+            self.write_in_database('Ch2_Q', 2*np.mean(ch2*s2))
+            if self.ch2_trace:
+                self.write_in_database('Ch2_trace', ch2)
 
-#        f2 = self.format_and_eval_string(self.freq_2)
-#        phi2 = np.arange(0, 2*np.pi*f2*duration, 2e-9)
-#        c2 = np.cos(phi2)
-#        s2 = np.sin(phi2)
-#        self.write_in_database('Ch2_I', np.mean(ch2*c2))
-#        self.write_in_database('Ch2_Q', np.mean(ch2*s2))
+    def _post_setattr_ch1_enabled(self, old, new):
+        """Update the database entries based on the enabled channels.
+
+        """
+        entries = {'Ch1_I': 1.0, 'Ch1_Q': 1.0}
+        if self.ch1_trace:
+            entries['Ch1_trace'] = np.array([0, 1])
+        self._update_entries(new, entries)
+
+    def _post_setattr_ch2_enabled(self, old, new):
+        """Update the database entries based on the enabled channels.
+
+        """
+        entries = {'Ch2_I': 1.0, 'Ch2_Q': 1.0}
+        if self.ch2_trace:
+            entries['Ch2_trace'] = np.array([0, 1])
+        self._update_entries(new, entries)
+
+    def _post_setattr_ch1_trace(self, old, new):
+        """Update the database entries based on the trace setting.
+
+        """
+        if new and not self.ch1_enabled:
+            return
+        self._update_entries(new, {'Ch1_trace': np.array([0, 1])})
+
+    def _post_setattr_ch2_trace(self, old, new):
+        """Update the database entries based on the trace settings.
+
+        """
+        if new and not self.ch2_enabled:
+            return
+        self._update_entries(new, {'Ch2_trace': np.array([0, 1])})
+
+    def _update_entries(self, new, defaults):
+        """Update database entries.
+
+        """
+        entries = self.database_entries.copy()
+        if new:
+            entries.update(defaults)
+        else:
+            for e in defaults:
+                if e in entries:
+                    del entries[e]
+        self.database_entries = entries

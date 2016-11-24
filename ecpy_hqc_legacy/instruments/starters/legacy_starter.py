@@ -33,10 +33,15 @@ class LegacyStarter(BaseStarter):
 
         """
         c = self.format_connection_infos(connection)
+        driver = None
         try:
-            res = driver_cls(c).connected
+            driver = driver_cls(c)
+            res = driver.connected
         except Exception:
             return False, format_exc()
+        finally:
+            if driver is not None:
+                driver.close_connection()
         return res, ('Instrument does not appear to be connected but no '
                      'exception was raised.')
 
@@ -68,6 +73,7 @@ class VisaLegacyStarter(LegacyStarter):
 
         """
         from pyvisa.rname import assemble_canonical_name
+        infos = {k: v for k, v in infos.items() if v}
         return {'resource_name': assemble_canonical_name(**infos)}
 
 

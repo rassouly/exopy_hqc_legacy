@@ -21,10 +21,11 @@ with enaml.imports():
 pytest_plugins = str('ecpy.testing.tasks.fixtures'),
 
 
-@pytest.fixture
+@pytest.yield_fixture
 def task_workbench(task_workbench):
     """Task workbench in which the HqcLegacyManifest has been registered.
 
     """
     task_workbench.register(HqcLegacyManifest())
-    return task_workbench
+    yield task_workbench
+    task_workbench.unregister('ecpy_hqc_legacy')
