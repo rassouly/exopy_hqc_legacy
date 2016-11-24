@@ -6,7 +6,7 @@
 #
 # The full license is in the file LICENCE, distributed with this software.
 # -----------------------------------------------------------------------------
-"""Views for the PNA tasks.
+"""Configuration for the tests run on tasks.
 
 """
 from __future__ import (division, unicode_literals, print_function,
