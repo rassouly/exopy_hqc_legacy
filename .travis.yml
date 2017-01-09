@@ -50,7 +50,7 @@ before_install:
 
   # Intall test tools
   - $CONDA_INSTALL pytest
-  - $PIP_INSTALL pytest-cov pytest-capturelog pytest-timeout
+  - $PIP_INSTALL pytest-cov pytest-catchlog pytest-timeout
 
 install:
 
