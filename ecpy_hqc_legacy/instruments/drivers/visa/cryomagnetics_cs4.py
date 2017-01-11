@@ -6,7 +6,7 @@
 #
 # The full license is in the file LICENCE, distributed with this software.
 # -----------------------------------------------------------------------------
-"""Driver for the Cryomagnetic superconducting magnets power supply.
+"""Driver for the Cryomagnetic superconducting magnet power supply CS4.
 
 """
 from __future__ import (division, unicode_literals, print_function,
@@ -25,15 +25,24 @@ _GET_HEATER_DICT = {'0': 'Off',
 
 _ACTIVITY_DICT = {'To zero': 'SWEEP ZERO'}
 
-FIELD_CURRENT_RATIO = 0.043963
 OUT_FLUC = 2e-4
-MAXITER = 20
+MAXITER = 10
 
 
 class CS4(VisaInstrument):
-    """Driver for the CS4 superconducting magnet power supply.
 
-    """
+    def __init__(self, connection_info, caching_allowed=True,
+                 caching_permissions={}, auto_open=True):
+        super(CS4, self).__init__(connection_info, caching_allowed,
+                                  caching_permissions)
+        try:
+            mc = connection_info['magnet_conversion']
+            self.field_current_ratio = float(mc)
+        except KeyError:
+            raise InstrIOError(cleandoc('''The field to current ratio
+                 of the currently used magnet need to be specified in
+                 the instrument settings. One should also check that
+                 the switch heater current is correct.'''))
 
     @secure_communication()
     def make_ready(self):
@@ -42,6 +51,11 @@ class CS4(VisaInstrument):
         """
         self.write('UNITS T')
         self.write('RANGE 0 100')
+        # we'll only use the command sweep up (ie to upper limit)
+        # however upper limit can't be lower than lower limit for
+        # some sources : G4 for example
+        # set lower limit to lowest value
+        self.write('LLIM -7')
 
     def go_to_field(self, value, rate, auto_stop_heater=True,
                     post_switch_wait=30):
@@ -49,7 +63,7 @@ class CS4(VisaInstrument):
 
         """
         # sweeping rate is converted from T/min to A/sec
-        self.field_sweep_rate = rate / (60 * FIELD_CURRENT_RATIO)
+        self.field_sweep_rate = rate / (60 * self.field_current_ratio)
 
         if abs(self.persistent_field - value) >= OUT_FLUC:
 
@@ -69,11 +83,11 @@ class CS4(VisaInstrument):
             sleep(wait)
             niter = 0
             while abs(self.target_field) >= OUT_FLUC:
-                sleep(1)
+                sleep(5)
                 niter += 1
                 if niter > MAXITER:
-                    raise InstrIOError(cleandoc('''CS4 didn't set the field
-                        to zero after {} sec'''.format(MAXITER)))
+                    raise InstrIOError(cleandoc('''CS4 didn't set the
+                        field to zero after {} sec'''.format(5 * MAXITER)))
 
     def check_connection(self):
         pass
@@ -88,7 +102,8 @@ class CS4(VisaInstrument):
         try:
             return _GET_HEATER_DICT[heat]
         except KeyError:
-            raise ValueError(cleandoc('''The switch is in fault or absent'''))
+            raise ValueError(cleandoc('''The switch is in fault or
+                                         absent'''))
 
     @heater_state.setter
     @secure_communication()
@@ -106,7 +121,19 @@ class CS4(VisaInstrument):
     @field_sweep_rate.setter
     @secure_communication()
     def field_sweep_rate(self, rate):
-        self.write("RATE 0 {}".format(rate))
+        self.write('RATE 0 {}'.format(rate))
+
+    @instrument_property
+    def fast_sweep_rate(self):
+        """Rate at which to ramp the field when the switch heater is off.
+
+        """
+        return float(self.ask('RATE? 5'))
+
+    @field_sweep_rate.setter
+    @secure_communication()
+    def fast_sweep_rate(self, rate):
+        self.write('RATE 5 {}'.format(rate))
 
     @instrument_property
     def target_field(self):
@@ -118,26 +145,34 @@ class CS4(VisaInstrument):
     @target_field.setter
     @secure_communication()
     def target_field(self, target):
+        """Sweep the output intensity to reach the specified ULIM (in A)
+        at a rate depending on the intensity, as defined in the range(s).
+
         """
-        sweep the output intensity to reach the specified ULIM (in A)
-        at a rate depending on the intensity, as defined in the range(s)
-        """
-        wait = abs(self.target_field - target) / self.field_sweep_rate
-        wait /= FIELD_CURRENT_RATIO
-        self.write("ULIM {}".format(target))
-        self.write('SWEEP UP')
+        self.write('ULIM {}'.format(target))
+
+        if self.heater_state == 'Off':
+            wait = abs(self.target_field - target) / self.fast_sweep_rate
+            self.write('SWEEP UP FAST')
+        else:
+            wait = abs(self.target_field - target) / self.field_sweep_rate
+            # careful, need to specify slow after a fast sweep !
+            self.write('SWEEP UP SLOW')
+
+        wait /= (60 * FIELD_CURRENT_RATIO)
         sleep(wait)
         niter = 0
         while abs(self.target_field - target) >= OUT_FLUC:
-            sleep(1)
+            sleep(5)
             niter += 1
             if niter > MAXITER:
                 raise InstrIOError(cleandoc('''CS4 didn't set the field
-                    to {}'''.format(target)))
+                                               to {}'''.format(target)))
+
 
     @instrument_property
     def persistent_field(self):
-        """Last known field.
+        """Last known value of the magnet field.
 
         """
         return float(self.ask('IMAG?').strip(' T'))
@@ -157,4 +192,4 @@ class CS4(VisaInstrument):
             self.write(par)
         else:
             raise ValueError(cleandoc(''' Invalid parameter {} sent to
-                CS4 set_activity method'''.format(value)))
+                             CS4 set_activity method'''.format(value)))
