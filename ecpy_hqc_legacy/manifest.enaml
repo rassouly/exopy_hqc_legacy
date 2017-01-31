@@ -367,3 +367,12 @@ enamldef HqcLegacyManifest(PluginManifest):
                     task = 'spdev_tasks:DemodSPTask'
                     view = 'views.spdev_views:DemodSpView'
                     instruments = ['ecpy_hqc_legacy.Legacy.SPADQ14']
+                Task:
+                    task = 'set_awg_parameters:SetAWGParametersTask'
+                    view = 'views.set_awg_parameters_views:SetAWGParametersView'
+                    Interface:
+                        interface = ('set_awg_parameters:'
+                                     'TektroAWGParasInterface')
+                        views = ['views.set_awg_parameters_views:'
+                                 'TektroAWGSetParametersView']
+                        instruments = ['ecpy_hqc_legacy.Legacy.AWG']

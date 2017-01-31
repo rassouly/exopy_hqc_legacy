@@ -19,7 +19,7 @@ from atom.api import (Unicode, Int, List, Dict)
 
 from ecpy.utils.atom_util import HasPrefAtom, tagged_members
 from ecpy.tasks.api import (InstrumentTask, InterfaceableTaskMixin,
-                            InstrTaskInterface)
+                            TaskInterface)
 
 # XXX unfinished
 
@@ -196,7 +196,7 @@ class SetAWGParametersTask(InterfaceableTaskMixin, InstrumentTask):
             self._channels = channels
 
 
-class AWGParasInterface(InstrTaskInterface):
+class AWGParasInterface(TaskInterface):
     """
     """
     #: List of channel ids for this interface.

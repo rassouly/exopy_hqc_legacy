@@ -14,13 +14,13 @@ from enaml.core.api import Include, Looper
 from enaml.widgets.api import (Label, ObjectCombo, Notebook, Page, Container,
                                Splitter, SplitItem, HGroup)
 
-from hqc_meas.utils.widgets.qt_line_completer import QtLineCompleter
-from hqc_meas.tasks.tools.string_evaluation import EVALUATER_TOOLTIP
-from hqc_meas.tasks.views.base_instr_view import BaseInstrumentView
+from ecpy.utils.widgets.qt_completers import QtLineCompleter
+from ecpy.tasks.api import EVALUATER_TOOLTIP
+from ...base_instr_view import InstrView
 
 # XXX unfinished
 
-class BaseSetAWGParametersView(BaseInstrumentView):
+class BaseSetAWGParametersView(InstrView):
     """Base view not including the interface view in the hierarchy.
 
     """
@@ -45,34 +45,20 @@ class BaseSetAWGParametersView(BaseInstrumentView):
 
 enamldef SetAWGParametersView(BaseSetAWGParametersView): view:
 
-    title << task.task_name
     constraints << [vbox(hbox(driver_lab, driver_val,
                               profile_lab, profile_val, spacer),
                          *inc.objects)]
 
-    Label:  driver_lab:
-        text = 'Driver'
-    ObjectCombo: driver_val:
-        items << sorted(drivers)
-        selected := task.selected_driver
-
-    Label:  profile_lab:
-        text = 'Instr'
-    ObjectCombo: profile_val:
-        items << sorted(profiles)
-        selected := task.selected_profile
-
     Include: inc:
         objects << list(i_views)
-
-
-TASK_VIEW_MAPPING = {'SetAWGParametersTask' : SetAWGParametersView}
 
 
 enamldef TektroAWGSetParametersView(Notebook):
     """
     """
     attr interface
+    attr root
+
     tabs_closable = False
 
     Looper:
@@ -196,6 +182,3 @@ enamldef TektroAWGSetParametersView(Notebook):
                             QtLineCompleter:
                                 text := ch_m2.parameter3
 
-
-INTERFACE_VIEW_MAPPING = {'TektroAWGParasInterface':
-                          [TektroAWGSetParametersView]}
