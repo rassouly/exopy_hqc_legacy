@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+# Copyright 2015-2017 by EcpyHqcLegacy Authors, see AUTHORS for more details.
 #
 # Distributed under the terms of the BSD license.
 #
@@ -21,7 +21,6 @@ from ecpy.utils.atom_util import HasPrefAtom, tagged_members
 from ecpy.tasks.api import (InstrumentTask, InterfaceableTaskMixin,
                             TaskInterface)
 
-# XXX unfinished
 
 class AnalogicalParameters(HasPrefAtom):
     """Parameters for one analogical port of the channel.
@@ -75,11 +74,12 @@ class AWGChannelParameters(HasPrefAtom):
         traceback = {}
         i = 0
         kind = 'Analogical{}_'
-        try:
-            task.format_and_eval_string(self.active)
-        except Exception:
-            mess = 'Failed to eval active : {}'
-            traceback['Channel'] = mess.format(format_exc())
+        if self.active:
+            try:
+                task.format_and_eval_string(self.active)
+            except Exception:
+                mess = 'Failed to eval active : {}'
+                traceback['Channel'] = mess.format(format_exc())
 
         for p in chain(self.analogicals, self.logicals):
             if i == self.analogical:

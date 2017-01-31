@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
-# =============================================================================
-# module : set_awg_parameters_views.enaml
-# author : Matthieu Dartiailh
-# license : MIT license
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Copyright 2015-2017 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""View for the SetAWGParameters tasks.
+
 """
-"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
 import os
 import logging
 import traceback
@@ -18,35 +23,10 @@ from ecpy.utils.widgets.qt_completers import QtLineCompleter
 from ecpy.tasks.api import EVALUATER_TOOLTIP
 from ...base_instr_view import InstrView
 
-# XXX unfinished
 
-class BaseSetAWGParametersView(InstrView):
-    """Base view not including the interface view in the hierarchy.
+enamldef SetAWGParametersView(InstrView): view:
 
-    """
-    def _insert_interface_views(self, interface):
-        """ Update the interface when the selected driver change.
-
-        """
-        cmd = 'hqc_meas.task_manager.interface_views_request'
-        views, _ = self.core.invoke_command(cmd,
-                                            {'interface_classes':
-                                                [interface.__class__.__name__]}
-                                            )
-
-        if interface.has_view:
-            i_views = [v(self, interface=self.task.interface)
-                       for v in views[interface.__class__.__name__]]
-            self.i_views = tuple(i_views)
-
-        else:
-            self.i_views = ()
-
-
-enamldef SetAWGParametersView(BaseSetAWGParametersView): view:
-
-    constraints << [vbox(hbox(driver_lab, driver_val,
-                              profile_lab, profile_val, spacer),
+    constraints << [vbox(hbox(instr_lab, instr_selection, spacer),
                          *inc.objects)]
 
     Include: inc:
@@ -81,6 +61,7 @@ enamldef TektroAWGSetParametersView(Notebook):
                     text = 'Output'
                 QtLineCompleter: o_val:
                     text := channel.active
+                    entries_updater << task.list_accessible_database_entries
                     tool_tip = EVALUATER_TOOLTIP
 
                 Label: a:
@@ -96,6 +77,7 @@ enamldef TektroAWGSetParametersView(Notebook):
                                 text = 'Vpp (V)'
                             QtLineCompleter:
                                 text := ch_a.parameter1
+                                entries_updater << task.list_accessible_database_entries
                                 tool_tip = EVALUATER_TOOLTIP
                     SplitItem:
                         HGroup:
@@ -106,6 +88,8 @@ enamldef TektroAWGSetParametersView(Notebook):
                                 text = 'Offset (V)'
                             QtLineCompleter:
                                 text := ch_a.parameter2
+                                entries_updater << task.list_accessible_database_entries
+                                tool_tip = EVALUATER_TOOLTIP
                     SplitItem:
                         HGroup:
                             padding = 0
@@ -115,6 +99,8 @@ enamldef TektroAWGSetParametersView(Notebook):
                                 text = 'Rotation (°)'
                             QtLineCompleter:
                                 text := ch_a.parameter3
+                                entries_updater << task.list_accessible_database_entries
+                                tool_tip = EVALUATER_TOOLTIP
 
                 Label: m1:
                     text = 'Marker 1'
@@ -129,6 +115,7 @@ enamldef TektroAWGSetParametersView(Notebook):
                                 text = 'Low (V)'
                             QtLineCompleter:
                                 text := ch_m1.parameter1
+                                entries_updater << task.list_accessible_database_entries
                                 tool_tip = EVALUATER_TOOLTIP
                     SplitItem:
                         HGroup:
@@ -139,6 +126,8 @@ enamldef TektroAWGSetParametersView(Notebook):
                                 text = 'High (V)'
                             QtLineCompleter:
                                 text := ch_m1.parameter2
+                                entries_updater << task.list_accessible_database_entries
+                                tool_tip = EVALUATER_TOOLTIP
                     SplitItem:
                         HGroup:
                             padding = 0
@@ -148,6 +137,8 @@ enamldef TektroAWGSetParametersView(Notebook):
                                 text = 'Delay (ns)'
                             QtLineCompleter:
                                 text := ch_m1.parameter3
+                                entries_updater << task.list_accessible_database_entries
+                                tool_tip = EVALUATER_TOOLTIP
 
                 Label: m2:
                     text = 'Marker 2'
@@ -162,6 +153,7 @@ enamldef TektroAWGSetParametersView(Notebook):
                                 text = 'Low (V)'
                             QtLineCompleter:
                                 text := ch_m2.parameter1
+                                entries_updater << task.list_accessible_database_entries
                                 tool_tip = EVALUATER_TOOLTIP
                     SplitItem:
                         HGroup:
@@ -172,6 +164,8 @@ enamldef TektroAWGSetParametersView(Notebook):
                                 text = 'High (V)'
                             QtLineCompleter:
                                 text := ch_m2.parameter2
+                                entries_updater << task.list_accessible_database_entries
+                                tool_tip = EVALUATER_TOOLTIP
                     SplitItem:
                         HGroup:
                             padding = 0
@@ -181,4 +175,5 @@ enamldef TektroAWGSetParametersView(Notebook):
                                 text = 'Delay (ns)'
                             QtLineCompleter:
                                 text := ch_m2.parameter3
-
+                                entries_updater << task.list_accessible_database_entries
+                                tool_tip = EVALUATER_TOOLTIP
