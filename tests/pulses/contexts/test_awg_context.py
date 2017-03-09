@@ -101,7 +101,7 @@ class TestAWGContext(object):
         sequence[201:1001:2] += 2**4 + 2**3 + 4 + 2 + 1
         sequence[200:1000:2] += 255
         np.testing.assert_array_equal(self.driver.sequences['Test_Ch1'],
-                                      bytearray(sequence))
+                                      sequence.tobytes())
 
     def test_compiling_M1_pulse_selecting_but_not_clearing(self):
         self.context.clear_unused_channels = False
@@ -130,7 +130,7 @@ class TestAWGContext(object):
         sequence[1::2] = 2**5
         sequence[201:1001:2] += 2**6
         np.testing.assert_array_equal(self.driver.channels[1].array,
-                                      bytearray(sequence))
+                                      sequence.tobytes())
 
     def test_compiling_M2_pulse_selecting_and_clearing(self):
         self.driver.channels[2].array = np.zeros(10)
@@ -172,7 +172,7 @@ class TestAWGContext(object):
         sequence[1::2] = 2**7 + 2**6 + 2**5
         sequence[201:1001:2] -= 2**7
         np.testing.assert_array_equal(self.driver.channels[1].array,
-                                      bytearray(sequence))
+                                      sequence.tobytes())
 
     def test_compiling_variable_length(self):
         pulse = Pulse(kind='Logical', def_1='0.1', def_2='0.5',
@@ -193,7 +193,7 @@ class TestAWGContext(object):
         sequence[1::2] = 2**5
         sequence[21:101:2] += 2**6
         np.testing.assert_array_equal(self.driver.channels[1].array,
-                                      bytearray(sequence))
+                                      sequence.tobytes())
 
     def test_too_short_fixed_length(self):
         self.root.time_constrained = True
@@ -256,7 +256,7 @@ class TestAWGContext(object):
         sequence[1::2] = 2**5
         sequence[201:1201:2] += 2**7
         np.testing.assert_array_equal(self.driver.channels[1].array,
-                                      bytearray(sequence))
+                                      sequence.tobytes())
 
     def test_overflow_check_A(self):
         self.root.time_constrained = True
