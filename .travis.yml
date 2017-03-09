@@ -36,7 +36,7 @@ before_install:
   - conda info -a
   - conda create -n travisci --yes python=$PYTHON pip
   - source activate travisci
-  - CONDA_INSTALL="conda install  -q"
+  - CONDA_INSTALL="conda install -q"
   - PIP_INSTALL="pip install -q"
 
   # Setup conda build output directory
@@ -46,7 +46,7 @@ before_install:
   - export CONDA_BLD_PATH=$(pwd)
 
   # Install ecpy dependencies
-  - $CONDA_INSTALL pyqt=4 numpy ecpy h5py ecpy_pulses pyclibrary
+  - $CONDA_INSTALL pyqt numpy ecpy h5py ecpy_pulses pyclibrary
   - $CONDA_INSTALL pyvisa -c conda-forge
 
   # Intall test tools
