@@ -107,3 +107,23 @@ enamldef RFSetOnOffView(InstrView): view:
             text := task.switch
             entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
+
+enamldef PulseModulationView(InstrView): view:
+    """View for the PulseModulationTask.
+
+    """
+    #: Attribute set by the parent view if the task is embedded inside a
+    #: LoopTask
+    attr in_loop : bool = False
+
+    constraints = [factory(auto_grid_layout)]
+
+    Conditional:
+        condition << not in_loop
+        Label:
+            text = 'Pulse modulation'
+        QtLineCompleter:
+            hug_width = 'ignore'
+            text := task.switch
+            entries_updater << task.list_accessible_database_entries
+            tool_tip = EVALUATER_TOOLTIP
