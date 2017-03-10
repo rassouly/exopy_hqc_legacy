@@ -19,7 +19,8 @@ import numpy as np
 
 from ecpy.testing.util import show_and_close_widget
 
-from ecpy_pulses.pulses.sequences.base_sequences import RootSequence, BaseSequence
+from ecpy_pulses.pulses.sequences.base_sequences import (RootSequence,
+                                                         BaseSequence)
 from ecpy_pulses.pulses.pulse import Pulse
 from ecpy_pulses.pulses.shapes.square_shape import SquareShape
 from ecpy_pulses.pulses.shapes.modulation import Modulation
@@ -28,6 +29,7 @@ from ecpy_hqc_legacy.pulses.contexts.awg_context import AWG5014Context
 with enaml.imports():
     from ecpy_hqc_legacy.pulses.contexts.views.awg_context_view\
         import AWG5014ContextView
+
 
 class DummyChannel(object):
     """Dummy AWG channel.
@@ -44,6 +46,7 @@ class DummyChannel(object):
 
     def clear_sequence(self):
         self.array = None
+
 
 class DummyDriver(object):
     """Dummy AWG5014Driver used for testing purposes.
@@ -92,7 +95,7 @@ class TestAWGContext(object):
         assert res
         assert sorted(infos) == sorted(self.context.list_sequence_infos())
         assert not self.driver.running
-        assert 'Test_Ch1' in  self.driver.sequences
+        assert 'Test_Ch1' in self.driver.sequences
         assert len(self.driver.sequences) == 1
         assert self.driver.channels[1].array is None
 
@@ -112,7 +115,7 @@ class TestAWGContext(object):
         pulse = Pulse(kind='Logical', def_1='0.1', def_2='0.5',
                       channel='Ch1_M1')
         pulse2 = Pulse(kind='Logical', def_1='0.1', def_2='0.1',
-                      channel='Ch1_M1')
+                       channel='Ch1_M1')
         self.root.add_child_item(0, pulse)
         self.root.add_child_item(1, pulse2)
 
@@ -121,7 +124,7 @@ class TestAWGContext(object):
         assert res
         assert not self.driver.running
         assert self.driver.channels[2].array is not None
-        assert 'Test_Ch1' in  self.driver.sequences
+        assert 'Test_Ch1' in self.driver.sequences
         assert len(self.driver.sequences) == 1
         assert (self.driver.channels[1].array is
                 self.driver.sequences['Test_Ch1'])
@@ -146,7 +149,7 @@ class TestAWGContext(object):
         assert res
         assert not self.driver.running
         assert self.driver.channels[2].array is None
-        assert 'Test_Ch1' in  self.driver.sequences
+        assert 'Test_Ch1' in self.driver.sequences
         assert len(self.driver.sequences) == 1
         assert (self.driver.channels[1].array is
                 self.driver.sequences['Test_Ch1'])
@@ -163,7 +166,7 @@ class TestAWGContext(object):
         print(errors)
         assert res
         assert self.driver.running
-        assert 'Test_Ch1' in  self.driver.sequences
+        assert 'Test_Ch1' in self.driver.sequences
         assert len(self.driver.sequences) == 1
         assert (self.driver.channels[1].array is
                 self.driver.sequences['Test_Ch1'])
@@ -184,7 +187,7 @@ class TestAWGContext(object):
         print(errors)
         assert res
         assert self.driver.running
-        assert 'Test_Ch1' in  self.driver.sequences
+        assert 'Test_Ch1' in self.driver.sequences
         assert len(self.driver.sequences) == 1
         assert (self.driver.channels[1].array is
                 self.driver.sequences['Test_Ch1'])
@@ -247,7 +250,7 @@ class TestAWGContext(object):
         print(errors)
         assert res
         assert self.driver.running
-        assert 'Test_Ch1' in  self.driver.sequences
+        assert 'Test_Ch1' in self.driver.sequences
         assert len(self.driver.sequences) == 1
         assert (self.driver.channels[1].array is
                 self.driver.sequences['Test_Ch1'])
@@ -333,11 +336,12 @@ class TestAWGContext(object):
         assert res
         assert self.driver.running
         for i in (1, 2, 3):
-            assert 'Test_Ch%d' % i in  self.driver.sequences
+            assert 'Test_Ch%d' % i in self.driver.sequences
         assert len(self.driver.sequences) == 3
         for i in (1, 2, 3):
             assert (self.driver.channels[i].array is
                     self.driver.sequences['Test_Ch%d' % i])
+
 
 def test_awg5014_context_view(windows):
     """Test displaying the context view.
