@@ -56,6 +56,20 @@ class AWGChannel(BaseInstrument):
         with self.secure():
             self._AWG.write('SOURCE{}:WAVEFORM ""'.format(self._channel))
 
+    @secure_communication()
+    def set_sequence_pos(self, name, position):
+        """Sets the sequence index position to waveform name.
+
+        """
+        current_length = int(self._AWG.ask("SEQuence:LENGth?"))
+        if position > current_length:
+            self._AWG.write("SEQuence:LENGth {}".format(position))
+        self._AWG.ask('*ESR?')
+        msg = 'SEQuence:ELEMent{}:WAVeform{} "{}"'
+        self._AWG.write(msg.format(position, self._channel, name))
+        # ESR bit 5 signal a command error
+        assert int(self._AWG.ask('*ESR?')) & 2**5 == 0, 'Command failed'
+
     @contextmanager
     def secure(self):
         """ Lock acquire and release method
@@ -453,6 +467,68 @@ class AWG(VisaInstrument):
         self._driver.write_binary_values(header, waveform, datatype='B')
         self.write('*WAI')
 
+    @secure_communication()
+    def clear_sequence(self):
+        self.write("SEQuence:LENGth 0")
+
+    @secure_communication()
+    def set_goto_pos(self, position, goto):
+        """sets the goto value at position to goto
+        """
+        self.write('SEQuence:ELEMent' + str(position) + ':GOTO:STATe 1')
+        self.write('SEQuence:ELEMent' + str(position) + ':GOTO:INDex ' + str(goto))
+
+    @secure_communication()
+    def set_repeat(self, position, repeat):
+        self.write('SEQUENCE:ELEMENT' + str(position) + ':LOOP:COUNT ' + str(repeat))
+
+    @secure_communication()
+    def set_trigger_pos(self, position):
+        """sets the waveform at position to wait for trigger
+        """
+        self.write('SEQuence:ELEMent' + str(position) + ':TWAIT 1')
+
+    @instrument_property
+    @secure_communication()
+    def internal_trigger_period(self):
+        """getter for internal trigger period
+        """
+        return self.ask("TRIGGER:SEQUENCE:TIMER?")
+
+    @internal_trigger_period.setter
+    @secure_communication()
+    def internal_trigger_period(self, value):
+        """setter for internal trigger period in nanoseconds
+        """
+        self.write("TRIGGER:SEQUENCE:TIMER " + str(value) + "NS")
+
+    @instrument_property
+    @secure_communication()
+    def internal_trigger(self):
+        """getter for trigger internal or external
+        """
+        ore = self.ask("TRIGGER:SEQUENCE:SOURCE?")
+        if ore == 'INT':
+            return 'True'
+        elif ore == 'EXT':
+            return 'False'
+        else:
+            raise InstrIOError
+
+    @internal_trigger.setter
+    @secure_communication()
+    def internal_trigger(self, value):
+        """setter for internal trigger enable
+        """
+        if value in ('INT', 1, 'True'):
+            self.write('TRIGGER:SEQUENCE:SOURCE INT')
+        elif value in ('EXT', 0, 'False'):
+            self.write('TRIGGER:SEQUENCE:SOURCE EXT')
+        else:
+            mess = fill(cleandoc('''The invalid value {} was sent to
+                                 internal_trigger method''').format(value), 80)
+            raise VisaTypeError(mess)
+
     @instrument_property
     @secure_communication()
     def defined_channels(self):
@@ -604,25 +680,32 @@ class AWG(VisaInstrument):
         """
         if value in ('CONT', 'CONTINUOUS', 'continuous'):
             self.write('AWGControl:RMODe CONT')
-            if self.ask('AWGControl:RMODe?') != 'CONT':
+            if self.ask('AWGControl:RMODe?')[:-1] != 'CONT':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run mode'''))
         elif value in ('TRIG', 'TRIGGERED', 'triggered'):
             self.write('AWGControl:RMODe TRIG')
-            if self.ask('AWGControl:RMODe?') != 'TRIG':
+            if self.ask('AWGControl:RMODe?')[:-1] != 'TRIG':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run mode'''))
         elif value in ('GAT', 'GATED', 'gated'):
             self.write('AWGControl:RMODe GAT')
-            if self.ask('AWGControl:RMODe?') != 'GAT':
+            if self.ask('AWGControl:RMODe?')[:-1] != 'GAT':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run mode'''))
         elif value in ('SEQ', 'SEQUENCE', 'sequence'):
             self.write('AWGControl:RMODe SEQ')
-            if self.ask('AWGControl:RMODe?') != 'SEQ':
+            if self.ask('AWGControl:RMODe?')[:-1] != 'SEQ':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run mode'''))
         else:
             mess = fill(cleandoc('''The invalid value {} was sent to
                                  run mode method''').format(value), 80)
             raise VisaTypeError(mess)
+
+    def delete_all_waveforms(self):
+        self.write('WLIST:WAVEFORM:DELETE ALL')
+
+    def loop_infinite(self, val):
+        # val = 0 [resp: 1] sets the infinite flag off [resp: on]
+        self.write('SEQUENCE:ELEMENT1:LOOP:INFINITE {}'.format(val))
