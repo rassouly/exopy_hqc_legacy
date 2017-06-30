@@ -709,3 +709,10 @@ class AWG(VisaInstrument):
     def loop_infinite(self, val):
         # val = 0 [resp: 1] sets the infinite flag off [resp: on]
         self.write('SEQUENCE:ELEMENT1:LOOP:INFINITE {}'.format(val))
+
+    def clear_all_sequences(self):
+        """Clear the all sequences played by the AWG.
+
+        """
+        self.write('SEQuence:LENGth 0')
+

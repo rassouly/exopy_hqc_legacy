@@ -14,7 +14,7 @@ from __future__ import (division, unicode_literals, print_function,
 
 import numbers
 import numpy as np
-from atom.api import (Bool, Unicode, Enum, set_default)
+from atom.api import (Bool, Unicode, Enum, set_default, Int)
 
 from ecpy.tasks.api import InstrumentTask, validators
 
@@ -36,6 +36,8 @@ class DemodSPTask(InstrumentTask):
     # and correct each I,Q pair by the ref, then average
     average = Enum('No avg', 'Avg before demod',
                    'Avg after demod').tag(pref=True)
+
+    num_loop = Unicode('1').tag(pref=True, feval=VAL_INT)
 
     #: Should the acquisition on channel 1 be enabled
     ch1_enabled = Bool(True).tag(pref=True)
@@ -130,13 +132,16 @@ class DemodSPTask(InstrumentTask):
 
         avg_bef_demod = True if self.average == 'Avg before demod' else False
 
+        num_loop = int(self.format_and_eval_string(self.num_loop))
         records_number = self.format_and_eval_string(self.records_number)
+        records_number *= num_loop
         delay = self.format_and_eval_string(self.delay)*1e-9
         duration = self.format_and_eval_string(self.duration)*1e-9
         sampling_rate = self.format_and_eval_string(self.sampling_rate)
 
         channels = (self.ch1_enabled, self.ch2_enabled)
 
+        print('records_number = {}'.format(records_number))
         traces = self.driver.get_traces(channels, duration, delay,
                                         records_number, average=avg_bef_demod)
 
@@ -155,15 +160,16 @@ class DemodSPTask(InstrumentTask):
                 ch1 = ch1.T[:-extra].T
 
             ntraces1, nsamples1 = np.shape(ch1)
+            ch1 = ch1.reshape(int(ntraces1/num_loop), num_loop, nsamples1)
             phi1 = np.linspace(0, 2*np.pi*f1*((nsamples1-1)*2e-9), nsamples1)
             c1 = np.cos(phi1)
             s1 = np.sin(phi1)
             # The mean value of cos^2 is 0.5 hence the factor 2 to get the
             # amplitude.
-            ch1_i = 2*np.mean(ch1*c1, axis=1)
-            ch1_q = 2*np.mean(ch1*s1, axis=1)
-            ch1_i_av = ch1_i if not average else np.mean(ch1_i)
-            ch1_q_av = ch1_q if not average else np.mean(ch1_q)
+            ch1_i = 2*np.mean(ch1*c1, axis=2)
+            ch1_q = 2*np.mean(ch1*s1, axis=2)
+            ch1_i_av = ch1_i if not average else np.mean(ch1_i, axis=0)
+            ch1_q_av = ch1_q if not average else np.mean(ch1_q, axis=0)
             self.write_in_database('Ch1_I', ch1_i_av)
             self.write_in_database('Ch1_Q', ch1_q_av)
 
@@ -182,15 +188,16 @@ class DemodSPTask(InstrumentTask):
                 ch2 = ch2.T[:-extra].T
 
             ntraces2, nsamples2 = np.shape(ch2)
+            ch2 = ch2.reshape(int(ntraces2/num_loop), num_loop, nsamples2)
             phi2 = np.linspace(0, 2*np.pi*f2*((nsamples2-1)*2e-9), nsamples2)
             c2 = np.cos(phi2)
             s2 = np.sin(phi2)
             # The mean value of cos^2 is 0.5 hence the factor 2 to get the
             # amplitude.
-            ch2_i = 2*np.mean(ch2*c2, axis=1)
-            ch2_q = 2*np.mean(ch2*s2, axis=1)
-            ch2_i_av = ch2_i if not average else np.mean(ch2_i)
-            ch2_q_av = ch2_q if not average else np.mean(ch2_q)
+            ch2_i = 2*np.mean(ch2*c2, axis=2)
+            ch2_q = 2*np.mean(ch2*s2, axis=2)
+            ch2_i_av = ch2_i if not average else np.mean(ch2_i, axis=0)
+            ch2_q_av = ch2_q if not average else np.mean(ch2_q, axis=0)
             self.write_in_database('Ch2_I', ch2_i_av)
             self.write_in_database('Ch2_Q', ch2_q_av)
 
@@ -203,8 +210,8 @@ class DemodSPTask(InstrumentTask):
             normed = (ch1_i + 1j*ch1_q)/ch2_c
             chc_i = np.real(normed)
             chc_q = np.imag(normed)
-            chc_i_av = chc_i if not average else np.mean(chc_i)
-            chc_q_av = chc_q if not average else np.mean(chc_q)
+            chc_i_av = chc_i if not average else np.mean(chc_i, axis=0)
+            chc_q_av = chc_q if not average else np.mean(chc_q, axis=0)
             self.write_in_database('Chc_I', chc_i_av)
             self.write_in_database('Chc_Q', chc_q_av)
             if self.ch1_trace:

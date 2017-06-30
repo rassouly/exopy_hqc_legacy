@@ -30,9 +30,9 @@ enamldef DemodSpView(InstrView): view:
 
     """
     constraints = [vbox(
-                    grid([instr_label, traces, after, duration, average],
+                    grid([instr_label, traces, after, duration, average, num_loop],
                          [instr_selection, traces_val, after_val,
-                          duration_val, average_val]),
+                          duration_val, average_val, num_loop_val]),
                     hbox(demod1,demod2)),
                     demod1.width == demod2.width]
 
@@ -68,6 +68,13 @@ enamldef DemodSpView(InstrView): view:
                     "Avg after demod: calculate one I,Q per trace, "
                     "then average.\nThis allows to use a ref Iref, Qref "
                     "and correct each I,Q pair by the ref, then average.")
+
+    Label: num_loop:
+        text = 'Number of pulse sequences in loop'
+    QtLineCompleter: num_loop_val:
+        text := task.num_loop
+        entries_updater << task.list_accessible_database_entries
+        tool_tip = EVALUATER_TOOLTIP
 
     GroupBox: demod1:
         title = 'Channel 1 demodulation settings'
