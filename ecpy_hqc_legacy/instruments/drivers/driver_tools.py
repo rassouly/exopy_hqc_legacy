@@ -107,7 +107,7 @@ class instrument_property(property):
             super(instrument_property, self).__set__(obj, value)
 
 
-def secure_communication(max_iter=2):
+def secure_communication(max_iter=10):
     """Decorator making sure that a communication error cannot simply be
     resolved by attempting again to send a message.
 
@@ -133,7 +133,6 @@ def secure_communication(max_iter=2):
                     if i == max_iter:
                         raise
                     else:
-                        print(format_exc())
                         self.reopen_connection()
                         i += 1
 

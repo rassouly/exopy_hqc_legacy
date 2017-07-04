@@ -439,6 +439,15 @@ class AWG(VisaInstrument):
             except VisaIOError:
                 break
 
+    def clear_output_buffer(self):
+        self.timeout = 100
+        while True:
+            try:
+                self.read()
+            except VisaIOError:
+                self.timeout = 2000
+                break
+
     def get_channel(self, num):
         """
         """
@@ -632,6 +641,7 @@ class AWG(VisaInstrument):
     def running(self):
         """Run state getter method
         """
+        self.clear_output_buffer()
         run = self.ask_for_values("AWGC:RST?")[0]
         if run == 0:
             return '0 : Instrument has stopped'
@@ -667,9 +677,10 @@ class AWG(VisaInstrument):
     def run_mode(self):
         """Run mode getter method
         """
-        run_mod = self.ask("AWGControl:RMODe?")
-        if run_mod is not None:
-            return run_mod
+        self.clear_output_buffer()
+        run_mode = self.ask("AWGControl:RMODe?")
+        if run_mode is not None:
+            return run_mode
         else:
             raise InstrIOError
 
@@ -680,24 +691,24 @@ class AWG(VisaInstrument):
         """
         if value in ('CONT', 'CONTINUOUS', 'continuous'):
             self.write('AWGControl:RMODe CONT')
-            if self.ask('AWGControl:RMODe?')[:-1] != 'CONT':
+            if self.run_mode[:-1] != 'CONT':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run mode'''))
         elif value in ('TRIG', 'TRIGGERED', 'triggered'):
             self.write('AWGControl:RMODe TRIG')
-            if self.ask('AWGControl:RMODe?')[:-1] != 'TRIG':
+            if self.run_mode[:-1] != 'TRIG':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run mode'''))
         elif value in ('GAT', 'GATED', 'gated'):
             self.write('AWGControl:RMODe GAT')
-            if self.ask('AWGControl:RMODe?')[:-1] != 'GAT':
+            if self.run_mode[:-1] != 'GAT':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run mode'''))
         elif value in ('SEQ', 'SEQUENCE', 'sequence'):
             self.write('AWGControl:RMODe SEQ')
-            if self.ask('AWGControl:RMODe?')[:-1] != 'SEQ':
+            if self.run_mode[:-1] != 'SEQ':
                 raise InstrIOError(cleandoc('''Instrument did not set
-                                            correctly the run mode'''))
+                                            correctly the run mode.'''))
         else:
             mess = fill(cleandoc('''The invalid value {} was sent to
                                  run mode method''').format(value), 80)
@@ -706,13 +717,8 @@ class AWG(VisaInstrument):
     def delete_all_waveforms(self):
         self.write('WLIST:WAVEFORM:DELETE ALL')
 
-    def loop_infinite(self, val):
-        # val = 0 [resp: 1] sets the infinite flag off [resp: on]
-        self.write('SEQUENCE:ELEMENT1:LOOP:INFINITE {}'.format(val))
-
     def clear_all_sequences(self):
         """Clear the all sequences played by the AWG.
 
         """
         self.write('SEQuence:LENGth 0')
-

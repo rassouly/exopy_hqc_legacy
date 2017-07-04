@@ -141,7 +141,6 @@ class DemodSPTask(InstrumentTask):
 
         channels = (self.ch1_enabled, self.ch2_enabled)
 
-        print('records_number = {}'.format(records_number))
         traces = self.driver.get_traces(channels, duration, delay,
                                         records_number, average=avg_bef_demod)
 
@@ -200,7 +199,6 @@ class DemodSPTask(InstrumentTask):
             ch2_q_av = ch2_q if not average else np.mean(ch2_q, axis=0)
             self.write_in_database('Ch2_I', ch2_i_av)
             self.write_in_database('Ch2_Q', ch2_q_av)
-
             if self.ch2_trace:
                 ch2_av = ch2 if not average else np.mean(ch2, axis=0)
                 self.write_in_database('Ch2_trace', ch2_av)
@@ -221,15 +219,16 @@ class DemodSPTask(InstrumentTask):
                 ch1_s1 = ch1*s1
 
                 # We crunch a single dimension to compute I and Q per period
-                shape = (ntraces1, samples_per_trace//samples_per_period,
+                shape = (int(ntraces1/num_loop), num_loop,
+                         samples_per_trace//samples_per_period,
                          samples_per_period)
                 ch1_c1 = ch1_c1.reshape(shape)
-                ch1_i_t = 2*np.mean(ch1_c1, axis=2)
+                ch1_i_t = 2*np.mean(ch1_c1, axis=3)
                 ch1_s1 = ch1_s1.reshape(shape)
-                ch1_q_t = 2*np.mean(ch1_s1, axis=2)
+                ch1_q_t = 2*np.mean(ch1_s1, axis=3)
 
                 ch1_c_t = ch1_i_t + 1j*ch1_q_t
-                chc_c_t = np.transpose(np.transpose(ch1_c_t)/ch2_c)
+                chc_c_t = np.swapaxes(np.swapaxes(ch1_c_t, 0, 2)/ch2_c.T, 0, 2)
                 chc_i_t = np.real(chc_c_t)
                 chc_q_t = np.imag(chc_c_t)
 
