@@ -98,9 +98,8 @@ class Alazar935x(DllInstrument):
 
         board.setExternalTrigger(ats.DC_COUPLING, ats.ETR_5V)
 
-        triggerDelay_sec = 0.
-        triggerDelay_samples = int(triggerDelay_sec * self.samples_per_sec +
-                                   0.5)
+        triggerDelay_sec = 0
+        triggerDelay_samples = 4*int(triggerDelay_sec*self.samples_per_sec/4)
         board.setTriggerDelay(triggerDelay_samples)
 
         board.setTriggerTimeOut(0)
@@ -141,6 +140,10 @@ class Alazar935x(DllInstrument):
 
         """
         board = self.board
+
+        triggerDelay_sec = delay
+        triggerDelay_samples = 4*int(triggerDelay_sec*self.samples_per_sec/4)
+        board.setTriggerDelay(triggerDelay_samples)
 
         # Acquired only specified channels
 
