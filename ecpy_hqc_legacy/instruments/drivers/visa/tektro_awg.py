@@ -61,7 +61,12 @@ class AWGChannel(BaseInstrument):
         """Sets the sequence index position to waveform name.
 
         """
-        current_length = int(self._AWG.ask("SEQuence:LENGth?"))
+        self._AWG.clear_output_buffer()
+        try:
+            current_length = int(self._AWG.ask("SEQuence:LENGth?"))
+        except:
+            print('Could not read current_length, assuming 0')
+            current_length = 0
         if position > current_length:
             self._AWG.write("SEQuence:LENGth {}".format(position))
         self._AWG.ask('*ESR?')
@@ -657,6 +662,7 @@ class AWG(VisaInstrument):
     def running(self, value):
         """Run state setter method
         """
+        self.clear_output_buffer()
         if value in ('RUN', 1, 'True'):
             self.write('AWGC:RUN:IMM')
             if self.ask_for_values('AWGC:RST?')[0] not in (1, 2):

@@ -338,7 +338,7 @@ class SaveFileTask(SimpleTask):
         for i, v in enumerate(self.saved_values.values()):
             value = self.format_and_eval_string(v)
             values.append(value)
-            if i in self.array_values:
+            if i in self.array_values:  # if we deal with an array_type value
                 lengths.add(value.shape[0])
                 if len(value.shape) > 1:
                     log = logging.getLogger()

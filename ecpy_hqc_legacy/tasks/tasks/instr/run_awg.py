@@ -38,3 +38,4 @@ class RunAWGTask(InstrumentTask):
         else:
             self.driver.running = 0
             self.write_in_database('output', 0)
+        print('RUNNING STATE OK')

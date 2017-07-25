@@ -167,8 +167,8 @@ class DemodSPTask(InstrumentTask):
             # amplitude.
             ch1_i = 2*np.mean(ch1*c1, axis=2)
             ch1_q = 2*np.mean(ch1*s1, axis=2)
-            ch1_i_av = ch1_i if not average else np.mean(ch1_i, axis=0)
-            ch1_q_av = ch1_q if not average else np.mean(ch1_q, axis=0)
+            ch1_i_av = ch1_i.T[0] if not average else np.mean(ch1_i, axis=0)
+            ch1_q_av = ch1_q.T[0] if not average else np.mean(ch1_q, axis=0)
             self.write_in_database('Ch1_I', ch1_i_av)
             self.write_in_database('Ch1_Q', ch1_q_av)
 
@@ -195,8 +195,8 @@ class DemodSPTask(InstrumentTask):
             # amplitude.
             ch2_i = 2*np.mean(ch2*c2, axis=2)
             ch2_q = 2*np.mean(ch2*s2, axis=2)
-            ch2_i_av = ch2_i if not average else np.mean(ch2_i, axis=0)
-            ch2_q_av = ch2_q if not average else np.mean(ch2_q, axis=0)
+            ch2_i_av = ch2_i.T[0] if not average else np.mean(ch2_i, axis=0)
+            ch2_q_av = ch2_q.T[0] if not average else np.mean(ch2_q, axis=0)
             self.write_in_database('Ch2_I', ch2_i_av)
             self.write_in_database('Ch2_Q', ch2_q_av)
             if self.ch2_trace:
@@ -208,8 +208,9 @@ class DemodSPTask(InstrumentTask):
             normed = (ch1_i + 1j*ch1_q)/ch2_c
             chc_i = np.real(normed)
             chc_q = np.imag(normed)
-            chc_i_av = chc_i if not average else np.mean(chc_i, axis=0)
-            chc_q_av = chc_q if not average else np.mean(chc_q, axis=0)
+            # ZL RL: quick fix for single shot data, need to do this properly
+            chc_i_av = chc_i.T[0] if not average else np.mean(chc_i, axis=0)
+            chc_q_av = chc_q.T[0] if not average else np.mean(chc_q, axis=0)
             self.write_in_database('Chc_I', chc_i_av)
             self.write_in_database('Chc_Q', chc_q_av)
             if self.ch1_trace:
