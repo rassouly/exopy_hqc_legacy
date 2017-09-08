@@ -148,11 +148,14 @@ class DemodSPTask(InstrumentTask):
 
         ch1, ch2 = traces
 
+        #RL save space
+        pack = 1
+
         if self.ch1_enabled:
             f1 = self.format_and_eval_string(self.freq_1)*1e6
 
             # Remove points that do not belong to a full period.
-            samples_per_period = int(sampling_rate/f1)
+            samples_per_period = int(sampling_rate*pack/f1)
             samples_per_trace = int(ch1.shape[-1])
             if (samples_per_trace % samples_per_period) != 0:
                 extra = samples_per_trace % samples_per_period
@@ -180,7 +183,7 @@ class DemodSPTask(InstrumentTask):
             f2 = self.format_and_eval_string(self.freq_2)*1e6
 
             # Remove point that do not belong to a full period.
-            samples_per_period = int(sampling_rate/f2)
+            samples_per_period = int(sampling_rate*pack/f2)
             samples_per_trace = int(ch2.shape[-1])
             if (samples_per_trace % samples_per_period) != 0:
                 extra = samples_per_trace % samples_per_period
@@ -209,8 +212,9 @@ class DemodSPTask(InstrumentTask):
             chc_i = np.real(normed)
             chc_q = np.imag(normed)
             # ZL RL: quick fix for single shot data, need to do this properly
-            chc_i_av = chc_i.T[0] if not average else np.mean(chc_i, axis=0)
-            chc_q_av = chc_q.T[0] if not average else np.mean(chc_q, axis=0)
+            # chc_i.T[0]
+            chc_i_av = chc_i if not average else np.mean(chc_i, axis=0)
+            chc_q_av = chc_q if not average else np.mean(chc_q, axis=0)
             self.write_in_database('Chc_I', chc_i_av)
             self.write_in_database('Chc_Q', chc_q_av)
             if self.ch1_trace:
@@ -221,8 +225,9 @@ class DemodSPTask(InstrumentTask):
 
                 # We crunch a single dimension to compute I and Q per period
                 shape = (int(ntraces1/num_loop), num_loop,
-                         samples_per_trace//samples_per_period,
-                         samples_per_period)
+                         samples_per_trace//(samples_per_period*pack),
+                         pack*samples_per_period)
+
                 ch1_c1 = ch1_c1.reshape(shape)
                 ch1_i_t = 2*np.mean(ch1_c1, axis=3)
                 ch1_s1 = ch1_s1.reshape(shape)
@@ -234,8 +239,8 @@ class DemodSPTask(InstrumentTask):
                 chc_q_t = np.imag(chc_c_t)
 
                 if not average:
-                    chc_i_t_av = chc_i_t
-                    chc_q_t_av = chc_q_t
+                    chc_i_t_av = np.swapaxes(chc_i_t,0,1)[0]
+                    chc_q_t_av = np.swapaxes(chc_q_t,0,1)[0]
                 else:
                     chc_i_t_av = np.mean(chc_i_t, axis=0)
                     chc_q_t_av = np.mean(chc_q_t, axis=0)
