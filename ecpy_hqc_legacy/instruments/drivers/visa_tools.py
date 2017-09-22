@@ -100,30 +100,10 @@ class VisaInstrument(BaseInstrument):
 
         """
         rm = ResourceManager()
-        print(self.connection_str)
-#        i = 0
-#        # Try at most `max_iter` times to excute method
-#        max_iter = 10
-#        while i < max_iter + 1:
-#            print(i)
-#            try:
-#                self._driver = rm.open_resource(self.connection_str, open_timeout=100, **para)
-#                break
-#            # Catch all the exception specified by the driver
-#            except errors.VisaIOError as er:
-#                if i == max_iter:
-#                    raise InstrIOError(str(er))
-#                else:
-#                    try:
-#                        self._driver = rm.open_resource(self.connection_str, open_timeout=100, **para)
-#                        break
-#                    except:
-#                        i += 1
-
         try:
-            self._driver = rm.open_resource(self.connection_str, open_timeout=1000, **para)
+            self._driver = rm.open_resource(self.connection_str,
+                                            open_timeout=1000, **para)
         except errors.VisaIOError as er:
-            print('AAAHHHH')
             self._driver = None
             raise InstrIOError(str(er))
 
