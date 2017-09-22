@@ -127,7 +127,6 @@ class VisaInstrument(BaseInstrument):
                 'write_termination': self._driver.write_termination,
                 'read_termination': self._driver.read_termination,
                 }
-        print('reopenning connection')
         self._driver.close()
         self.open_connection(**para)
 
