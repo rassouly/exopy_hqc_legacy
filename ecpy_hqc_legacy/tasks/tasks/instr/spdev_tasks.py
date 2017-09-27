@@ -37,6 +37,7 @@ class DemodSPTask(InstrumentTask):
     average = Enum('No avg', 'Avg before demod',
                    'Avg after demod').tag(pref=True)
 
+    # number of loops in the pulse sequence
     num_loop = Unicode('1').tag(pref=True, feval=VAL_INT)
 
     #: Should the acquisition on channel 1 be enabled
@@ -148,7 +149,7 @@ class DemodSPTask(InstrumentTask):
 
         ch1, ch2 = traces
 
-        #RL save space
+        #  RL save space
         pack = 1
 
         if self.ch1_enabled:
@@ -239,8 +240,8 @@ class DemodSPTask(InstrumentTask):
                 chc_q_t = np.imag(chc_c_t)
 
                 if not average:
-                    chc_i_t_av = np.swapaxes(chc_i_t,0,1)[0]
-                    chc_q_t_av = np.swapaxes(chc_q_t,0,1)[0]
+                    chc_i_t_av = np.swapaxes(chc_i_t, 0, 1)[0]
+                    chc_q_t_av = np.swapaxes(chc_q_t, 0, 1)[0]
                 else:
                     chc_i_t_av = np.mean(chc_i_t, axis=0)
                     chc_q_t_av = np.mean(chc_q_t, axis=0)

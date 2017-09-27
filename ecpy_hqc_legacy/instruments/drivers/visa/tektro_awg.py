@@ -14,6 +14,7 @@ from __future__ import (division, unicode_literals, print_function,
 
 import re
 import time
+import logging
 from textwrap import fill
 from inspect import cleandoc
 from threading import Lock
@@ -65,7 +66,9 @@ class AWGChannel(BaseInstrument):
         try:
             current_length = int(self._AWG.ask("SEQuence:LENGth?"))
         except:
-            print('Could not read current_length, assuming 0')
+            log = logging.getLogger(__name__)
+            msg = 'Could not read current_length, assuming 0'
+            log.exception(msg)
             current_length = 0
         if position > current_length:
             self._AWG.write("SEQuence:LENGth {}".format(position))
@@ -721,6 +724,8 @@ class AWG(VisaInstrument):
             raise VisaTypeError(mess)
 
     def delete_all_waveforms(self):
+        """Deletes all user-defined waveforms from the currently loaded setup
+        """
         self.write('WLIST:WAVEFORM:DELETE ALL')
 
     def clear_all_sequences(self):

@@ -37,6 +37,7 @@ import inspect
 from inspect import cleandoc
 from textwrap import fill
 from functools import wraps
+import logging
 
 from ecpy.utils.traceback import format_exc
 
@@ -107,7 +108,7 @@ class instrument_property(property):
             super(instrument_property, self).__set__(obj, value)
 
 
-def secure_communication(max_iter=10):
+def secure_communication(max_iter=2):
     """Decorator making sure that a communication error cannot simply be
     resolved by attempting again to send a message.
 
@@ -133,6 +134,9 @@ def secure_communication(max_iter=10):
                     if i == max_iter:
                         raise
                     else:
+                        log = logging.getLogger(__name__)
+                        msg = 'Iterating connection %s/%s' % (i, max_iter)
+                        log.exception(msg)
                         self.reopen_connection()
                         i += 1
 

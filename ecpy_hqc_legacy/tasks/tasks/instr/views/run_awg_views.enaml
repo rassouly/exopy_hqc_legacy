@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+# Copyright 2015-2017 by EcpyHqcLegacy Authors, see AUTHORS for more details.
 #
 # Distributed under the terms of the BSD license.
 #
@@ -12,9 +12,9 @@
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
+from enaml.stdlib.fields import FloatField
 from enaml.core.api import Conditional
 from enaml.widgets.api import (GroupBox, Label, Field, ObjectCombo, CheckBox)
-from enaml.stdlib.fields import FloatField
 from enaml.layout.api import factory
 
 from textwrap import fill

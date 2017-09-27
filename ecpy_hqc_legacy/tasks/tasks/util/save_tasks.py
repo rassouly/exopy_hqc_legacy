@@ -327,7 +327,6 @@ class SaveFileTask(SimpleTask):
                     names = value.dtype.names
                     self.array_values.append(i)
                     self.array_dims.append(value.ndim)
-                    print(value.shape)
                     if names:
                         labels.extend([label + '_' + m for m in names])
                     else:
@@ -338,8 +337,6 @@ class SaveFileTask(SimpleTask):
             self.file_object.flush()
 
             self.initialized = True
-
-        print(self.array_dims)
 
         shapes_1D = set()
         shapes_2D = set()
@@ -405,7 +402,6 @@ class SaveFileTask(SimpleTask):
                         columns.append(numpy.ones(length)*val)
             else:
                 for i, val in enumerate(values):
-                    print('arghhhhh')
                     if i in self.array_values:
                         if val.ndim == 1:
                             val_2D = numpy.array([val]).T

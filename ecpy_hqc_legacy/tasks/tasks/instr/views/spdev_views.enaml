@@ -74,7 +74,11 @@ enamldef DemodSpView(InstrView): view:
     QtLineCompleter: num_loop_val:
         text := task.num_loop
         entries_updater << task.list_accessible_database_entries
-        tool_tip = EVALUATER_TOOLTIP
+        tool_tip = ('Number of loops in your pulse sequence \n '
+                    'e.g. if you have 10 pulses being played in your pulse \n'
+                    'sequence, and the number of averages is 1000, you need \n'
+                    'to group the acquired data in groups of 10, and average \n'
+                    '1000 times the points taken for the same pulse.')
 
     GroupBox: demod1:
         title = 'Channel 1 demodulation settings'

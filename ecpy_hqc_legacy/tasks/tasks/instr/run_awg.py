@@ -16,12 +16,14 @@ from atom.api import (Unicode, Bool, set_default, Enum)
 
 from ecpy.tasks.api import (InstrumentTask, InterfaceableTaskMixin,
                             validators)
+import logging
 
 
 class RunAWGTask(InstrumentTask):
     """ Task to set AWG run mode
 
     """
+    # switch to choose the AWG run mode: on or off
     switch = Unicode('Off').tag(pref=True, feval=validators.SkipLoop())
     database_entries = set_default({'output': 0})
 
@@ -38,4 +40,6 @@ class RunAWGTask(InstrumentTask):
         else:
             self.driver.running = 0
             self.write_in_database('output', 0)
-        print('RUNNING STATE OK')
+        log = logging.getLogger(__name__)
+        msg = 'AWG running state OK'
+        log.info(msg)
