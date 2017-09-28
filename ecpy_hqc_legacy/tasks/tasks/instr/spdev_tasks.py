@@ -14,7 +14,7 @@ from __future__ import (division, unicode_literals, print_function,
 
 import numbers
 import numpy as np
-from atom.api import (Bool, Unicode, Enum, set_default, Int)
+from atom.api import (Bool, Unicode, Enum, set_default)
 
 from ecpy.tasks.api import InstrumentTask, validators
 
@@ -37,7 +37,7 @@ class DemodSPTask(InstrumentTask):
     average = Enum('No avg', 'Avg before demod',
                    'Avg after demod').tag(pref=True)
 
-    # number of loops in the pulse sequence
+    #: Number of loops in the pulse sequence
     num_loop = Unicode('1').tag(pref=True, feval=VAL_INT)
 
     #: Should the acquisition on channel 1 be enabled

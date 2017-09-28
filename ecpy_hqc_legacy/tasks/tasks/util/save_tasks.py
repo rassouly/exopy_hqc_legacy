@@ -281,7 +281,8 @@ class SaveFileTask(SimpleTask):
     #: Flag indicating whether or not initialisation has been performed.
     initialized = Bool(False)
 
-    #: Column indices identified as arrays.
+    #: Column indices identified as arrays. Use to save 2D arrays in
+    #: concatenated columns.
     array_values = Value()
 
     #: Shapes of identified arrays.

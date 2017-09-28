@@ -377,7 +377,7 @@ class PNASweepTask(SingleChannelPNATask):
 
         waiting_time = self.channel_driver.sweep_time
         self.driver.fire_trigger(self.channel)
-        time.sleep(1.5*waiting_time)
+        time.sleep(waiting_time)
         while not self.driver.check_operation_completion():
             time.sleep(0.1*waiting_time)
 

@@ -37,6 +37,9 @@ class AWGChannel(BaseInstrument):
         self._channel = channel_num
 
     def reopen_connection(self):
+        """Reopens connection to insrtument
+
+        """
         self._AWG.reopen_connection()
 
     @secure_communication()
@@ -65,7 +68,7 @@ class AWGChannel(BaseInstrument):
         self._AWG.clear_output_buffer()
         try:
             current_length = int(self._AWG.ask("SEQuence:LENGth?"))
-        except:
+        except Exception:
             log = logging.getLogger(__name__)
             msg = 'Could not read current_length, assuming 0'
             log.exception(msg)
@@ -80,7 +83,7 @@ class AWGChannel(BaseInstrument):
 
     @contextmanager
     def secure(self):
-        """ Lock acquire and release method
+        """Lock acquire and release method
 
         """
         i = 0
@@ -97,7 +100,7 @@ class AWGChannel(BaseInstrument):
     @instrument_property
     @secure_communication()
     def output_state(self):
-        """ Output getter method
+        """Output getter method
 
         """
         with self.secure():
@@ -115,7 +118,7 @@ class AWGChannel(BaseInstrument):
     @output_state.setter
     @secure_communication()
     def output_state(self, value):
-        """ Output setter method. 'ON', 'OFF'
+        """Output setter method. 'ON', 'OFF'
 
         """
         with self.secure():
@@ -142,7 +145,8 @@ class AWGChannel(BaseInstrument):
     @instrument_property
     @secure_communication()
     def marker1_high_voltage(self):
-        """marker1 high voltage getter method
+        """Marker1 high voltage getter method
+
         """
         with self.secure():
             m1_HV = self._AWG.ask_for_values("SOURce{}:MARK1:VOLTage:HIGH?"
@@ -155,7 +159,8 @@ class AWGChannel(BaseInstrument):
     @marker1_high_voltage.setter
     @secure_communication()
     def marker1_high_voltage(self, value):
-        """marker1 high voltage setter method
+        """Marker1 high voltage setter method
+
         """
         with self.secure():
             self._AWG.write("SOURce{}:MARK1:VOLTage:HIGH {}"
@@ -170,7 +175,8 @@ class AWGChannel(BaseInstrument):
     @instrument_property
     @secure_communication()
     def marker2_high_voltage(self):
-        """marker2 high voltage getter method
+        """Marker2 high voltage getter method
+
         """
         with self.secure():
             m2_HV = self._AWG.ask_for_values("SOURce{}:MARK2:VOLTage:HIGH?"
@@ -183,7 +189,8 @@ class AWGChannel(BaseInstrument):
     @marker2_high_voltage.setter
     @secure_communication()
     def marker2_high_voltage(self, value):
-        """marker2 high voltage setter method
+        """Marker2 high voltage setter method
+
         """
         with self.secure():
             self._AWG.write("SOURce{}:MARK2:VOLTage:HIGH {}"
@@ -198,7 +205,8 @@ class AWGChannel(BaseInstrument):
     @instrument_property
     @secure_communication()
     def marker1_low_voltage(self):
-        """marker1 low voltage getter method
+        """Marker1 low voltage getter method
+
         """
         with self.secure():
             m1_LV = self._AWG.ask_for_values("SOURce{}:MARK1:VOLTage:LOW?"
@@ -211,7 +219,8 @@ class AWGChannel(BaseInstrument):
     @marker1_low_voltage.setter
     @secure_communication()
     def marker1_low_voltage(self, value):
-        """marker1 low voltage setter method
+        """Marker1 low voltage setter method
+
         """
         with self.secure():
             self._AWG.write("SOURce{}:MARK1:VOLTage:LOW {}"
@@ -226,7 +235,8 @@ class AWGChannel(BaseInstrument):
     @instrument_property
     @secure_communication()
     def marker2_low_voltage(self):
-        """marker2 low voltage getter method
+        """Marker2 low voltage getter method
+
         """
         with self.secure():
             m2_LV = self._AWG.ask_for_values("SOURce{}:MARK2:VOLTage:LOW?"
@@ -239,7 +249,8 @@ class AWGChannel(BaseInstrument):
     @marker2_low_voltage.setter
     @secure_communication()
     def marker2_low_voltage(self, value):
-        """marker2 low voltage setter method
+        """Marker2 low voltage setter method
+
         """
         with self.secure():
             self._AWG.write("SOURce{}:MARK2:VOLTage:LOW {}"
@@ -254,7 +265,8 @@ class AWGChannel(BaseInstrument):
     @instrument_property
     @secure_communication()
     def marker1_delay(self):
-        """marker1 delay getter method. Unit = seconds
+        """Marker1 delay getter method. Unit = seconds
+
         """
         with self.secure():
             m1_delay = self._AWG.ask_for_values("SOURce{}:MARK1:DEL?"
@@ -267,7 +279,8 @@ class AWGChannel(BaseInstrument):
     @marker1_delay.setter
     @secure_communication()
     def marker1_delay(self, value):
-        """marker1 delay setter method. Unit = seconds
+        """Marker1 delay setter method. Unit = seconds
+
         """
         with self.secure():
             self._AWG.write("SOURce{}:MARK1:DEL {}"
@@ -282,7 +295,8 @@ class AWGChannel(BaseInstrument):
     @instrument_property
     @secure_communication()
     def marker2_delay(self):
-        """marker2 delay getter method. Unit = seconds
+        """Marker2 delay getter method. Unit = seconds
+
         """
         with self.secure():
             m2_delay = self._AWG.ask_for_values("SOURce{}:MARK2:DEL?"
@@ -295,7 +309,8 @@ class AWGChannel(BaseInstrument):
     @marker2_delay.setter
     @secure_communication()
     def marker2_delay(self, value):
-        """marker2 delay setter method. Unit = seconds
+        """Marker2 delay setter method. Unit = seconds
+
         """
         with self.secure():
             self._AWG.write("SOURce{}:MARK2:DEL {}"
@@ -310,7 +325,8 @@ class AWGChannel(BaseInstrument):
     @instrument_property
     @secure_communication()
     def delay(self):
-        """delay getter method. Unit = seconds
+        """Delay getter method. Unit = seconds
+
         """
         with self.secure():
             dela = self._AWG.ask_for_values("SOURce{}:DEL:ADJ?"
@@ -323,7 +339,8 @@ class AWGChannel(BaseInstrument):
     @delay.setter
     @secure_communication()
     def delay(self, value):
-        """delay setter method. Unity = seconds
+        """Delay setter method. Unity = seconds
+
         """
         with self.secure():
             self._AWG.write("SOURce{}:DEL:ADJ {}"
@@ -338,7 +355,8 @@ class AWGChannel(BaseInstrument):
     @instrument_property
     @secure_communication()
     def offset(self):
-        """offset getter method
+        """Offset getter method
+
         """
         with self.secure():
             msg = "SOURce{}:VOLTage:LEVel:IMMediate:OFFSet?"
@@ -351,13 +369,14 @@ class AWGChannel(BaseInstrument):
     @offset.setter
     @secure_communication()
     def offset(self, value):
-        """offset setter method
+        """Offset setter method
+
         """
         with self.secure():
             self._AWG.write("SOURce{}:VOLTage:LEVel:IMMediate:OFFSet {}"
                             .format(self._channel, value))
-            result = self._AWG.ask_for_values("SOURce{}:VOLTage:LEVel:IMMediate:OFFSet?"
-                                              .format(self._channel))[0]
+            msg = "SOURce{}:VOLTage:LEVel:IMMediate:OFFSet?"
+            result = self._AWG.ask_for_values(msg.format(self._channel))[0]
             if abs(result - value) > 10**-12:
                 raise InstrIOError(cleandoc('''AWG channel {} did not set
                                             correctly the offset'''
@@ -366,7 +385,8 @@ class AWGChannel(BaseInstrument):
     @instrument_property
     @secure_communication()
     def vpp(self):
-        """vpp getter method
+        """Vpp getter method
+
         """
         with self.secure():
             vp = self._AWG.ask_for_values("SOURce{}:VOLTage?"
@@ -379,7 +399,7 @@ class AWGChannel(BaseInstrument):
     @vpp.setter
     @secure_communication()
     def vpp(self, value):
-        """vpp setter method
+        """Vpp setter method
 
         """
         with self.secure():
@@ -395,7 +415,7 @@ class AWGChannel(BaseInstrument):
     @instrument_property
     @secure_communication()
     def phase(self):
-        """phase getter method. Unity = degrees
+        """Phase getter method. Unity = degrees
 
         """
         with self.secure():
@@ -409,7 +429,7 @@ class AWGChannel(BaseInstrument):
     @phase.setter
     @secure_communication()
     def phase(self, value):
-        """phase setter method. Unity = degrees
+        """Phase setter method. Unity = degrees
 
         """
         with self.secure():
@@ -448,12 +468,17 @@ class AWG(VisaInstrument):
                 break
 
     def clear_output_buffer(self):
+        """Cleans output buffer. This replaces '*CLS' which does not work
+        properly
+
+        """
+        _timeout = self.timeout
         self.timeout = 100
         while True:
             try:
                 self.read()
             except VisaIOError:
-                self.timeout = 2000
+                self.timeout = _timeout
                 break
 
     def get_channel(self, num):
@@ -486,43 +511,57 @@ class AWG(VisaInstrument):
 
     @secure_communication()
     def clear_sequence(self):
+        """Command to delete the sequence
+
+        """
         self.write("SEQuence:LENGth 0")
 
     @secure_communication()
     def set_goto_pos(self, position, goto):
-        """sets the goto value at position to goto
+        """Sets the goto value at position to goto
+
         """
         self.write('SEQuence:ELEMent' + str(position) + ':GOTO:STATe 1')
-        self.write('SEQuence:ELEMent' + str(position) + ':GOTO:INDex ' + str(goto))
+        self.write('SEQuence:ELEMent' + str(position) + ':GOTO:INDex ' +
+                   str(goto))
 
     @secure_communication()
     def set_repeat(self, position, repeat):
-        self.write('SEQUENCE:ELEMENT' + str(position) + ':LOOP:COUNT ' + str(repeat))
+        """Sets the loop count for the specified subsequence element.
+        The loop count is an integer.
+
+        """
+        self.write('SEQUENCE:ELEMENT' + str(position) + ':LOOP:COUNT ' +
+                   str(repeat))
 
     @secure_communication()
     def set_trigger_pos(self, position):
-        """sets the waveform at position to wait for trigger
+        """Sets the waveform at position to wait for trigger
+
         """
         self.write('SEQuence:ELEMent' + str(position) + ':TWAIT 1')
 
     @instrument_property
     @secure_communication()
     def internal_trigger_period(self):
-        """getter for internal trigger period
+        """Getter for internal trigger period
+
         """
         return self.ask("TRIGGER:SEQUENCE:TIMER?")
 
     @internal_trigger_period.setter
     @secure_communication()
     def internal_trigger_period(self, value):
-        """setter for internal trigger period in nanoseconds
+        """Setter for internal trigger period in nanoseconds
+
         """
         self.write("TRIGGER:SEQUENCE:TIMER " + str(value) + "NS")
 
     @instrument_property
     @secure_communication()
     def internal_trigger(self):
-        """getter for trigger internal or external
+        """Getter for trigger internal or external
+
         """
         ore = self.ask("TRIGGER:SEQUENCE:SOURCE?")
         if ore == 'INT':
@@ -535,7 +574,8 @@ class AWG(VisaInstrument):
     @internal_trigger.setter
     @secure_communication()
     def internal_trigger(self, value):
-        """setter for internal trigger enable
+        """Setter for internal trigger enable
+
         """
         if value in ('INT', 1, 'True'):
             self.write('TRIGGER:SEQUENCE:SOURCE INT')
@@ -557,7 +597,8 @@ class AWG(VisaInstrument):
     @instrument_property
     @secure_communication()
     def oscillator_reference_external(self):
-        """oscillator reference external getter method
+        """Oscillator reference external getter method
+
         """
         ore = self.ask("SOUR:ROSC:SOUR?")
         if ore == 'EXT':
@@ -570,7 +611,8 @@ class AWG(VisaInstrument):
     @oscillator_reference_external.setter
     @secure_communication()
     def oscillator_reference_external(self, value):
-        """oscillator reference external setter method
+        """Oscillator reference external setter method
+
         """
         if value in ('EXT', 1, 'True'):
             self.write('SOUR:ROSC:SOUR EXT')
@@ -593,7 +635,8 @@ class AWG(VisaInstrument):
     @instrument_property
     @secure_communication()
     def clock_source(self):
-        """clock source getter method
+        """Clock source getter method
+
         """
         cle = self.ask("AWGControl:CLOCk:SOURce?")
         if cle is not None:
@@ -604,7 +647,8 @@ class AWG(VisaInstrument):
     @clock_source.setter
     @secure_communication()
     def clock_source(self, value):
-        """clock source setter method
+        """Clock source setter method
+
         """
         if value in ('EXT', 1, 'True'):
             self.write('AWGControl:CLOCk:SOURce EXT')
@@ -625,7 +669,8 @@ class AWG(VisaInstrument):
     @instrument_property
     @secure_communication()
     def sampling_frequency(self):
-        """sampling frequency getter method
+        """Sampling frequency getter method
+
         """
         sampl_freq = self.ask_for_values("SOUR:FREQ:CW?")[0]
         if sampl_freq is not None:
@@ -636,7 +681,8 @@ class AWG(VisaInstrument):
     @sampling_frequency.setter
     @secure_communication()
     def sampling_frequency(self, value):
-        """sampling frequency setter method
+        """Sampling frequency setter method
+
         """
         self.write("SOUR:FREQ:CW {}".format(value))
         result = self.ask_for_values("SOUR:FREQ:CW?")[0]
@@ -648,6 +694,7 @@ class AWG(VisaInstrument):
     @secure_communication()
     def running(self):
         """Run state getter method
+
         """
         self.clear_output_buffer()
         run = self.ask_for_values("AWGC:RST?")[0]
@@ -664,6 +711,7 @@ class AWG(VisaInstrument):
     @secure_communication()
     def running(self, value):
         """Run state setter method
+
         """
         self.clear_output_buffer()
         if value in ('RUN', 1, 'True'):
@@ -685,6 +733,7 @@ class AWG(VisaInstrument):
     @secure_communication()
     def run_mode(self):
         """Run mode getter method
+
         """
         self.clear_output_buffer()
         run_mode = self.ask("AWGControl:RMODe?")
@@ -697,6 +746,7 @@ class AWG(VisaInstrument):
     @secure_communication()
     def run_mode(self, value):
         """Run mode setter method
+
         """
         if value in ('CONT', 'CONTINUOUS', 'continuous'):
             self.write('AWGControl:RMODe CONT')
@@ -725,6 +775,7 @@ class AWG(VisaInstrument):
 
     def delete_all_waveforms(self):
         """Deletes all user-defined waveforms from the currently loaded setup
+
         """
         self.write('WLIST:WAVEFORM:DELETE ALL')
 

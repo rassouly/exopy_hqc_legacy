@@ -135,8 +135,9 @@ def secure_communication(max_iter=2):
                         raise
                     else:
                         log = logging.getLogger(__name__)
-                        msg = 'Iterating connection %s/%s' % (i, max_iter)
-                        log.exception(msg)
+                        msg = 'Iterating connection %s/%s ' % (i, max_iter)
+                        msg2 = ' for instrument %s' % (str(self._driver))
+                        log.debug(msg + msg2)
                         self.reopen_connection()
                         i += 1
 

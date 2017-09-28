@@ -78,7 +78,8 @@ enamldef DemodSpView(InstrView): view:
                     'e.g. if you have 10 pulses being played in your pulse \n'
                     'sequence, and the number of averages is 1000, you need \n'
                     'to group the acquired data in groups of 10, and average \n'
-                    '1000 times the points taken for the same pulse.')
+                    '1000 times the points taken for the same pulse.\n') + EVALUATER_TOOLTIP
+
 
     GroupBox: demod1:
         title = 'Channel 1 demodulation settings'
