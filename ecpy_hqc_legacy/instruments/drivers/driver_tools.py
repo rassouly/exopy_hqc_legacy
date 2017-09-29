@@ -33,11 +33,11 @@ the VISA library.
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
+import logging
 import inspect
 from inspect import cleandoc
 from textwrap import fill
 from functools import wraps
-import logging
 
 from ecpy.utils.traceback import format_exc
 
