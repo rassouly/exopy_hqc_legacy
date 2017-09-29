@@ -805,9 +805,7 @@ class ZNB20(VisaInstrument):
     def check_operation_completion(self):
         """
         """
-        bites = self.ask('*ESR?')
-        status_byte = ('{0:08b}'.format(int(bites)))[::-1]
-        return bool(int(status_byte[0]))
+        return bool(int(self.ask('*OPC?')))
 
     @secure_communication()
     def set_all_chanel_to_hold(self):
