@@ -179,7 +179,7 @@ class AWG5014Context(BaseContext):
             aux[1::2] = array // 2**8
             to_send[int(channel[-1])] = to_bytes(aux)
 
-        # Build seuence infos
+        # Build sequence infos
         name = self._cache['sequence_name']
         infos = dict(sampling_frequency=self.sampling_frequency,
                      sequence_ch1='',
@@ -194,6 +194,7 @@ class AWG5014Context(BaseContext):
             return True, infos, traceback
 
         # If we do have a driver proceed to the transfer.
+
         return self._transfer_sequences(driver, to_send, infos)
 
     def list_sequence_infos(self):

@@ -33,6 +33,7 @@ the VISA library.
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
+import logging
 import inspect
 from inspect import cleandoc
 from textwrap import fill
@@ -133,7 +134,10 @@ def secure_communication(max_iter=2):
                     if i == max_iter:
                         raise
                     else:
-                        print(format_exc())
+                        log = logging.getLogger(__name__)
+                        msg = 'Iterating connection %s/%s ' % (i, max_iter)
+                        msg2 = ' for instrument %s' % (str(self._driver))
+                        log.debug(msg + msg2)
                         self.reopen_connection()
                         i += 1
 

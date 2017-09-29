@@ -37,6 +37,9 @@ class DemodSPTask(InstrumentTask):
     average = Enum('No avg', 'Avg before demod',
                    'Avg after demod').tag(pref=True)
 
+    #: Number of loops in the pulse sequence
+    num_loop = Unicode('1').tag(pref=True, feval=VAL_INT)
+
     #: Should the acquisition on channel 1 be enabled
     ch1_enabled = Bool(True).tag(pref=True)
 
@@ -130,7 +133,9 @@ class DemodSPTask(InstrumentTask):
 
         avg_bef_demod = True if self.average == 'Avg before demod' else False
 
+        num_loop = int(self.format_and_eval_string(self.num_loop))
         records_number = self.format_and_eval_string(self.records_number)
+        records_number *= num_loop
         delay = self.format_and_eval_string(self.delay)*1e-9
         duration = self.format_and_eval_string(self.duration)*1e-9
         sampling_rate = self.format_and_eval_string(self.sampling_rate)
@@ -144,26 +149,30 @@ class DemodSPTask(InstrumentTask):
 
         ch1, ch2 = traces
 
+        #  RL save space
+        pack = 1
+
         if self.ch1_enabled:
             f1 = self.format_and_eval_string(self.freq_1)*1e6
 
             # Remove points that do not belong to a full period.
-            samples_per_period = int(sampling_rate/f1)
+            samples_per_period = int(sampling_rate*pack/f1)
             samples_per_trace = int(ch1.shape[-1])
             if (samples_per_trace % samples_per_period) != 0:
                 extra = samples_per_trace % samples_per_period
                 ch1 = ch1.T[:-extra].T
 
             ntraces1, nsamples1 = np.shape(ch1)
+            ch1 = ch1.reshape(int(ntraces1/num_loop), num_loop, nsamples1)
             phi1 = np.linspace(0, 2*np.pi*f1*((nsamples1-1)*2e-9), nsamples1)
             c1 = np.cos(phi1)
             s1 = np.sin(phi1)
             # The mean value of cos^2 is 0.5 hence the factor 2 to get the
             # amplitude.
-            ch1_i = 2*np.mean(ch1*c1, axis=1)
-            ch1_q = 2*np.mean(ch1*s1, axis=1)
-            ch1_i_av = ch1_i if not average else np.mean(ch1_i)
-            ch1_q_av = ch1_q if not average else np.mean(ch1_q)
+            ch1_i = 2*np.mean(ch1*c1, axis=2)
+            ch1_q = 2*np.mean(ch1*s1, axis=2)
+            ch1_i_av = ch1_i.T[0] if not average else np.mean(ch1_i, axis=0)
+            ch1_q_av = ch1_q.T[0] if not average else np.mean(ch1_q, axis=0)
             self.write_in_database('Ch1_I', ch1_i_av)
             self.write_in_database('Ch1_Q', ch1_q_av)
 
@@ -175,25 +184,25 @@ class DemodSPTask(InstrumentTask):
             f2 = self.format_and_eval_string(self.freq_2)*1e6
 
             # Remove point that do not belong to a full period.
-            samples_per_period = int(sampling_rate/f2)
+            samples_per_period = int(sampling_rate*pack/f2)
             samples_per_trace = int(ch2.shape[-1])
             if (samples_per_trace % samples_per_period) != 0:
                 extra = samples_per_trace % samples_per_period
                 ch2 = ch2.T[:-extra].T
 
             ntraces2, nsamples2 = np.shape(ch2)
+            ch2 = ch2.reshape(int(ntraces2/num_loop), num_loop, nsamples2)
             phi2 = np.linspace(0, 2*np.pi*f2*((nsamples2-1)*2e-9), nsamples2)
             c2 = np.cos(phi2)
             s2 = np.sin(phi2)
             # The mean value of cos^2 is 0.5 hence the factor 2 to get the
             # amplitude.
-            ch2_i = 2*np.mean(ch2*c2, axis=1)
-            ch2_q = 2*np.mean(ch2*s2, axis=1)
-            ch2_i_av = ch2_i if not average else np.mean(ch2_i)
-            ch2_q_av = ch2_q if not average else np.mean(ch2_q)
+            ch2_i = 2*np.mean(ch2*c2, axis=2)
+            ch2_q = 2*np.mean(ch2*s2, axis=2)
+            ch2_i_av = ch2_i.T[0] if not average else np.mean(ch2_i, axis=0)
+            ch2_q_av = ch2_q.T[0] if not average else np.mean(ch2_q, axis=0)
             self.write_in_database('Ch2_I', ch2_i_av)
             self.write_in_database('Ch2_Q', ch2_q_av)
-
             if self.ch2_trace:
                 ch2_av = ch2 if not average else np.mean(ch2, axis=0)
                 self.write_in_database('Ch2_trace', ch2_av)
@@ -203,8 +212,10 @@ class DemodSPTask(InstrumentTask):
             normed = (ch1_i + 1j*ch1_q)/ch2_c
             chc_i = np.real(normed)
             chc_q = np.imag(normed)
-            chc_i_av = chc_i if not average else np.mean(chc_i)
-            chc_q_av = chc_q if not average else np.mean(chc_q)
+            # ZL RL: quick fix for single shot data, need to do this properly
+            # chc_i.T[0]
+            chc_i_av = chc_i if not average else np.mean(chc_i, axis=0)
+            chc_q_av = chc_q if not average else np.mean(chc_q, axis=0)
             self.write_in_database('Chc_I', chc_i_av)
             self.write_in_database('Chc_Q', chc_q_av)
             if self.ch1_trace:
@@ -214,21 +225,23 @@ class DemodSPTask(InstrumentTask):
                 ch1_s1 = ch1*s1
 
                 # We crunch a single dimension to compute I and Q per period
-                shape = (ntraces1, samples_per_trace//samples_per_period,
-                         samples_per_period)
+                shape = (int(ntraces1/num_loop), num_loop,
+                         samples_per_trace//(samples_per_period*pack),
+                         pack*samples_per_period)
+
                 ch1_c1 = ch1_c1.reshape(shape)
-                ch1_i_t = 2*np.mean(ch1_c1, axis=2)
+                ch1_i_t = 2*np.mean(ch1_c1, axis=3)
                 ch1_s1 = ch1_s1.reshape(shape)
-                ch1_q_t = 2*np.mean(ch1_s1, axis=2)
+                ch1_q_t = 2*np.mean(ch1_s1, axis=3)
 
                 ch1_c_t = ch1_i_t + 1j*ch1_q_t
-                chc_c_t = np.transpose(np.transpose(ch1_c_t)/ch2_c)
+                chc_c_t = np.swapaxes(np.swapaxes(ch1_c_t, 0, 2)/ch2_c.T, 0, 2)
                 chc_i_t = np.real(chc_c_t)
                 chc_q_t = np.imag(chc_c_t)
 
                 if not average:
-                    chc_i_t_av = chc_i_t
-                    chc_q_t_av = chc_q_t
+                    chc_i_t_av = np.swapaxes(chc_i_t, 0, 1)[0]
+                    chc_q_t_av = np.swapaxes(chc_q_t, 0, 1)[0]
                 else:
                     chc_i_t_av = np.mean(chc_i_t, axis=0)
                     chc_q_t_av = np.mean(chc_q_t, axis=0)

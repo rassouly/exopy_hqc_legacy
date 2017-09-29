@@ -98,9 +98,8 @@ class Alazar935x(DllInstrument):
 
         board.setExternalTrigger(ats.DC_COUPLING, ats.ETR_5V)
 
-        triggerDelay_sec = 0.
-        triggerDelay_samples = int(triggerDelay_sec * self.samples_per_sec +
-                                   0.5)
+        triggerDelay_sec = 0
+        triggerDelay_samples = 4*int(triggerDelay_sec*self.samples_per_sec/4)
         board.setTriggerDelay(triggerDelay_samples)
 
         board.setTriggerTimeOut(0)
@@ -141,6 +140,10 @@ class Alazar935x(DllInstrument):
 
         """
         board = self.board
+
+        triggerDelay_sec = delay
+        triggerDelay_samples = 4*int(triggerDelay_sec*self.samples_per_sec/4)
+        board.setTriggerDelay(triggerDelay_samples)
 
         # Acquired only specified channels
 
@@ -218,7 +221,7 @@ class Alazar935x(DllInstrument):
             # Wait for the buffer at the head of the list of available
             # buffers to be filled by the board.
             buffer = buffers[buffers_completed % len(buffers)]
-            board.waitAsyncBufferComplete(buffer.addr, timeout_ms=5000)
+            board.waitAsyncBufferComplete(buffer.addr, timeout_ms=15000)
             rbuf = np.reshape(buffer.buffer,
                               (records_per_buffer*channel_count,
                                samples_per_record))

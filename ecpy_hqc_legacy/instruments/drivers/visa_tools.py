@@ -101,7 +101,8 @@ class VisaInstrument(BaseInstrument):
         """
         rm = ResourceManager()
         try:
-            self._driver = rm.open_resource(self.connection_str, **para)
+            self._driver = rm.open_resource(self.connection_str,
+                                            open_timeout=1000, **para)
         except errors.VisaIOError as er:
             self._driver = None
             raise InstrIOError(str(er))

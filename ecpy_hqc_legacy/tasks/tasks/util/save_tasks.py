@@ -281,8 +281,12 @@ class SaveFileTask(SimpleTask):
     #: Flag indicating whether or not initialisation has been performed.
     initialized = Bool(False)
 
-    #: Column indices identified as arrays.
+    #: Column indices identified as arrays. Use to save 2D arrays in
+    #: concatenated columns.
     array_values = Value()
+
+    #: Shapes of identified arrays.
+    array_dims = Value()
 
     database_entries = set_default({'file': None})
 
@@ -315,13 +319,15 @@ class SaveFileTask(SimpleTask):
                                             '\n').encode('utf-8'))
 
             labels = []
-            self.array_values = set()
+            self.array_values = list()
+            self.array_dims = list()
             for i, (l, v) in enumerate(self.saved_values.items()):
                 label = self.format_string(l)
                 value = self.format_and_eval_string(v)
                 if isinstance(value, numpy.ndarray):
                     names = value.dtype.names
-                    self.array_values.add(i)
+                    self.array_values.append(i)
+                    self.array_dims.append(value.ndim)
                     if names:
                         labels.extend([label + '_' + m for m in names])
                     else:
@@ -333,29 +339,52 @@ class SaveFileTask(SimpleTask):
 
             self.initialized = True
 
-        lengths = set()
+        shapes_1D = set()
+        shapes_2D = set()
         values = []
         for i, v in enumerate(self.saved_values.values()):
             value = self.format_and_eval_string(v)
             values.append(value)
-            if i in self.array_values:
-                lengths.add(value.shape[0])
-                if len(value.shape) > 1:
+            if i in self.array_values:  # if we deal with an array_type value
+                if len(value.shape) == 1:
+                    shapes_1D.add(value.shape)
+                elif len(value.shape) == 2:
+                    shapes_2D.add(value.shape)
+                else:
                     log = logging.getLogger()
-                    msg = ("In {}, impossible to save arrays exceeding one "
+                    msg = ("In {}, impossible to save arrays exceeding two "
                            "dimension. Save file in HDF5 format.")
                     log.error(msg.format(self.name))
                     self.root.should_stop.set()
 
-        if lengths:
-            if len(lengths) > 1:
+        if shapes_1D:
+            if len(shapes_1D) > 1:
                 log = logging.getLogger()
-                msg = ("In {}, impossible to save simultaneously arrays of "
+                msg = ("In {}, impossible to save simultaneously 1D-arrays of "
                        "different sizes. Save file in HDF5 format.")
                 log.error(msg.format(self.name))
                 self.root.should_stop.set()
             else:
-                length = lengths.pop()
+                length = shapes_1D.pop()
+
+        if shapes_2D:
+            if len(shapes_2D) > 1:
+                log = logging.getLogger()
+                msg = ("In {}, impossible to save simultaneously 2D-arrays of "
+                       "different sizes. Save file in HDF5 format.")
+                log.error(msg.format(self.name))
+                self.root.should_stop.set()
+            elif shapes_1D:
+                if length == shapes_2D[0]:
+                    shape = shapes_2D.pop()
+                else:
+                    log = logging.getLogger()
+                    msg = ("In {}, 1D-arrays and 2D-arrays could not be "
+                           "broadcast together. Save file in HDF5 format.")
+                    log.error(msg.format(self.name))
+                    self.root.should_stop.set()
+            else:
+                shape = shapes_2D.pop()
 
         if not self.array_values:
             new_line = '\t'.join([str(val) for val in values]) + '\n'
@@ -363,20 +392,31 @@ class SaveFileTask(SimpleTask):
             self.file_object.flush()
         else:
             columns = []
-            for i, val in enumerate(values):
-                if i in self.array_values:
-                    if val.dtype.names:
-                        columns.extend([val[m] for m in val.dtype.names])
+            if not (2 in self.array_dims):
+                for i, val in enumerate(values):
+                    if i in self.array_values:
+                        if val.dtype.names:
+                            columns.extend([val[m] for m in val.dtype.names])
+                        else:
+                            columns.append(val)
                     else:
-                        columns.append(val)
-                else:
-                    columns.append(numpy.ones(length)*val)
+                        columns.append(numpy.ones(length)*val)
+            else:
+                for i, val in enumerate(values):
+                    if i in self.array_values:
+                        if val.ndim == 1:
+                            val_2D = numpy.array([val]).T
+                            ones = numpy.ones((1, shape[1]))
+                            val = numpy.multiply(val_2D, ones)
+                    else:
+                        val = numpy.ones(shape[0]*shape[1])*val
+                    columns.append(val.reshape((shape[0]*shape[1])))
             array_to_save = numpy.rec.fromarrays(columns)
             numpy.savetxt(self.file_object, array_to_save, delimiter='\t')
             self.file_object.flush()
 
     def check(self, *args, **kwargs):
-        """Check tha given parameters are meaningful
+        """Check that given parameters are meaningful
 
         """
         err_path = self.get_error_path()

@@ -176,6 +176,10 @@ class RohdeSchwarzSMB100A(VisaInstrument):
         """Pulse modulation setter method.
 
         """
+        # TODO: write checks
+        self.write('SOURce:PULM:SOURce EXT')
+        self.write('SOURce:PULM:POLarity NORMal')
+        self.write('SOURce:PULM:TRIGger:EXTernal:IMPedance G50')
         on = re.compile('on', re.IGNORECASE)
         off = re.compile('off', re.IGNORECASE)
         if on.match(value) or value == 1:
