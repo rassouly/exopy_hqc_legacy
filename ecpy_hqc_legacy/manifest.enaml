@@ -223,7 +223,10 @@ enamldef HqcLegacyManifest(PluginManifest):
                         driver = 'anritsu_signal_source:AnritsuMG3694'
                         model = 'MG3694'
                         kind = 'RF source'
-                        connections = {'VisaGPIB': {'resource_class': 'INSTR'}
+                        connections = {'VisaGPIB': {'resource_class': 'INSTR'},
+                                       'VisaTCPIP': {'resource_class': 'INSTR',
+                                                     'lan_device_name': 'inst0'},
+                                       'VisaRaw': {}
                                        }
 
                 Drivers:
