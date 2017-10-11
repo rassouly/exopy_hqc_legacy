@@ -73,17 +73,12 @@ class VisaLegacyStarter(LegacyStarter):
         """Use pyvisa to build the canonical resource name.
 
         """
-#        from pyvisa.rname import assemble_canonical_name
-#        infos = {k: v for k, v in infos.items() if v}
-#        return {'resource_name': assemble_canonical_name(**infos)}
         from pyvisa.rname import assemble_canonical_name
         infos = {k: v for k, v in infos.items() if v}
-        try:
+        if 'resource_name' in infos:
             return {'resource_name': infos['resource_name']}
-        except:
+        else:
             return {'resource_name': assemble_canonical_name(**infos)}
-
-
 
 class DllLegacyStarter(LegacyStarter):
     """Starter for legacy dll instruments.

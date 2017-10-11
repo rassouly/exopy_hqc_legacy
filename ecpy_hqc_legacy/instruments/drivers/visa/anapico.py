@@ -25,13 +25,8 @@ from ..visa_tools import VisaInstrument
 
 class Anapico(VisaInstrument):
     """
-    Generic driver for Rohde and Schwarz SMB100A SignalGenerator,
+    Generic driver for Anapico Signal Generators,
     using the VISA library.
-
-    This driver does not give access to all the functionnality of the
-    instrument but you can extend it if needed. See the documentation of
-    the driver_tools module for more details about writing instruments
-    drivers.
 
     Parameters
     ----------
@@ -48,23 +43,33 @@ class Anapico(VisaInstrument):
         Fixed power of the output signal.
     output : bool, instrument_property
         State of the output 'ON'(True)/'OFF'(False).
-
-    Notes
-    -----
-    This driver has been written for the  but might work for other
-    models using the same SCPI commands.
-
     """
     def __init__(self, connection_info, caching_allowed=True,
                  caching_permissions={}, auto_open=True):
 
         super(Anapico, self).__init__(connection_info,
-                                                  caching_allowed,
-                                                  caching_permissions,
-                                                  auto_open)
+                                      caching_allowed,
+                                      caching_permissions,
+                                      auto_open)
         self.frequency_unit = 'GHz'
         self.write_termination = '\n'
         self.read_termination = '\n'
+# The next line sets the timeout before reconnection to 0. This is available
+# since firmware version 0.4.106 and avoids the Anapico generator to freeze
+# upon unproperly closed connections (for instance if ecpy crashes)
+# no need to turn the generator OFF and ON with this line
+# here if the explanation from the support team at Anapico:
+# I added a reconnect timeout option. It allows to reconnect to an
+# inactive link that has never been closed. The timeout defines how long
+# the user must wait until the link is considered inactive and reconnect is
+# enabled. The default timeout is infinite, meaning no reconnect possible at
+# all so it behaves like earlier firmare. In this application the timeout can
+# be set to zero so reconnect is always possible immediately.
+#
+# The command is "SYST:COMM:VXI:RTMO <x>", where "<x>" is the reconnect timeout
+# in seconds or "INF" for infinite. If they need to reuse to an unclosed link,
+# they should always send "SYST:COMM:VXI:RTMO 0" immediately after opening a
+# connection.
         self.write("SYST:COMM:VXI:RTMO 0")
 
     @instrument_property
