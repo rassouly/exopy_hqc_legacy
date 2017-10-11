@@ -165,3 +165,148 @@ class MultiChannelVoltageSourceInterface(TaskInterface):
 
         else:
             return True, {}
+
+
+class SetDCCurrentTask(InterfaceableTaskMixin, InstrumentTask):
+    """Set a DC current to the specified value.
+
+    The user can choose to limit the rate by choosing an appropriate back step
+    (larger step allowed), and a waiting time between each step.
+
+    """
+    #: Target value for the source (dynamically evaluated)
+    target_value = Unicode().tag(pref=True,
+                                 feval=validators.SkipLoop(types=numbers.Real))
+
+    #: Largest allowed step when changing the output of the instr.
+    back_step = Float().tag(pref=True)
+
+    #: Largest allowed current
+    safe_max = Float(0.0).tag(pref=True)
+
+    #: Time to wait between changes of the output of the instr.
+    delay = Float(0.01).tag(pref=True)
+
+    parallel = set_default({'activated': True, 'pool': 'instr'})
+    database_entries = set_default({'current': 0.01})
+
+    def i_perform(self, value=None):
+        """Default interface.
+
+        """
+        if self.driver.owner != self.name:
+            self.driver.owner = self.name
+            if hasattr(self.driver, 'function') and\
+                    self.driver.function != 'CURR':
+                msg = ('Instrument assigned to task {} is not configured to '
+                       'output a current')
+                raise ValueError(msg.format(self.name))
+
+        setter = lambda value: setattr(self.driver, 'current', value)
+        current_value = getattr(self.driver, 'current')
+
+        self.smooth_set(value, setter, current_value)
+
+    def smooth_set(self, target_value, setter, current_value):
+        """ Smoothly set the current.
+
+        target_value : float
+            Current to reach.
+
+        setter : callable
+            Function to set the current, should take as single argument the
+            value.
+
+        """
+        if target_value is not None:
+            value = target_value
+        else:
+            value = self.format_and_eval_string(self.target_value)
+
+        if self.safe_max and self.safe_max < abs(value):
+            msg = 'Requested current {} exceeds safe max : {}'
+            raise ValueError(msg.format(value, self.safe_max))
+
+        last_value = current_value
+
+        if abs(last_value - value) < 1e-12:
+            self.write_in_database('current', value)
+            return
+
+        elif self.back_step == 0:
+            self.write_in_database('current', value)
+            setter(value)
+            return
+
+        else:
+            if (value - last_value)/self.back_step > 0:
+                step = self.back_step
+            else:
+                step = -self.back_step
+
+        if abs(value-last_value) > abs(step):
+            while not self.root.should_stop.is_set():
+                # Avoid the accumulation of rounding errors
+                last_value = round(last_value + step, 9)
+                setter(last_value)
+                if abs(value-last_value) > abs(step):
+                    time.sleep(self.delay)
+                else:
+                    break
+
+        if not self.root.should_stop.is_set():
+            setter(value)
+            self.write_in_database('current', value)
+            return
+
+        self.write_in_database('current', last_value)
+
+
+class SetDCFunctionTask(InterfaceableTaskMixin, InstrumentTask):
+    """Set a DC source function to the specified value: VOLT or CURR
+
+    """
+    #: Target value for the source (dynamically evaluated)
+    switch = Unicode('VOLT').tag(pref=True, feval=validators.SkipLoop())
+
+    database_entries = set_default({'function': 'VOLT'})
+
+    def i_perform(self, switch=None):
+        """Default interface.
+
+        """
+        if switch is None:
+            switch = self.format_and_eval_string(self.switch)
+
+        if switch == 'VOLT':
+            self.driver.function = 'VOLT'
+            self.write_in_database('function', 'VOLT')
+
+        if switch == 'CURR':
+            self.driver.function = 'CURR'
+            self.write_in_database('function', 'CURR')
+
+
+class SetDCOutputTask(InterfaceableTaskMixin, InstrumentTask):
+    """Set a DC source output to the specified value: ON or OFF
+
+    """
+    #: Target value for the source output
+    switch = Unicode('OFF').tag(pref=True, feval=validators.SkipLoop())
+
+    database_entries = set_default({'output': 'OFF'})
+
+    def i_perform(self, switch=None):
+        """Default interface.
+
+        """
+        if switch is None:
+            switch = self.format_and_eval_string(self.switch)
+
+        if switch == 'ON':
+            self.driver.output = 'ON'
+            self.write_in_database('output', 'ON')
+
+        if switch == 'OFF':
+            self.driver.output = 'OFF'
+            self.write_in_database('output', 'OFF')
