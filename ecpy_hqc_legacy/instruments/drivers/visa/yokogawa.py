@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+# Copyright 2015-2017 by EcpyHqcLegacy Authors, see AUTHORS for more details.
 #
 # Distributed under the terms of the BSD license.
 #
@@ -51,11 +51,13 @@ class YokogawaGS200(VisaInstrument):
         super(YokogawaGS200, self).open_connection(**para)
         self.write_termination = '\n'
         self.read_termination = '\n'
+        self.write('*CLS')
 
     @instrument_property
     @secure_communication()
     def voltage(self):
         """Voltage getter method. NB: does not check the current function.
+
         """
         voltage = self.ask_for_values(":SOURce:LEVel?")[0]
         if voltage is not None:
@@ -67,6 +69,7 @@ class YokogawaGS200(VisaInstrument):
     @secure_communication()
     def voltage(self, set_point):
         """Voltage setter method. NB: does not check the current function.
+
         """
         self.write(":SOURce:LEVel {}".format(set_point))
         value = self.ask_for_values('SOURce:LEVel?')[0]
@@ -126,8 +129,83 @@ class YokogawaGS200(VisaInstrument):
 
     @instrument_property
     @secure_communication()
+    def current(self):
+        """Current getter method.
+
+        NB: does not check the current function.
+
+        """
+        current = self.ask_for_values(":SOURce:LEVel?")[0]
+        if current is not None:
+            return current
+        else:
+            raise InstrIOError('Instrument did not return the current')
+
+    @current.setter
+    @secure_communication()
+    def current(self, set_point):
+        """Current setter method.
+
+        NB: does not check the current function.
+
+        """
+        self.write(":SOURce:LEVel {}".format(set_point))
+        value = self.ask_for_values('SOURce:LEVel?')[0]
+        # to avoid floating point rouding
+        if abs(value - round(set_point, 9)) > 10**-9:
+            raise InstrIOError('Instrument did not set correctly the current')
+
+    @instrument_property
+    @secure_communication()
+    def current_range(self):
+        """ Current range getter method.
+
+        NB: does not check the current function.
+
+        """
+        c_range = self.ask(":SOURce:RANGe?")
+        if c_range is not None:
+            if c_range == '1E-3':
+                return '1 mA'
+            elif c_range == '10E-3':
+                return '10 mA'
+            elif c_range == '100E-3':
+                return '100 mA'
+            elif c_range == '200E-3':
+                return '200 mA'
+        else:
+            raise InstrIOError('Instrument did not return the range')
+
+    @voltage_range.setter
+    @secure_communication()
+    def current_range(self, c_range):
+        """Voltage range getter method.
+
+        NB: does not check the current function.
+
+        """
+        visa_range = ''
+        if c_range == '1 mA':
+            visa_range = '1E-3'
+        elif c_range == '10 mA':
+            visa_range = '10E-3'
+        elif c_range == '100 mA':
+            visa_range = '100E-3'
+        elif c_range == '200 mA':
+            visa_range = '200E-3'
+
+        if visa_range:
+            self.write(":SOURce:RANGe {}".format(visa_range))
+            check = self.ask(":SOURce:RANGe?")
+            if check != visa_range:
+                raise InstrIOError(cleandoc('''Instrument did not set correctly
+                    the range'''))
+
+    @instrument_property
+    @secure_communication()
     def function(self):
         """Function getter method
+
         """
         value = self.ask('SOURce:FUNCtion?')
         if value is not None:
@@ -139,28 +217,38 @@ class YokogawaGS200(VisaInstrument):
     @secure_communication()
     def function(self, mode):
         """Function setter method
+
         """
         volt = re.compile('VOLT', re.IGNORECASE)
         curr = re.compile('CURR', re.IGNORECASE)
-        if volt.match(mode):
-            self.write(':SOURce:FUNCtion VOLT')
-            value = self.ask('SOURce:FUNCtion?')
-            if value[1:-1] != 'VOLT':
-                raise InstrIOError('Instrument did not set correctly the mode')
-        elif curr.match(mode):
-            self.write(':SOURce:FUNCtion CURR')
-            value = self.ask('SOURce:FUNCtion?')
-            if value[1:-1] != 'CURR':
-                raise InstrIOError('Instrument did not set correctly the mode')
+        if self.voltage == 0 and self.output is False:
+            if volt.match(mode):
+                self.write(':SOURce:FUNCtion VOLT')
+                value = self.ask('SOURce:FUNCtion?')
+                if value != 'VOLT':
+                    raise InstrIOError('Instrument did not set correctly the'
+                                       'mode')
+            elif curr.match(mode):
+                self.write(':SOURce:FUNCtion CURR')
+                value = self.ask('SOURce:FUNCtion?')
+                if value != 'CURR':
+                    raise InstrIOError('Instrument did not set correctly the'
+                                       'mode')
+            else:
+                mess = fill('''The invalid value {} was sent to set_function
+                            method of the Yokogawa driver'''.format(value), 80)
+                raise errors.VisaTypeError(mess)
         else:
-            mess = fill('''The invalid value {} was sent to set_function
-                        method of the Yokogawa driver'''.format(value), 80)
-            raise errors.VisaTypeError(mess)
+            mess = ''' Set current/voltage to 0 and output off to change the
+                    function mode of a Yokogawa. Currently voltage/current = {}
+                    and output is {}'''
+            raise InstrIOError(mess.format(self.voltage, self.output))
 
     @instrument_property
     @secure_communication()
     def output(self):
         """Output getter method
+
         """
         value = self.ask_for_values(':OUTPUT?')
         if value is not None:
@@ -172,23 +260,32 @@ class YokogawaGS200(VisaInstrument):
     @secure_communication()
     def output(self, value):
         """Output setter method
+
         """
         on = re.compile('on', re.IGNORECASE)
         off = re.compile('off', re.IGNORECASE)
-        if on.match(value) or value == 1:
-            self.write(':OUTPUT ON')
-            if self.ask(':OUTPUT?') != '1':
-                raise InstrIOError(cleandoc('''Instrument did not set correctly
-                                            the output'''))
-        elif off.match(value) or value == 0:
-            self.write(':OUTPUT OFF')
-            if self.ask(':OUTPUT?') != '0':
-                raise InstrIOError(cleandoc('''Instrument did not set correctly
-                                            the output'''))
+        # output is only switched on if voltage or current is 0
+        # note that self.voltage gets the source level, which is the voltage
+        # in voltage mode, and the current in current mode.
+        if self.voltage == 0:
+            if on.match(value) or value == 1:
+                self.write(':OUTPUT ON')
+                if self.ask(':OUTPUT?') != '1':
+                    raise InstrIOError(cleandoc('''Instrument did not set
+                                                correctly the output'''))
+            elif off.match(value) or value == 0:
+                self.write(':OUTPUT OFF')
+                if self.ask(':OUTPUT?') != '0':
+                    raise InstrIOError(cleandoc('''Instrument did not set
+                                                correctly the output'''))
+            else:
+                mess = fill(cleandoc('''The invalid value {} was sent to set
+                                     the output state of the Yokogawa
+                                     driver''').format(value), 80)
+                raise errors.VisaTypeError(mess)
         else:
-            mess = fill(cleandoc('''The invalid value {} was sent to set the
-                    output state of the Yokogawa driver''').format(value), 80)
-            raise errors.VisaTypeError(mess)
+            msg = 'set volage/current to 0 to change the DC output'
+            raise InstrIOError(msg)
 
     def check_connection(self):
         """

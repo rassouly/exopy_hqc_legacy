@@ -755,6 +755,8 @@ class ZNB20(VisaInstrument):
         super(ZNB20, self).open_connection(**para)
         self.write_termination = '\n'
         self.read_termination = '\n'
+        # clearing buffers to avoid running into queue overflow
+        self.write('*CLS')
 
     def get_channel(self, num):
         """

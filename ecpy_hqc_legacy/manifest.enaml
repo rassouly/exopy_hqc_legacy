@@ -440,19 +440,34 @@ enamldef HqcLegacyManifest(PluginManifest):
                     instruments = ['ecpy_hqc_legacy.Legacy.ZNB20',
                                    'ecpy_hqc_legacy.Legacy.ZVA24']
                 Task:
-                    task = 'set_dc_voltage_task:SetDCVoltageTask'
-                    view = 'views.set_dc_voltage_view:SetDcVoltageView'
+                    task = 'dc_tasks:SetDCVoltageTask'
+                    view = 'views.dc_views:SetDcVoltageView'
                     instruments = ['ecpy_hqc_legacy.Legacy.YokogawaGS200',
                                    'ecpy_hqc_legacy.Legacy.Yokogawa7651']
                     metadata = {'loopable': True}
                     Interface:
-                        interface = ('set_dc_voltage_task:'
+                        interface = ('dc_tasks:'
                                      'MultiChannelVoltageSourceInterface')
-                        views = ['views.set_dc_voltage_view:'
+                        views = ['views.dc_views:'
                                  'MultiChannelVoltageSourceILabel',
-                                 'views.set_dc_voltage_view:'
+                                 'views.dc_views:'
                                  'MultiChannelVoltageSourceIChannel']
                         instruments = ['ecpy_hqc_legacy.Legacy.TinyBilt']
+                Task:
+                    task = 'dc_tasks:SetDCCurrentTask'
+                    view = 'views.dc_views:SetDcCurrentView'
+                    instruments = ['ecpy_hqc_legacy.Legacy.YokogawaGS200']
+                    metadata = {'loopable': True}
+                Task:
+                    task = 'dc_tasks:SetDCFunctionTask'
+                    view = 'views.dc_views:SetDcFunctionView'
+                    instruments = ['ecpy_hqc_legacy.Legacy.YokogawaGS200']
+                    metadata = {'loopable': True}
+                Task:
+                    task = 'dc_tasks:SetDCOutputTask'
+                    view = 'views.dc_views:SetDcOutputView'
+                    instruments = ['ecpy_hqc_legacy.Legacy.YokogawaGS200']
+                    metadata = {'loopable': True}
                 Task:
                     task = 'spdev_tasks:DemodSPTask'
                     view = 'views.spdev_views:DemodSpView'
