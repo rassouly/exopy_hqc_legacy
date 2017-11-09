@@ -541,6 +541,13 @@ class AWG(VisaInstrument):
         """
         self.write('SEQuence:ELEMent' + str(position) + ':TWAIT 1')
 
+    @secure_communication()
+    def jump_to_pos(self, position):
+        """Forces the sequencer to jump to index number 'position'
+
+        """
+        self.write('SEQUENCE:JUMP:IMMEDIATE ' + str(position))
+
     @instrument_property
     @secure_communication()
     def internal_trigger_period(self):

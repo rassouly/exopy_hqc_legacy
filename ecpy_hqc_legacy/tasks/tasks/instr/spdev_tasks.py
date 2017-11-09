@@ -209,7 +209,8 @@ class DemodSPTask(InstrumentTask):
 
         if self.ref2:
             ch2_c = ch2_i + 1j*ch2_q
-            normed = (ch1_i + 1j*ch1_q)/ch2_c
+            ch2_c_normed = ch2_c  / np.abs(ch2_c)
+            normed = (ch1_i + 1j*ch1_q)/ch2_c_normed
             chc_i = np.real(normed)
             chc_q = np.imag(normed)
             # ZL RL: quick fix for single shot data, need to do this properly
@@ -245,6 +246,9 @@ class DemodSPTask(InstrumentTask):
                 else:
                     chc_i_t_av = np.mean(chc_i_t, axis=0)
                     chc_q_t_av = np.mean(chc_q_t, axis=0)
+                    chc_abs2_t_av = np.mean(np.abs(chc_i_t+1j*chc_q_t)**2,
+                                           axis=0)
+                    self.write_in_database('Chc_Abs2_trace', chc_abs2_t_av)
 
                 self.write_in_database('Chc_I_trace', chc_i_t_av)
                 self.write_in_database('Chc_Q_trace', chc_q_t_av)
@@ -261,6 +265,8 @@ class DemodSPTask(InstrumentTask):
             if self.ref2 and self.ch2_enabled:
                 entries['Chc_I_trace'] = np.array([0, 1])
                 entries['Chc_Q_trace'] = np.array([0, 1])
+                if self.average:
+                    entries['Chc_Abs2_trace'] = np.array([0, 1])
         self._update_entries(new, entries)
 
     def _post_setattr_ch2_enabled(self, old, new):
@@ -275,6 +281,8 @@ class DemodSPTask(InstrumentTask):
         if (self.ref2 and self.ch1_enabled) and self.ch1_trace:
             entries['Chc_I_trace'] = np.array([0, 1])
             entries['Chc_Q_trace'] = np.array([0, 1])
+            if self.average:
+                    entries['Chc_Abs2_trace'] = np.array([0, 1])
         if not self.ch2_enabled:
             self.ref2 = False
         self._update_entries(new, entries)
@@ -289,6 +297,8 @@ class DemodSPTask(InstrumentTask):
         if self.ref2:
             self._update_entries(new, {'Chc_I_trace': np.array([0, 1]),
                                        'Chc_Q_trace': np.array([0, 1])})
+            if self.average:
+                self._update_entries(new, {'Chc_Abs2_trace': np.array([0, 1])})
 
     def _post_setattr_ch2_trace(self, old, new):
         """Update the database entries based on the trace settings.
@@ -306,6 +316,8 @@ class DemodSPTask(InstrumentTask):
         if self.ch1_trace:
             self._update_entries(new, {'Chc_I_trace': np.array([0, 1]),
                                        'Chc_Q_trace': np.array([0, 1])})
+            if self.average:
+                self._update_entries(new, {'Chc_Abs2_trace': np.array([0, 1])})
 
     def _update_entries(self, new, defaults):
         """Update database entries.
