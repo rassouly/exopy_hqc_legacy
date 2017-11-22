@@ -17,7 +17,9 @@ from future.utils import raise_from
 from atom.api import (Enum, Unicode, set_default)
 from scipy.interpolate import splrep, sproot, splev
 from scipy.optimize import curve_fit, leastsq
+import scipy.ndimage.filters as flt
 
+import logging
 from ecpy.tasks.api import SimpleTask, validators
 
 ARR_VAL = validators.Feval(types=np.ndarray)
@@ -33,14 +35,14 @@ class FitResonanceTask(SimpleTask):
     target_array = Unicode().tag(pref=True, feval=ARR_VAL)
 
     #: Name of the column into which the extrema should be looked for.
-    column_name_data_maglin = Unicode().tag(pref=True)
-    column_name_data_phase = Unicode().tag(pref=True)
+    column_name_maglin = Unicode().tag(pref=True)
+    column_name_phase = Unicode().tag(pref=True)
     column_name_freq = Unicode().tag(pref=True)
 
     #: Flag indicating the measurement setup. This changes the fit function
     mode = Enum('Reflection', 'Transmission').tag(pref=True)
 
-    database_entries = set_default({'res_value': 1.0})
+    database_entries = set_default({'res_value': 1.0, 'fit_err':0})
 
     wait = set_default({'activated': True})  # Wait on all pools by default.
 
@@ -51,15 +53,29 @@ class FitResonanceTask(SimpleTask):
         """
         array = self.format_and_eval_string(self.target_array)
         freq = array[self.column_name_freq]
-        data_maglin = array[self.column_name_data_maglin]
-        data_phase = array[self.column_name_data_phase]
+        data_maglin = array[self.column_name_maglin]
+        data_phase = array[self.column_name_phase]
         data_c = data_maglin*np.exp(1j*np.pi/180*data_phase)
         if self.mode == 'Reflection':
-            val = fit_complex_a_out(freq, data_c)
-            self.write_in_database('res_value', val)
+            try:
+                val, fit_err = fit_complex_a_out(freq, data_c)
+            except:
+                val = 1
+                fit_err = 100
         if self.mode == 'Transmission':
-            val = fit_lorentzian(freq, data_maglin)
-            self.write_in_database('res_value', val)
+            try:
+                val, fit_err = fit_lorentzian(freq, data_maglin)
+            except:
+                val = 1
+                fit_err = 100
+        self.write_in_database('res_value', val)
+        print(np.round(val*1e-9,5)*1e9)
+        self.write_in_database('fit_err', fit_err)
+        if fit_err > 1:
+            log = logging.getLogger(__name__)
+            msg = ('Fit resonance has abnormally high fit error,'
+                   'freq fit = {} GHz, relative error = {}')
+            log.warning(msg.format(round(val*1e-9, 3), round(fit_err, 2)))
 
     def check(self, *args, **kwargs):
         """ Check the target array can be found and has the right column.
@@ -132,8 +148,7 @@ def complex_a_out(f, f_0, kc, ki, a_in, T):  # kc and ki are kappas/2pi
 
 
 def fit_complex_a_out(f, a_out):
-    f_0 = get_f0_reflection(f, a_out)
-    kc = (np.max(f) - np.min(f))/10.
+    f_0, kc = get_f0_reflection(f, a_out)
     ki = kc
     T = 0
 
@@ -142,7 +157,8 @@ def fit_complex_a_out(f, a_out):
     a_in = -a_out[0]
     popt, pcov = complex_fit(aux, f, a_out, (f_0, kc, ki, np.real(a_in),
                                              np.imag(a_in), T))
-    return popt[0]
+    fit_error = 100*np.sqrt(pcov[0, 0])/popt[0]
+    return popt[0], fit_error
 
 
 def get_f0_reflection(f, a_out):
@@ -155,7 +171,14 @@ def get_f0_reflection(f, a_out):
         f0 = f[np.argmin(maglin)]
     else:
         f0 = roots[0]
-    return f0
+        
+    phase_flt = flt.gaussian_filter(phase, 1)
+    dphase_flt = np.diff(phase_flt)
+    df = f[:-1]
+    spline = splrep(df, dphase_flt-(max(dphase_flt)+min(dphase_flt))/2)
+    roots = sproot(spline)
+    kc = roots[-1]-roots[0]
+    return f0, kc
 
 
 def lorentzian(x, x0, y0, A, B):
@@ -178,5 +201,6 @@ def fit_lorentzian(x, y):
     B = whm*whm/4.0
     A = B*(ymax-y0)
     popt, pcov = curve_fit(lorentzian, x, y, (x0, y0, A, B))
-
-    return popt[0]
+    fit_error = 100*np.sqrt(pcov[0, 0])/popt[0]
+    
+    return popt[0], fit_error

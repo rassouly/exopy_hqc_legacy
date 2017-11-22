@@ -1,0 +1,61 @@
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
+# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+#
+# Distributed under the terms of the BSD license.
+#
+# The full license is in the file LICENCE, distributed with this software.
+# -----------------------------------------------------------------------------
+"""Views of the tasks operating on numpy.arrays.
+
+"""
+from __future__ import (division, unicode_literals, print_function,
+                        absolute_import)
+
+from enaml.layout.api import grid
+from enaml.widgets.api import (GroupBox, Label, Field, ObjectCombo, Splitter,
+                               SplitItem, Container)
+
+from ecpy.utils.widgets.qt_completers import QtLineCompleter
+from ecpy.tasks.api import EVALUATER_TOOLTIP, BaseTaskView
+
+enamldef FitResonanceView(BaseTaskView): view:
+    """Widget for the array extrema task.
+
+    """
+
+    constraints << [grid([arr_lab, col_lab1, col_lab2, col_lab3, mod_lab],
+                         [arr_val, col_val1, col_val2, col_val3, mod_val])]
+
+    Label: arr_lab:
+        text = 'Target array'
+    QtLineCompleter: arr_val:
+        hug_width = 'ignore'
+        text := task.target_array
+        entries_updater << task.list_accessible_database_entries
+        tool_tip = EVALUATER_TOOLTIP
+
+    Label: col_lab1:
+        text = 'Column name freq'
+    Field: col_val1:
+        hug_width = 'ignore'
+        text := task.column_name_freq
+        
+    Label: col_lab2:
+        text = 'Column name maglin'
+    Field: col_val2:
+        hug_width = 'ignore'
+        text := task.column_name_maglin
+        
+    Label: col_lab3:
+        text = 'Column name phase'
+    Field: col_val3:
+        hug_width = 'ignore'
+        text := task.column_name_phase
+
+    Label: mod_lab:
+        text = 'Mode'
+    ObjectCombo: mod_val:
+        items = list(task.get_member('mode').items)
+        selected := task.mode
+
