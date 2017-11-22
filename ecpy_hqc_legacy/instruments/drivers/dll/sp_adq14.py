@@ -196,15 +196,13 @@ class SPADQ14(DllInstrument):
         buffer_size = samples_per_record*records_per_capture
         buffers = []
         avg = []
-        for i, c in enumerate(channels):
+        for c in channels:
             buf = (np.ascontiguousarray(np.empty(buffer_size, dtype=np.int16))
                    if c else np.zeros(1, dtype=np.uint16))
             buffers.append(buf)
             avg.append(np.zeros(samples_per_record) if c else np.zeros(1))
 
         chs = tuple([i for i, c in enumerate(channels) if c])
-        buffers = buffers
-        avg = avg
         buffers_ptr = (ctypes.c_void_p*2)(*(b.ctypes.data_as(ctypes.c_void_p)
                                             for b in buffers))
 
@@ -273,10 +271,10 @@ class SPADQ14(DllInstrument):
             for c in chs:
                 avg[c] *= 1.9/65535
         else:
-            for c in chs:
-                b = buffers[c]
-                b.reshape((-1, samples_per_record))
-                b *= 1.9/65535
+            for i, c in enumerate(channels):
+                if c:
+                    buffers[i] = np.reshape(buffers[i].astype(np.float32),
+                                  (-1, samples_per_record)) * 1.9/65535
 
         return avg if average else buffers
 
