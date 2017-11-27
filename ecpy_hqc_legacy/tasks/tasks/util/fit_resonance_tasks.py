@@ -40,9 +40,9 @@ class FitResonanceTask(SimpleTask):
     column_name_freq = Unicode().tag(pref=True)
 
     #: Flag indicating the measurement setup. This changes the fit function
-    mode = Enum('Reflection', 'Transmission').tag(pref=True)
+    mode = Enum('Reflection', 'Transmission', 'Cross Kerr').tag(pref=True)
 
-    database_entries = set_default({'res_value': 1.0, 'fit_err':0})
+    database_entries = set_default({'res_value': 1.0, 'fit_err':0.0})
 
     wait = set_default({'activated': True})  # Wait on all pools by default.
 
@@ -63,6 +63,12 @@ class FitResonanceTask(SimpleTask):
                 val = 1
                 fit_err = 100
         if self.mode == 'Transmission':
+            try:
+                val, fit_err = fit_lorentzian(freq, data_maglin)
+            except:
+                val = 1
+                fit_err = 100
+        if self.mode == 'Cross Kerr':
             try:
                 val, fit_err = fit_lorentzian(freq, data_maglin)
             except:
@@ -171,7 +177,7 @@ def get_f0_reflection(f, a_out):
         f0 = f[np.argmin(maglin)]
     else:
         f0 = roots[0]
-        
+
     phase_flt = flt.gaussian_filter(phase, 1)
     dphase_flt = np.diff(phase_flt)
     df = f[:-1]
@@ -202,5 +208,5 @@ def fit_lorentzian(x, y):
     A = B*(ymax-y0)
     popt, pcov = curve_fit(lorentzian, x, y, (x0, y0, A, B))
     fit_error = 100*np.sqrt(pcov[0, 0])/popt[0]
-    
+
     return popt[0], fit_error
