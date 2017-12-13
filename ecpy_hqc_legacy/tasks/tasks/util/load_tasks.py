@@ -21,16 +21,15 @@ from past.builtins import basestring
 from ecpy.tasks.api import SimpleTask, InterfaceableTaskMixin, TaskInterface
 
 
-def _make_array(names, dtypes='f8', data = None):
+def _make_array(names, dtypes='f8', data=None):
     if isinstance(dtypes, basestring):
         dtypes = [dtypes for i in range(len(names))]
 
     dtype = {'names': names, 'formats': dtypes}
-    if data==None:
-        data = np.ones((1,))
-    print(names)
-    print(dtype)
-    return np.ones((5,), dtype=dtype)
+    if data is None:
+        data = np.ones((5,))
+    data = data.astype(dtype)
+    return data
 
 
 class LoadArrayTask(InterfaceableTaskMixin, SimpleTask):
@@ -150,6 +149,7 @@ class CSVLoadInterface(TaskInterface):
         if new:
             self.task.write_in_database('array', _make_array(new))
 
+
 class DATLoadInterface(TaskInterface):
     """Interface used to load DAT files.
 
@@ -182,23 +182,24 @@ class DATLoadInterface(TaskInterface):
         header_lines = 0
         with open(full_path) as f:
             while True:
+                line = f.readline()
                 if f.readline().startswith(self.comments):
                     header_lines += 1
                 else:
-                    line = f.readline().split(self.delimiter)
+                    line = line.split(self.delimiter)
                     try:
                         float(line[0])
                         break
                     except:
                         names = [n.strip() for n in line if n]
-                        print('---Names---')
-                        print(names)
                         header_lines += 1
 
         data = np.loadtxt(full_path, comments=self.comments,
                           delimiter=self.delimiter, skiprows=header_lines)
 
-        task.write_in_database('array', _make_array(names, data = data))
+        data = _make_array(names, data=data)
+
+        task.write_in_database('array', _make_array(names, data=data))
 
     def check(self, *args, **kwargs):
         """Try to find the names of the columns to add the array in the
@@ -224,8 +225,6 @@ class DATLoadInterface(TaskInterface):
                     if not line.startswith(self.comments):
                         names = line.split(self.delimiter)
                         names = [n.strip() for n in names if n]
-                        print('---Names---')
-                        print(names)
                         self.task.write_in_database('array',
                                                     _make_array(names))
                         break

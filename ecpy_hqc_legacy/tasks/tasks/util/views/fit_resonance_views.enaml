@@ -24,14 +24,22 @@ enamldef FitResonanceView(BaseTaskView): view:
 
     """
 
-    constraints << [grid([arr_lab, col_lab1, col_lab2, col_lab3, mod_lab],
-                         [arr_val, col_val1, col_val2, col_val3, mod_val])]
+    constraints << [grid([arr_lab, ref_lab, col_lab1, col_lab2, col_lab3, mod_lab],
+                         [arr_val, ref_val, col_val1, col_val2, col_val3, mod_val])]
 
     Label: arr_lab:
         text = 'Target array'
     QtLineCompleter: arr_val:
         hug_width = 'ignore'
         text := task.target_array
+        entries_updater << task.list_accessible_database_entries
+        tool_tip = EVALUATER_TOOLTIP
+        
+    Label: ref_lab:
+        text = 'Ref array'
+    QtLineCompleter: ref_val:
+        hug_width = 'ignore'
+        text := task.ref_array
         entries_updater << task.list_accessible_database_entries
         tool_tip = EVALUATER_TOOLTIP
 
