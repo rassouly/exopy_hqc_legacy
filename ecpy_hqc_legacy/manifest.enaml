@@ -278,6 +278,13 @@ enamldef HqcLegacyManifest(PluginManifest):
                         kind = 'RF source'
                         connections = {'VisaTCPIP': {'resource_class': 'INSTR'}
                                         }
+                    Driver:
+                        driver = ('rohde_and_schwarz_arbitrary_generator:'
+                                  'RohdeSchwarzHMF2550')
+                        model = 'HMF2550'
+                        kind = 'RF source'
+                        connections = {'VisaRS232': {'resource_class': 'INSTR'}
+                                        }
                 Drivers:
                     manufacturer = 'Anapico'
                     Driver:
@@ -364,7 +371,8 @@ enamldef HqcLegacyManifest(PluginManifest):
                                    'ecpy_hqc_legacy.Legacy.AnritsuMG3694',
                                    'ecpy_hqc_legacy.Legacy.LabBrickLMS103',
                                    'ecpy_hqc_legacy.Legacy.RohdeSchwarzSMB100A',
-                                   'ecpy_hqc_legacy.Legacy.Anapico']
+                                   'ecpy_hqc_legacy.Legacy.Anapico',
+                                   'ecpy_hqc_legacy.Legacy.RohdeSchwarzHMF2550']
                     metadata = {'loopable': True}
                     Interface:
                         interface = 'pna_tasks:PNASetRFFrequencyInterface'
@@ -410,7 +418,8 @@ enamldef HqcLegacyManifest(PluginManifest):
                                    'ecpy_hqc_legacy.Legacy.RohdeSchwarzSMB100A',
                                    'ecpy_hqc_legacy.Legacy.ZNB20',
                                    'ecpy_hqc_legacy.Legacy.ZVA24',
-                                   'ecpy_hqc_legacy.Legacy.Anapico']
+                                   'ecpy_hqc_legacy.Legacy.Anapico',
+                                   'ecpy_hqc_legacy.Legacy.RohdeSchwarzHMF2550']
                     metadata = {'loopable': True}
                     Interface:
                         interface = 'synthHD_tasks:SynthHDsetChannelInterface'
