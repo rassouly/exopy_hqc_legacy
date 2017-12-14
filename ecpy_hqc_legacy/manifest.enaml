@@ -313,9 +313,18 @@ enamldef HqcLegacyManifest(PluginManifest):
                 Task:
                     task = 'array_tasks:ArrayFindValueTask'
                     view = 'views.array_views:ArrayFindValueView'
+#                Task:
+#                    task = 'fit_resonance_tasks:FitResonanceTask'
+#                    view = 'views.fit_resonance_views:FitResonanceView'
                 Task:
                     task = 'fit_resonance_tasks:FitResonanceTask'
-                    view = 'views.fit_resonance_views:FitResonanceView'
+                    view = 'views.fit_resonance_views_new:FitResonanceView'
+                    Interface:
+                        interface = 'fit_resonance_tasks:FitVNAInterface'
+                        views = ['views.fit_resonance_views:FitVNAInterfaceView']
+                    Interface:
+                        interface = 'fit_resonance_tasks:FitAlazarInterface'
+                        views = ['views.fit_resonance_views:FitAlazarInterfaceView']
                 Task:
                     task = 'load_tasks:LoadArrayTask'
                     view = 'views.load_views:LoadArrayView'
