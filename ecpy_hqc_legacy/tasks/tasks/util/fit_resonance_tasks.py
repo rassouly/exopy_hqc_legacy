@@ -14,7 +14,7 @@ from __future__ import (division, unicode_literals, print_function,
 
 import numpy as np
 from future.utils import raise_from
-from atom.api import (Enum, Unicode, set_default, Float, Int)
+from atom.api import (Enum, Bool, Unicode, set_default, Float, Int)
 from scipy.interpolate import splrep, sproot, splev
 from scipy.optimize import curve_fit, leastsq
 import scipy.ndimage.filters as flt
@@ -34,7 +34,9 @@ class FitResonanceTask(InterfaceableTaskMixin, SimpleTask):
     #: Name of the target in the database.
     target_array = Unicode().tag(pref=True, feval=ARR_VAL)
     ref_array = Unicode().tag(pref=True, feval=ARR_VAL)
-
+    use_ref = Bool(False).tag(pref=True)
+    if use_ref:
+        print('bah')
     #: Kind of data to fit.
     selected_format = Unicode().tag(pref=True)
 
@@ -87,29 +89,27 @@ class FitVNAInterface(TaskInterface):
         """
         task = self.task
         array = task.format_and_eval_string(task.target_array)
-        if 1 == 0:
+        if 1 == 1:
             array_ref = task.format_and_eval_string(task.ref_array)
 
         freq = array[self.column_name_freq]
         data_maglin = array[self.column_name_maglin]
 
         if self.mode == 'Reflection':
-            if 1 == 0:
+            if 1 == 1:
                 freq_ref = array_ref[self.column_name_freq]
                 data_maglin_ref = array_ref[self.column_name_maglin]
                 data_phase_ref = array_ref[self.column_name_phase]
             data_phase = array[self.column_name_phase]
             data_c = data_maglin*np.exp(1j*np.pi/180*data_phase)
-            if 1 == 0:
+            if 1 == 1:
                 data_c_ref = data_maglin_ref*np.exp(1j*np.pi/180*data_phase_ref)
-                data_cc = data_c/data_c_ref
+                data_c = data_c/data_c_ref
 
         if self.mode == 'Lorentzian':
             data_error = array[self.column_name_phase]
         if self.mode == 'Reflection':
             try:
-                if 1 == 0:
-                    val, fit_err = fit_complex_a_out(freq, data_cc)
                 val, fit_err = fit_complex_a_out(freq, data_c)
             except:
                 val = 1e9
@@ -176,7 +176,7 @@ class FitVNAInterface(TaskInterface):
         """ Update the database entries according to the mode.
 
         """
-        
+
 class FitAlazarInterface(TaskInterface):
     """ Store the pair(s) of index/value for the resonance frequency.
 

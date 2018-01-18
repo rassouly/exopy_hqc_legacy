@@ -15,7 +15,7 @@ from __future__ import (division, unicode_literals, print_function,
 import time
 import numbers
 
-from atom.api import (Float, Value, Unicode, Int, set_default)
+from atom.api import (Float, Value, Unicode, Int, set_default, Enum)
 
 from ecpy.tasks.api import (InstrumentTask, TaskInterface,
                             InterfaceableTaskMixin, validators)
@@ -31,6 +31,9 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
     #: Target value for the source (dynamically evaluated)
     target_value = Unicode().tag(pref=True,
                                  feval=validators.SkipLoop(types=numbers.Real))
+
+    #: Chosen range
+    chosen_range = Enum('10 mV', '100 mV', '1 V', '10 V', '30 V').tag(pref=True)
 
     #: Largest allowed step when changing the output of the instr.
     back_step = Float().tag(pref=True)
@@ -56,6 +59,8 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
                        'output a voltage')
                 raise ValueError(msg.format(self.name))
 
+
+        setattr(self.driver, 'voltage_range', self.chosen_range)
         setter = lambda value: setattr(self.driver, 'voltage', value)
         current_value = getattr(self.driver, 'voltage')
 

@@ -28,7 +28,7 @@ from enaml.stdlib.message_box import warning
 from ecpy.tasks.api import (BaseTaskView, EVALUATER_TOOLTIP, FORMATTER_TOOLTIP)
 from ecpy.utils.widgets.qt_completers import QtLineCompleter
 
-        
+
 class BaseFitView(BaseTaskView):
     """ Base class for fit task views handling the interface selection.
 
@@ -129,10 +129,10 @@ enamldef FitResonanceView(BaseFitView): main:
 
     """
     GroupBox: array:
-        title = 'Array'
-        constraints << [grid([arr_lab, ref_lab, type_lab],
-                             [arr_val, ref_val, type_val])]
-    
+        title = 'Arrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrray'
+        constraints << [grid([arr_lab, ref_lab, use_ref_lab, type_lab],
+                             [arr_val, ref_val, use_ref_val, type_val])]
+
         Label: arr_lab:
             text = 'Target array'
         QtLineCompleter: arr_val:
@@ -140,7 +140,7 @@ enamldef FitResonanceView(BaseFitView): main:
             text := task.target_array
             entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
-            
+
         Label: ref_lab:
             text = 'Ref array'
         QtLineCompleter: ref_val:
@@ -148,7 +148,13 @@ enamldef FitResonanceView(BaseFitView): main:
             text := task.ref_array
             entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
-            
+
+        Label: use_ref_lab:
+            text = 'Use ref'
+        CheckBox: use_ref_val:
+            checked := task.use_ref
+            tool_tip = fill("Should one subtract the a background spectrum ?", 60)
+
         Label: type_lab:
             text = 'Data type'
         ObjectCombo: type_val:
@@ -176,13 +182,13 @@ enamldef FitVNAInterfaceView(Container):
     Field: col_val1:
         hug_width = 'ignore'
         text := interface.column_name_freq
-        
+
     Label: col_lab2:
         text = 'Column name maglin'
     Field: col_val2:
         hug_width = 'ignore'
         text := interface.column_name_maglin
-        
+
     Label: col_lab3:
         text = 'Column name phase'
     Field: col_val3:
@@ -213,19 +219,19 @@ enamldef FitAlazarInterfaceView(Container):
     Field: col_val1:
         hug_width = 'ignore'
         text := interface.column_name_freq
-        
+
     Label: col_lab2:
         text = 'Column name Icor'
     Field: col_val2:
         hug_width = 'ignore'
         text := interface.column_name_Icor
-        
+
     Label: col_lab3:
         text = 'Column name Qcor'
     Field: col_val3:
         hug_width = 'ignore'
         text := interface.column_name_Qcor
-    
+
     Label: delay_lab:
         text = 'Time delay (ns)'
     Field: delay_val:

@@ -325,7 +325,7 @@ enamldef HqcLegacyManifest(PluginManifest):
 #                    view = 'views.fit_resonance_views:FitResonanceView'
                 Task:
                     task = 'fit_resonance_tasks:FitResonanceTask'
-                    view = 'views.fit_resonance_views_new:FitResonanceView'
+                    view = 'views.fit_resonance_views:FitResonanceView'
                     Interface:
                         interface = 'fit_resonance_tasks:FitVNAInterface'
                         views = ['views.fit_resonance_views:FitVNAInterfaceView']
