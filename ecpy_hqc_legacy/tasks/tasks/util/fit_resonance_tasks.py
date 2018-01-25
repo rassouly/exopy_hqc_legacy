@@ -35,8 +35,7 @@ class FitResonanceTask(InterfaceableTaskMixin, SimpleTask):
     target_array = Unicode().tag(pref=True, feval=ARR_VAL)
     ref_array = Unicode().tag(pref=True, feval=ARR_VAL)
     use_ref = Bool(False).tag(pref=True)
-    if use_ref:
-        print('bah')
+
     #: Kind of data to fit.
     selected_format = Unicode().tag(pref=True)
 
@@ -88,21 +87,21 @@ class FitVNAInterface(TaskInterface):
 
         """
         task = self.task
+        use_ref = task.use_ref
         array = task.format_and_eval_string(task.target_array)
-        if 1 == 1:
+        if use_ref:
             array_ref = task.format_and_eval_string(task.ref_array)
 
         freq = array[self.column_name_freq]
         data_maglin = array[self.column_name_maglin]
 
         if self.mode == 'Reflection':
-            if 1 == 1:
+            data_phase = array[self.column_name_phase]
+            data_c = data_maglin*np.exp(1j*np.pi/180*data_phase)
+            if use_ref:
                 freq_ref = array_ref[self.column_name_freq]
                 data_maglin_ref = array_ref[self.column_name_maglin]
                 data_phase_ref = array_ref[self.column_name_phase]
-            data_phase = array[self.column_name_phase]
-            data_c = data_maglin*np.exp(1j*np.pi/180*data_phase)
-            if 1 == 1:
                 data_c_ref = data_maglin_ref*np.exp(1j*np.pi/180*data_phase_ref)
                 data_c = data_c/data_c_ref
 

@@ -129,7 +129,7 @@ enamldef FitResonanceView(BaseFitView): main:
 
     """
     GroupBox: array:
-        title = 'Arrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrray'
+        title = 'Array'
         constraints << [grid([arr_lab, ref_lab, use_ref_lab, type_lab],
                              [arr_val, ref_val, use_ref_val, type_val])]
 
@@ -153,7 +153,6 @@ enamldef FitResonanceView(BaseFitView): main:
             text = 'Use ref'
         CheckBox: use_ref_val:
             checked := task.use_ref
-            tool_tip = fill("Should one subtract the a background spectrum ?", 60)
 
         Label: type_lab:
             text = 'Data type'
