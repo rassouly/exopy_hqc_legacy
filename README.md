@@ -9,7 +9,10 @@ Transition package to smooth transition from HQCMeas to Ecpy.
 Installation
 ------------
 
+``` shell
 conda install ecpy_hqc_legacy -c ecpy -c conda-forge
+```
+
 
 WORK IN PROGRESS
 
