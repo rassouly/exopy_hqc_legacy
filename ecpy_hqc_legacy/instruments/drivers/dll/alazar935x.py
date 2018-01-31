@@ -90,7 +90,7 @@ class Alazar935x(DllInstrument):
                                   ats.TRIG_ENGINE_J,
                                   ats.TRIG_EXTERNAL,
                                   ats.TRIGGER_SLOPE_POSITIVE,
-                                  150,
+                                  141,
                                   ats.TRIG_ENGINE_K,
                                   ats.TRIG_DISABLE,
                                   ats.TRIGGER_SLOPE_POSITIVE,
