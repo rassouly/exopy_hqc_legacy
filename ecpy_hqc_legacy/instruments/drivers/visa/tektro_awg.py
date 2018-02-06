@@ -526,6 +526,30 @@ class AWG(VisaInstrument):
                    str(goto))
 
     @secure_communication()
+    def set_jump_pos(self, position, jump):
+        """Sets the jump value at position to jump
+
+        """
+        self.write('SEQuence:ELEMent' + str(position) + ':JTARget:TYPE INDex')
+        self.write('SEQuence:ELEMent' + str(position) + ':JTARget:INDex ' +
+                   str(jump))
+
+    @secure_communication()
+    def send_event(self):
+        """Send an event
+
+        """
+        self.write('EVENt:IMM')
+
+    @secure_communication()
+    def ask_sequencer_pos(self):
+        """Ask the current position index of the sequencer
+
+        """
+        pos = self.ask('AWGC:SEQ:POS?')
+        return(pos)
+
+    @secure_communication()
     def set_repeat(self, position, repeat):
         """Sets the loop count for the specified subsequence element.
         The loop count is an integer.

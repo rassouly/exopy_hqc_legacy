@@ -102,6 +102,7 @@ class FitVNAInterface(TaskInterface):
                 freq_ref = array_ref[self.column_name_freq]
                 data_maglin_ref = array_ref[self.column_name_maglin]
                 data_phase_ref = array_ref[self.column_name_phase]
+                freq_ref, data_maglin_ref, data_phase_ref = adapt_ref(freq, freq_ref, data_maglin_ref, data_phase_ref)
                 data_c_ref = data_maglin_ref*np.exp(1j*np.pi/180*data_phase_ref)
                 data_c = data_c/data_c_ref
 
@@ -279,6 +280,68 @@ class FitAlazarInterface(TaskInterface):
 
         """
 
+def _find_weights(x, x_ref):
+    '''
+    Inputs
+    ------
+    x(float):x_value we want to bound by 2 x_refs values
+    x_ref(array)
+
+    Outputs:
+    --------
+    indices(int): indices of bounds in x_ref
+    weights(list): weights of either bound
+
+    '''
+    if x>np.max(x_ref) or x<np.min(x_ref):
+        raise ValueError('Searched value should be in the bound of the search array')
+    i0 = np.argmin(np.abs(x_ref-x))
+    x0_ref = x_ref[i0]
+
+    if x>=x0_ref and x0_ref != np.max(x_ref):
+        i1 = i0+1
+        x1_ref = x_ref[i1]
+    else:
+        i1 = i0
+        x1_ref = x0_ref
+        i0 = i0-1
+        x0_ref = x_ref[i0]
+
+    delta_x = x1_ref-x0_ref
+    weight_x0 = 1-(x-x0_ref)/delta_x
+    weight_x1 = 1-(-x+x1_ref)/delta_x
+
+    return(i0,i1, weight_x0, weight_x1)
+
+
+def adapt_ref(x_data, x_ref, maglin_ref, phase_ref):
+    '''
+    If x_data and x_ref are not the same, interpolate the data_ref to match
+    the data linspace.
+
+    Inputs
+    ------
+    x_data(array): data to be fitter
+    x_ref(array): ref support (e.g. spec frequecies)
+    maglin_ref(array): data_ref
+    phase_ref(array): data_ref
+
+    Outputs:
+    --------
+    adapted x_ref(array), maglin_ref(array) and phase_ref(array)
+
+    '''
+    data_c_ref =  maglin_ref*np.exp(1j*np.pi/180*phase_ref)
+    X = len(x_data)
+    maglin_ref_adapted = np.empty(X)
+    phase_ref_adapted = np.empty(X)
+    for ii, x in enumerate(x_data):
+        i0, i1, w0, w1 = _find_weights(x, x_ref)
+        data_c_calc = data_c_ref[i0]*w0+data_c_ref[i1]*w1
+        maglin_ref_adapted[ii] = np.abs(data_c_calc)
+        phase_ref_adapted[ii] = 180/np.pi*np.angle(data_c_calc)
+    return(x_data, maglin_ref_adapted, phase_ref_adapted)
+
 
 def complex_fit(f, xData, yData, p0, weights=None, bounds=()):
     if np.isscalar(p0):
@@ -314,7 +377,7 @@ def fit_complex_a_out(f, a_out):
     kc = 10e6
     ki = kc
     T = 0
-#
+
 #    plt.close('all')
 #    fig, ax = plt.subplots(3)
 #    ax[0].scatter(f, np.abs(a_out))

@@ -13,6 +13,7 @@ from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
 import logging
+import time
 
 from atom.api import (Unicode, set_default)
 
@@ -35,7 +36,13 @@ class RunAWGTask(InstrumentTask):
             switch = self.format_and_eval_string(self.switch)
 
         if switch == 'On' or switch == 1:
+            self.driver.send_event() #has to be combined with a
+                                     #'Event jump to' 1
+#            print('Event sent, sleeping {}s'.format(15))
+#            time.sleep(15)
             self.driver.running = 1
+#            print('Requested running ON, sleeping {}s'.format(15))
+#            time.sleep(15)
             self.write_in_database('output', 1)
         else:
             self.driver.running = 0
