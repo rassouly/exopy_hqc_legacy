@@ -14,8 +14,9 @@ from __future__ import (division, unicode_literals, print_function,
 
 import logging
 import time
+import numbers
 
-from atom.api import (Unicode, set_default)
+from atom.api import (Float, Unicode, set_default)
 
 from ecpy.tasks.api import (InstrumentTask, validators)
 
@@ -26,6 +27,9 @@ class RunAWGTask(InstrumentTask):
     """
     #: Switch to choose the AWG run mode: on or off
     switch = Unicode('Off').tag(pref=True, feval=validators.SkipLoop())
+    delay = Unicode('0').tag(pref=True,
+                                 feval=validators.SkipLoop(types=numbers.Real))
+
     database_entries = set_default({'output': 0})
 
     def perform(self, switch=None):
@@ -36,16 +40,14 @@ class RunAWGTask(InstrumentTask):
             switch = self.format_and_eval_string(self.switch)
 
         if switch == 'On' or switch == 1:
-            self.driver.send_event() #has to be combined with a
-                                     #'Event jump to' 1
-#            print('Event sent, sleeping {}s'.format(15))
-#            time.sleep(15)
-            self.driver.running = 1
-#            print('Requested running ON, sleeping {}s'.format(15))
-#            time.sleep(15)
+            self.driver.send_event() #goes with a 'Event jump to' 1
+            delay = self.format_and_eval_string(self.delay)
+            print(delay)
+            self.driver.run_awg(1, delay=delay) #delay needed when loading
+                                                     #large nb of sequences
             self.write_in_database('output', 1)
         else:
-            self.driver.running = 0
+            self.driver.run_awg(0)
             self.write_in_database('output', 0)
         log = logging.getLogger(__name__)
         msg = 'AWG running state OK'

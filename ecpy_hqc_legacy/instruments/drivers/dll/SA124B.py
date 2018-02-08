@@ -18,9 +18,8 @@ Visual C++ runtime needs to be installed to be able to load the dll.
 from __future__ import (division, unicode_literals, print_function,
                         absolute_import)
 
-import sys
-import math
 import ctypes
+import time
 from subprocess import call
 
 import numpy as np
@@ -28,14 +27,8 @@ import numpy as np
 from ..dll_tools import DllInstrument
 from ..driver_tools import InstrIOError
 
+# get dll
 sa_dll = ctypes.CDLL('sa_api.dll')
-
-#try:
-#    sa_dll = 'instrument_plugins\\sa_api.dll'
-#    sa_dll = ctypes.cdll.LoadLibrary(sa_dll)
-#except:
-#    sa_dll = 'sa_api.dll'
-#    sa_dll = ctypes.cdll.LoadLibrary(sa_dll)
 
 SA_TRUE  = 1
 SA_FALSE = 0
@@ -75,13 +68,14 @@ SA_REF_EXTERNAL_IN  = 2
 
 # Levels
 SA_AUTO_ATTEN = -1
-SA_AUTO_GAIN  = -1
+SA_AUTO_GAIN = -1
 
 # Detectors
 SA_MIN_MAX = 0x0
 SA_AVERAGE = 0x1
 
 NO_ERROR = b'No error'
+
 
 def saGetAPIVersion():
     '''
@@ -136,8 +130,6 @@ def saOpenDeviceBySerialNumber(s_num):
             ctypes.c_int32(s_num))
     err_code = error_check(err)
 
-#    print 'Opened device.  SN: %d  Dev_ID: %d' % (s_num, dev_id.value)
-
     return err_code, dev_id.value
 
 
@@ -154,8 +146,6 @@ def sa_call(dev_id, func_call, *args):
 def saCloseDevice(dev_id):
     sa_call(dev_id, 'saCloseDevice')
 
-    print ('Closed Device.  Dev_ID: %d' % (dev_id))
-
 
 def saInitiate(dev_id, mode=SA_SWEEPING):
     '''
@@ -168,8 +158,6 @@ def saInitiate(dev_id, mode=SA_SWEEPING):
     return sa_call(dev_id, 'saInitiate',
                    ctypes.c_int32(mode),
                    ctypes.c_uint32(0))
-
-    print('Initiated.  Dev_ID: %d   Mode: %d' % (dev_id, mode))
 
 
 def saConfigAcquisition(dev_id, detector=SA_AVERAGE, scale=SA_LOG_SCALE):
@@ -187,7 +175,24 @@ def saConfigAcquisition(dev_id, detector=SA_AVERAGE, scale=SA_LOG_SCALE):
                    ctypes.c_int32(scale))
 
 
-def saQuerySweepInfo(dev_id, get_xaxis=False):
+def saQueryRealTimeFrameInfo(dev_id):
+    '''
+    Returns the current sweep start, number of steps, and step size
+    '''
+    frame_width = ctypes.c_int32(0)
+    frame_height = ctypes.c_int32(0)
+
+    err_code = sa_call(dev_id, 'saQueryRealTimeFrameInfo',
+                       ctypes.byref(frame_width),
+                       ctypes.byref(frame_height))
+
+    frame_width = frame_width.value
+    frame_height = frame_height.value
+
+    return err_code, frame_width, frame_height
+
+
+def saQuerySweepInfo(dev_id):
     '''
     Returns the current sweep start, number of steps, and step size
     '''
@@ -204,36 +209,41 @@ def saQuerySweepInfo(dev_id, get_xaxis=False):
     start_freq = start_freq.value
     bin_size = bin_size.value
 
-    if get_xaxis:
-        return err_code, np.arange(sweep_length)*bin_size + start_freq
-
-    return err_code, sweep_length, start_freq, bin_size
+    xaxis = np.arange(sweep_length)*bin_size + start_freq
+    return err_code, sweep_length, start_freq, bin_size, xaxis
 
 
-def saGetSweep(dev_id, get_xs=True, sweeplen=None):
+def saGetRealTimeSweep(dev_id):
+    ret = saQuerySweepInfo(dev_id)
+    err_code, sweep_length, start_freq, bin_size, xaxis = ret
+    sweeplen = len(xaxis)
+
+    err_code, frame_width, frame_height = saQueryRealTimeFrameInfo(dev_id)
+    sweep_buff = np.empty(sweeplen, dtype=np.double)
+    frame_buff = np.empty((frame_height, frame_width), dtype=np.double)
+    err_code = sa_call(dev_id, 'saGetRealTimeFrame',
+                       sweep_buff.ctypes,
+                       frame_buff.ctypes)
+    return err_code, xaxis, sweep_buff, frame_buff
+
+
+def saGetSweep(dev_id):
     '''
     This assumes we're in average mode.  If you really want min/max the
     buffers have different data and the return needs to be modified.
     '''
-    if get_xs:
-        err_code, xaxis = saQuerySweepInfo(dev_id, get_xaxis=True)
-        sweeplen = len(xaxis)
-    else:
-        if sweeplen is None:
-            raise Exception('must specify length or get xs')
+    ret = saQuerySweepInfo(dev_id)
+    err_code, sweep_length, start_freq, bin_size, xaxis = ret
+    sweeplen = len(xaxis)
 
     min_buff = np.empty(sweeplen, dtype=np.double)
     max_buff = np.empty(sweeplen, dtype=np.double)
-#    print '00', sweeplen
 
     err_code = sa_call(dev_id, 'saGetSweep_64f',
                        min_buff.ctypes,
                        max_buff.ctypes)
-#    print '11'
-    if get_xs:
-        return err_code, xaxis, min_buff
-    else:
-        return err_code, min_buff
+    return err_code, xaxis, min_buff
+
 
 def saQueryTemperature(dev_id):
     '''
@@ -285,7 +295,6 @@ def saConfigSweepCoupling(dev_id, rbw, vbw, reject=SA_TRUE):
     assert rbw > SA_MIN_RBW, 'RBW below minimum: %f < %f' % (rbw, SA_MIN_RBW)
     assert rbw < SA_MAX_RBW, 'RBW above maximum: %f > %f' % (rbw, SA_MAX_RBW)
 
-
     return sa_call(dev_id, 'saConfigSweepCoupling',
                    ctypes.c_double(rbw),
                    ctypes.c_double(vbw),
@@ -298,26 +307,30 @@ def saConfigCenterSpan(dev_id, center, span):
     assigned here, but they can be found from saQuerySweepInfo.
 
     '''
-    f_min = center-span
-    f_max = center+span
+    f_min = np.round(center-span/2, -3)
+    f_max = np.round(center+span/2, -3)
 
-    assert f_min > SA124_MIN_FREQ, 'f_min below minimum: %f < %f' % (f_min, SA124_MIN_FREQ)
-    assert f_max < SA124_MAX_FREQ, 'f_max above maximum: %f > %f' % (f_max, SA124_MAX_FREQ)
+    assert f_min > SA124_MIN_FREQ, 'f_min below \
+           minimum: %f < %f' % (f_min, SA124_MIN_FREQ)
+    assert f_max < SA124_MAX_FREQ, 'f_max above \
+           maximum: %f > %f' % (f_max, SA124_MAX_FREQ)
     assert span > 1.0, 'Minimum span is 1 Hz'
 
     return sa_call(dev_id, 'saConfigCenterSpan',
-                   ctypes.c_double(center),
-                   ctypes.c_double(span))
+                   ctypes.c_double(np.round(center, -3)),
+                   ctypes.c_double(np.round(span, -3)))
 
 
 def saConfigLevel(dev_id, level):
     '''
     Sets reference level in dBm.
     '''
-    assert level < SA_MAX_REF, 'level above maximum: %f > %f' % (level, SA_MAX_REF)
+    assert level < SA_MAX_REF, 'level above \
+           maximum: %f > %f' % (level, SA_MAX_REF)
 
     return sa_call(dev_id, 'saConfigLevel',
                    ctypes.c_double(level))
+
 
 def saReadSingleFreq(dev_id, freq, n_av=1, verify_freq=True,
                      set_zeroif_params=True):
@@ -343,23 +356,21 @@ def saReadSingleFreq(dev_id, freq, n_av=1, verify_freq=True,
     time.sleep(0.25)
 
     if verify_freq:
-        err_code, sweep_length, start_freq, bin_size = saQuerySweepInfo(dev_id)
+        ret = saQuerySweepInfo(dev_id)
+        err_code, sweep_length, start_freq, bin_size, xaxis = ret
         actual_freq = start_freq + round(sweep_length/2)*bin_size
         diff = np.abs(freq-actual_freq)
         if diff > 100e3:
             raise Exception('Frequency set inaccurate')
 
     ys = []
-    err_code, xs, y = saGetSweep(dev_id, get_xs=True)
-#        if len(y) > 1:
-#            print 'SA: settings lead to multiple measurements'
+    err_code, xs, y = saGetSweep(dev_id)
 
     idx = len(y)//2
     ys.append(y[idx])
     if n_av > 1:
         for i in range(n_av-1):
-#            ys.append(self.sweep(get_xs=False, sweeplen=len(y))[idx])
-            err_code, y = saGetSweep(dev_id, get_xs=False, sweeplen=len(y))
+            err_code, x, y = saGetSweep(dev_id)
             ys.append(y[idx])
     else:
         pass
@@ -369,41 +380,53 @@ def saReadSingleFreq(dev_id, freq, n_av=1, verify_freq=True,
 
 
 class SA124B(DllInstrument):
+    ''' Driver for SA124B Signal Hound spectrum analyzer
 
-    def __init__(self, connection_infos, caching_allowed=True,
+    '''
+    def __init__(self, connection_infos, mode=SA_SWEEPING,
+                 caching_allowed=True,
                  caching_permissions={}, auto_open=True):
         super(SA124B, self).__init__(connection_infos, caching_allowed,
                                      caching_permissions, auto_open)
-        if auto_open:
-            self.open_connection(connection_infos['serial'])
+        self.mode = mode
 
+        if auto_open:
+            serial = saGetSerialNumberList()[0]
+            assert serial != 0
+            self.open_connection(serial)
 
     def open_connection(self, serial):
+
         self.error_list = []
-        self.vbw, self.rbw= 250e3, 250e3
+        self.vbw, self.rbw = 250e3, 250e3
 
         s_nums = saGetSerialNumberList()
         if not (serial in s_nums):
-            raise Exception('Unable to find SA124B with serial %s: available serial numbers include %i' % (serial,s_nums[0]))
+            msg = 'Unable to find SA124B with serial %s: \
+                   available serial numbers include %i' % (serial, s_nums[0])
+            raise Exception(msg)
         self._serialno = serial
 
         err, self._devid = saOpenDeviceBySerialNumber(serial)
         if err != NO_ERROR:
             raise Exception(err)
 
-        print(saSetTimebase(self._devid))
-        print(saConfigAcquisition(self._devid))
-        print(saConfigCenterSpan(self._devid, 6e9, 10e6))
-        self._initiate()
+        saConfigLevel(self._devid, -30)
+        self.do_get_ext_ref()
+        self._init_freq()
 
+    def close_connection(self):
+        self._close()
 
     def _close(self):
         saCloseDevice(self._devid)
 
+    def _init_freq(self):
+        self.do_set_rbw_vbw(1e3, 1e3)
+        self.do_set_f0_span(6e9, 250e3)
 
     def _initiate(self):
-        saInitiate(self._devid, SA_SWEEPING)
-
+        saInitiate(self._devid, mode=self.mode)
 
     def do_get_error(self):
         '''
@@ -417,24 +440,19 @@ class SA124B(DllInstrument):
         else:
             return 'Error list empty'
 
-
     def do_get_dev_id(self):
         return self._devid
 
-
     def do_get_serial(self):
         return self._serialno
-
 
     def do_get_vbw(self):
         # The API doesn't have a device query.
         return self.vbw
 
-
     def do_get_rbw(self):
         # The API doesn't have a device query.
         return self.rbw
-
 
     def do_get_temperature(self):
         saAbort(self._devid)
@@ -443,27 +461,24 @@ class SA124B(DllInstrument):
         self._initiate()
         return temp
 
-
     def do_get_center_frequency(self):
-        err_code, sweep_length, start_freq, bin_size = saQuerySweepInfo(self._devid)
+        ret = saQuerySweepInfo(self._devid)
+        err_code, sweep_length, start_freq, bin_size, xaxis = ret
         self.error_list.append(err_code)
         return start_freq + round(sweep_length/2)*bin_size
 
-
     def do_get_span(self):
-        err_code, sweep_length, start_freq, bin_size = saQuerySweepInfo(self._devid)
+        ret = saQuerySweepInfo(self._devid)
+        err_code, sweep_length, start_freq, bin_size, xaxis = ret
         self.error_list.append(err_code)
         return sweep_length*bin_size
 
-
     def do_set_center_frequency(self, freq):
         span = self.do_get_span()
-
         err_code = saConfigCenterSpan(self._devid, freq, span)
         self._initiate()
         self.error_list.append(err_code)
         return freq
-
 
     def do_set_span(self, span):
         center_frequency = self.do_get_center_frequency()
@@ -473,12 +488,25 @@ class SA124B(DllInstrument):
         self.error_list.append(err_code)
         return span
 
+    def do_set_f0_span(self, f0, span):
+        err_code = saConfigCenterSpan(self._devid, f0, span)
+        self._initiate()
+        self.error_list.append(err_code)
+        return f0, span
 
     def do_get_ext_ref(self):
         err_code = saSetTimebase(self._devid)
         self._initiate()
         return err_code
 
+    def do_set_rbw_vbw(self, rbw, vbw):
+        err_code = saConfigSweepCoupling(self._devid, rbw, vbw)
+        self._initiate()
+        if err_code == NO_ERROR:
+            self.vbw = vbw
+            self.rbw = rbw
+        self.error_list.append(err_code)
+        return vbw
 
     def do_set_vbw(self, vbw):
         err_code = saConfigSweepCoupling(self._devid, self.rbw, vbw)
@@ -488,7 +516,6 @@ class SA124B(DllInstrument):
         self.error_list.append(err_code)
         return vbw
 
-
     def do_set_rbw(self, rbw):
         err_code = saConfigSweepCoupling(self._devid, rbw, self.vbw)
         self._initiate()
@@ -497,75 +524,77 @@ class SA124B(DllInstrument):
         self.error_list.append(err_code)
         return rbw
 
+    def max_sweep(self):
+        err_code, xs, ys = saGetSweep(self._devid)
+        self.error_list.append(err_code)
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        ax.plot(xs, ys)
+        return max(ys)
 
-    def sweep(self, get_xs=True, sweeplen=None):
-        if get_xs:
-            err_code, xs, ys = saGetSweep(self._devid, get_xs=True)
-            self.error_list.append(err_code)
-            return xs, ys
-        else:
-            assert not (sweeplen is None)
-            err_code, ys = saGetSweep(self._devid, get_xs=False, sweeplen=sweeplen)
-            self.error_list.append(err_code)
-            return ys
-
-    def read_single_freq(self, freq, n_av=1, verify_freq=True,
-                         set_zeroif_params=True):
-        '''
-        This function is for mixer tuning.  It's effectively zero-IF mode.
-        The SA124B has a zero IF mode you can access from the Spike software,
-        but it's not documented in the API.  (It is documented for the BB
-        series analyzers.)
-
-        This function becomes notably faster without the verification step,
-        as well as without setting the zeroif_params.  If you're going to be
-        looking at a frequency more than once (as you do when tuning a mixer)
-        there's no need to reset the zeroif_params or re-verify the frequency.
-        I recommend only doing those on the first call.
-
-        There's not too much of a need for averaging because the device is
-        quite sensitive.
-        '''
-        if set_zeroif_params:
-            self.do_set_rbw(250e3)
-            self.do_set_span(250e3)
-            self.do_set_vbw(250e3)
-
-        self.do_set_center_frequency(freq)
-        if verify_freq:
-            actual_freq = self.do_get_center_frequency()
-            diff = np.abs(freq-actual_freq)
-            if diff > 100e3:
-                raise Exception('Frequency set inaccurate')
-
+    def read_single_freq(self, f0, n_av=1):
+        self.do_set_center_frequency(f0)
+        fset = self.do_get_center_frequency()
+        if (fset-f0)/f0 > 1e-6:
+            msg = 'Instrument did not set the frequency correctly'
+            raise InstrIOError(msg)
         ys = []
-        xs, y = self.sweep(get_xs=True)
+        while n_av > 0:
+            ys.append(self.max_sweep())
+            n_av -= 1
+        ys = np.array(ys)
+        return 10*np.log10(np.mean(10**(ys/10)))
 
-#        if len(y) > 1:
-#            print 'SA: settings lead to multiple measurements'
+    def sweep(self):
+        err_code, xs, ys = saGetSweep(self._devid)
+        self.error_list.append(err_code)
+        return xs, ys
 
-        idx = len(y)//2
-        ys.append(y[idx])
-        if n_av > 1:
-            for i in range(n_av-1):
-                ys.append(self.sweep(get_xs=False, sweeplen=len(y))[idx])
-
+    def real_time_sweep(self, f0=None, mean=False):
+        if f0 is not None:
+            self.do_set_center_frequency(f0)
+        err_code, xs, ys, zs = saGetRealTimeSweep(self._devid)
+        self.error_list.append(err_code)
+        ys = np.array(ys)
+        length = len(ys)
+        mean_value = -np.mean(np.log(np.abs(ys[:length//2])))
+        if not mean:
+            return xs, ys, zs
         else:
-            pass
-        ys = 10**np.array(np.array(ys)/10.0)
-        y = np.mean(ys)
-        return 10 * np.log10(y)
-
-
+            return mean_value
 
 
 def test_my_sa():
     serial = saGetSerialNumberList()[0]
     assert serial != 0
-    connection_infos =  {u'serial': serial}
-    my_sa = SA124B(connection_infos)
-    print(my_sa.do_get_serial())
+    connection_infos = {u'serial': serial}
+    my_sa = SA124B(connection_infos, mode=SA_SWEEPING)
+    xs, y = my_sa.sweep()
     my_sa._close()
+
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+    ax.plot(xs, y)
+    ax.set_title('SWEEP')
+    ax.set_xlabel('Freq')
+    ax.set_ylabel('Signal')
+
+
+def test_my_sa_real_time():
+    serial = saGetSerialNumberList()[0]
+    assert serial != 0
+    connection_infos = {u'serial': serial}
+    my_sa = SA124B(connection_infos, mode=SA_REAL_TIME)
+    xs, y, z = my_sa.real_time_sweep()
+    my_sa._close()
+
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+    ax.plot(xs, y)
+    ax.set_title('REAL TIME')
+    ax.set_xlabel('Freq')
+    ax.set_ylabel('Signal')
+
 
 if __name__ == '__main__':
     test_my_sa()

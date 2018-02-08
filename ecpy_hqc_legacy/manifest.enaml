@@ -306,6 +306,11 @@ enamldef HqcLegacyManifest(PluginManifest):
                     manufacturer = 'AlazarTech'
                     model = 'ATS9350'
 
+                Driver:
+                    driver = 'SA124B:SA124B'
+                    manufacturer = 'SignalHound'
+                    model = 'SA124B'
+
     Extension:
         id = 'ecpy_hqc_legacy.tasks'
         point = 'ecpy.tasks.declarations'
@@ -500,4 +505,8 @@ enamldef HqcLegacyManifest(PluginManifest):
                 Task:
                     task = 'run_awg:RunAWGTask'
                     view = 'views.run_awg_views:RunAWGView'
+                    instruments = ['ecpy_hqc_legacy.Legacy.AWG']
+                Task:
+                    task = 'tune_IQ_mixer:TuneIQMixerTask'
+                    view = 'views.tune_IQ_mixer_views:TuneIQmixerView'
                     instruments = ['ecpy_hqc_legacy.Legacy.AWG']

@@ -25,7 +25,7 @@ from ecpy_hqc_legacy.utils.layouts import auto_grid_layout
 from ...base_instr_view import InstrView
 
 
-enamldef RunAWGView(InstrView): view:
+enamldef TuneIQmixerView(InstrView): view:
     """View for the RFSetOnOffTask.
 
     """
@@ -38,17 +38,32 @@ enamldef RunAWGView(InstrView): view:
     Conditional:
         condition << not in_loop
         Label:
-            text = 'Output'
+            text = 'LO Freq (GHz)'
         QtLineCompleter:
             hug_width = 'ignore'
-            text := task.switch
+            text := task.freq
             entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
 
-    Label: delay:
-        text = 'Delay (s)'
-    QtLineCompleter: delay_val:
-        text := task.delay
+    Label:
+        text = 'IF freq (GHz)'
+    QtLineCompleter:
+        hug_width = 'ignore'
+        text := task.det
         entries_updater << task.list_accessible_database_entries
         tool_tip = EVALUATER_TOOLTIP
-
+    Label:
+        text = 'Side band mode'
+    ObjectCombo:
+        items << list(task.get_member('SB').items)
+        selected := task.SB
+    Label:
+        text = 'Channel I'
+    ObjectCombo:
+        items << list(task.get_member('channelI').items)
+        selected := task.channelI
+    Label:
+        text = 'Channel Q'
+    ObjectCombo:
+        items << list(task.get_member('channelQ').items)
+        selected := task.channelQ

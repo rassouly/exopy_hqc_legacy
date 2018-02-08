@@ -714,33 +714,37 @@ class AWG(VisaInstrument):
             raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the sampling frequency'''))
 
-    @instrument_property
-    @secure_communication()
-    def running(self):
-        """Run state getter method
-
-        """
-        self.clear_output_buffer()
-        run = self.ask_for_values("AWGC:RST?")[0]
-        if run == 0:
-            return '0 : Instrument has stopped'
-        elif run == 1:
-            return '1 : Instrument is waiting for trigger'
-        elif run == 2:
-            return '2 : Intrument is running'
-        else:
-            raise InstrIOError
-
-    @running.setter
-    @secure_communication()
-    def running(self, value):
+#    @instrument_property
+#    @secure_communication()
+#    def running(self):
+#        """Run state getter method
+#
+#        """
+#        self.clear_output_buffer()
+#
+#        run = self.ask_for_values("AWGC:RST?")[0]
+#        if run == 0:
+#            return '0 : Instrument has stopped'
+#        elif run == 1:
+#            return '1 : Instrument is waiting for trigger'
+#        elif run == 2:
+#            return '2 : Intrument is running'
+#        else:
+#            raise InstrIOError
+#
+#    @running.setter
+#    @secure_communication()
+    def run_awg(self, value, delay=0.0):
         """Run state setter method
 
         """
         self.clear_output_buffer()
         if value in ('RUN', 1, 'True'):
             self.write('AWGC:RUN:IMM')
-            if self.ask_for_values('AWGC:RST?')[0] not in (1, 2):
+            self.write('AWGC:RST?')
+            time.sleep(delay)
+            values = self.read_values(format=2)
+            if values[0] not in (1, 2):
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run state'''))
         elif value in ('STOP', 0, 'False'):
