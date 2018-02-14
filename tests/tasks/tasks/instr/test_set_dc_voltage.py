@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+# Copyright 2015-2018 by ExopyHqcLegacy Authors, see AUTHORS for more details.
 #
 # Distributed under the terms of the BSD license.
 #
@@ -17,15 +17,15 @@ from multiprocessing import Event
 import pytest
 import enaml
 
-from ecpy.tasks.api import RootTask
-from ecpy.tasks.tasks.logic.loop_task import LoopTask
-from ecpy.testing.util import show_and_close_widget
-from ecpy_hqc_legacy.tasks.tasks.instr.dc_tasks\
+from exopy.tasks.api import RootTask
+from exopy.tasks.tasks.logic.loop_task import LoopTask
+from exopy.testing.util import show_and_close_widget
+from exopy_hqc_legacy.tasks.tasks.instr.dc_tasks\
     import (SetDCVoltageTask, MultiChannelVoltageSourceInterface)
 
 with enaml.imports():
-    from ecpy.tasks.tasks.logic.views.loop_view import LoopView
-    from ecpy_hqc_legacy.tasks.tasks.instr.views.dc_views\
+    from exopy.tasks.tasks.logic.views.loop_view import LoopView
+    from exopy_hqc_legacy.tasks.tasks.instr.views.dc_views\
         import SetDcVoltageView
 
 from .instr_helper import InstrHelper, InstrHelperStarter, PROFILES, DRIVERS

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+# Copyright 2015-2018 by ExopyHqcLegacy Authors, see AUTHORS for more details.
 #
 # Distributed under the terms of the BSD license.
 #
@@ -17,18 +17,18 @@ from multiprocessing import Event
 import pytest
 import enaml
 
-from ecpy.tasks.api import RootTask
-from ecpy.testing.util import show_and_close_widget
-from ecpy_hqc_legacy.tasks.tasks.instr.rf_tasks\
+from exopy.tasks.api import RootTask
+from exopy.testing.util import show_and_close_widget
+from exopy_hqc_legacy.tasks.tasks.instr.rf_tasks\
     import (SetRFFrequencyTask, SetRFPowerTask)
-from ecpy_hqc_legacy.tasks.tasks.instr.pna_tasks\
+from exopy_hqc_legacy.tasks.tasks.instr.pna_tasks\
     import (PNASetRFFrequencyInterface, PNASetRFPowerInterface,
             PNASinglePointMeasureTask, PNASweepTask)
 
 with enaml.imports():
-    from ecpy_hqc_legacy.tasks.tasks.instr.views.rf_views\
+    from exopy_hqc_legacy.tasks.tasks.instr.views.rf_views\
         import (RFFrequencyView, RFPowerView)
-    from ecpy_hqc_legacy.tasks.tasks.instr.views.pna_task_views\
+    from exopy_hqc_legacy.tasks.tasks.instr.views.pna_task_views\
         import (PNASinglePointView, PNASweepMeasView)
 
 from .instr_helper import InstrHelper, InstrHelperStarter, PROFILES, DRIVERS

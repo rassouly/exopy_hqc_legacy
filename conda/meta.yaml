@@ -1,5 +1,5 @@
 package:
-  name: ecpy_hqc_legacy
+  name: exopy_hqc_legacy
   version: {{ environ.get('GIT_DESCRIBE_TAG', '') }}
 
 source:
@@ -15,7 +15,7 @@ requirements:
     - future
   run:
     - python
-    - ecpy
+    - exopy >=0.1.0
     - numpy
     - h5py
     - pyvisa
@@ -23,10 +23,10 @@ requirements:
 
 test:
   imports:
-    - ecpy_hqc_legacy
+    - exopy_hqc_legacy
 
 about:
-  home: https://github.com/Ecpy/ecpy_hqc_legacy
+  home: https://github.com/Exopy/exopy_hqc_legacy
   license: BSD
   license_file: LICENSE
   summary: Transitional package for HQCMeas

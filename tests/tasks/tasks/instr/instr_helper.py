@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+# Copyright 2015-2018 by ExopyHqcLegacy Authors, see AUTHORS for more details.
 #
 # Distributed under the terms of the BSD license.
 #
@@ -15,12 +15,12 @@ from __future__ import (division, unicode_literals, print_function,
 from types import MethodType
 from future.utils import with_metaclass
 
-from ecpy_hqc_legacy.instruments.drivers.driver_tools import BaseInstrument
+from exopy_hqc_legacy.instruments.drivers.driver_tools import BaseInstrument
 
 
-PROFILES = 'ecpy.instruments.profiles'
+PROFILES = 'exopy.instruments.profiles'
 
-DRIVERS = 'ecpy.instruments.drivers'
+DRIVERS = 'exopy.instruments.drivers'
 
 
 class HelperMeta(type):

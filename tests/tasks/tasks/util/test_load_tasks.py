@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+# Copyright 2015-2018 by ExopyHqcLegacy Authors, see AUTHORS for more details.
 #
 # Distributed under the terms of the BSD license.
 #
@@ -19,13 +19,13 @@ import pytest
 import enaml
 import numpy as np
 
-from ecpy.tasks.api import RootTask
-from ecpy.testing.util import show_widget
-from ecpy_hqc_legacy.tasks.tasks.util.load_tasks import (LoadArrayTask,
+from exopy.tasks.api import RootTask
+from exopy.testing.util import show_widget
+from exopy_hqc_legacy.tasks.tasks.util.load_tasks import (LoadArrayTask,
                                                          CSVLoadInterface)
 
 with enaml.imports():
-    from ecpy_hqc_legacy.tasks.tasks.util.views.load_views import LoadArrayView
+    from exopy_hqc_legacy.tasks.tasks.util.views.load_views import LoadArrayView
 
 
 @pytest.fixture

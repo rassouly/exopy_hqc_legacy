@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+# Copyright 2015-2018 by ExopyHqcLegacy Authors, see AUTHORS for more details.
 #
 # Distributed under the terms of the BSD license.
 #
@@ -17,18 +17,18 @@ from collections import OrderedDict
 import enaml
 import numpy as np
 
-from ecpy.testing.util import show_and_close_widget
+from exopy.testing.util import show_and_close_widget
 
-from ecpy_pulses.pulses.sequences.base_sequences import (RootSequence,
+from exopy_pulses.pulses.sequences.base_sequences import (RootSequence,
                                                          BaseSequence)
-from ecpy_pulses.pulses.pulse import Pulse
-from ecpy_pulses.pulses.shapes.square_shape import SquareShape
-from ecpy_pulses.pulses.shapes.modulation import Modulation
+from exopy_pulses.pulses.pulse import Pulse
+from exopy_pulses.pulses.shapes.square_shape import SquareShape
+from exopy_pulses.pulses.shapes.modulation import Modulation
 
-from ecpy_hqc_legacy.pulses.contexts.awg_context import (AWG5014Context,
+from exopy_hqc_legacy.pulses.contexts.awg_context import (AWG5014Context,
                                                          to_bytes)
 with enaml.imports():
-    from ecpy_hqc_legacy.pulses.contexts.views.awg_context_view\
+    from exopy_hqc_legacy.pulses.contexts.views.awg_context_view\
         import AWG5014ContextView
 
 
