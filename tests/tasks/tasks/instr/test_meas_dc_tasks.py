@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+# Copyright 2015-2018 by ExopyHqcLegacy Authors, see AUTHORS for more details.
 #
 # Distributed under the terms of the BSD license.
 #
@@ -17,13 +17,13 @@ from multiprocessing import Event
 import pytest
 import enaml
 
-from ecpy.tasks.api import RootTask
-from ecpy.testing.util import show_and_close_widget
-from ecpy_hqc_legacy.tasks.tasks.instr.meas_dc_tasks\
+from exopy.tasks.api import RootTask
+from exopy.testing.util import show_and_close_widget
+from exopy_hqc_legacy.tasks.tasks.instr.meas_dc_tasks\
     import MeasDCVoltageTask
 
 with enaml.imports():
-    from ecpy_hqc_legacy.tasks.tasks.instr.views.meas_dc_views\
+    from exopy_hqc_legacy.tasks.tasks.instr.views.meas_dc_views\
         import MeasDCVoltView
 
 from .instr_helper import InstrHelper, InstrHelperStarter, PROFILES, DRIVERS

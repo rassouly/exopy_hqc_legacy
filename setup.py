@@ -7,17 +7,17 @@ import os.path
 import sys
 
 sys.path.insert(0, os.path.abspath('.'))
-from ecpy_hqc_legacy.version import __version__
+from exopy_hqc_legacy.version import __version__
 
 
 setup(
-    name='ecpy_hqc_legacy',
-    description='Transitional package between HQCMeas and Ecpy',
+    name='exopy_hqc_legacy',
+    description='Transitional package between HQCMeas and Exopy',
     version=__version__,
     author='see AUTHORS',
     author_email='m.dartiailh@gmail.com',
-    url='https://github.com/ecpy/ecpy_hqc_legacy',
-    download_url='https://github.com/ecpy/ecpy_hqc_legacy/tarball/master',
+    url='https://github.com/exopy/exopy_hqc_legacy',
+    download_url='https://github.com/exopy/exopy_hqc_legacy/tarball/master',
     keywords='experiment automation GUI',
     license='BSD',
     classifiers=[
@@ -27,15 +27,17 @@ setup(
         'Operating System :: OS Independent',
         'Topic :: Scientific/Engineering :: Physics',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         ],
     zip_safe=False,
     packages=find_packages(exclude=['tests', 'tests.*']),
     package_data={'': ['*.enaml']},
-    requires=['ecpy', 'pyvisa', 'h5py', 'numpy', 'pyclibrary'],
-    install_requires=['setuptools', 'ecpy', 'pyvisa', 'h5py', 'numpy'],
+    requires=['exopy', 'pyvisa', 'h5py', 'numpy', 'pyclibrary'],
+    install_requires=['setuptools', 'exopy', 'pyvisa', 'h5py', 'numpy'],
     entry_points={
         'gui_scripts':
-        'hqcmeas_to_ecpy = ecpy_hqc_legacy.conversion.__main__:main',
-        'ecpy_package_extension':
-        'ecpy_hqc_legacy = ecpy_hqc_legacy:list_manifests'}
+        'hqcmeas_to_exopy = exopy_hqc_legacy.conversion.__main__:main',
+        'exopy_package_extension':
+        'exopy_hqc_legacy = exopy_hqc_legacy:list_manifests'}
 )

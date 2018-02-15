@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# Copyright 2015-2016 by EcpyHqcLegacy Authors, see AUTHORS for more details.
+# Copyright 2015-2018 by ExopyHqcLegacy Authors, see AUTHORS for more details.
 #
 # Distributed under the terms of the BSD license.
 #
@@ -20,17 +20,17 @@ import pytest
 import enaml
 import numpy as np
 
-from ecpy.tasks.api import RootTask
-from ecpy.testing.util import (show_and_close_widget, show_widget)
-from ecpy_hqc_legacy.tasks.tasks.util.save_tasks import (SaveTask,
+from exopy.tasks.api import RootTask
+from exopy.testing.util import (show_and_close_widget, show_widget)
+from exopy_hqc_legacy.tasks.tasks.util.save_tasks import (SaveTask,
                                                          SaveArrayTask,
                                                          SaveFileTask)
 
 with enaml.imports():
-    from ecpy_hqc_legacy.tasks.tasks.util.views.save_views\
+    from exopy_hqc_legacy.tasks.tasks.util.views.save_views\
         import (SaveView, SaveArrayView, SaveFileView)
 
-pytest_plugins = str('ecpy.testing.tasks.fixtures'),
+pytest_plugins = str('exopy.testing.tasks.fixtures'),
 
 
 class TestSaveTask(object):
