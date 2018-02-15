@@ -16,8 +16,12 @@ import os
 import errno
 import logging
 import numbers
+import warnings
 from inspect import cleandoc
 from collections import OrderedDict
+
+#: Protection against numpy deprecation message in h5py
+warnings.filterwarnings("ignore", category=FutureWarning, module="h5py")
 
 import numpy
 import h5py
