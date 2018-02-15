@@ -40,8 +40,7 @@ before_install:
   - export CONDA_BLD_PATH=$(pwd)
 
   # Install exopy dependencies
-  - $CONDA_INSTALL pyqt numpy exopy h5py exopy_pulses pyclibrary
-  - $CONDA_INSTALL pyvisa -c conda-forge
+  - $CONDA_INSTALL pyqt numpy exopy h5py exopy_pulses pyclibrary pyvisa
 
   # Intall test tools
   - $CONDA_INSTALL pytest
@@ -54,7 +53,7 @@ install:
   # Needed to install pyvisa for testing purposes
   - conda config --append channels conda-forge
   - conda build conda -q  # Package building does run only very minimal tests
-  - conda install exopy_hqc_legacy --use-local -q --override-channels
+  - conda install exopy_hqc_legacy --use-local -q
   - cd ~
 
 before_script:
