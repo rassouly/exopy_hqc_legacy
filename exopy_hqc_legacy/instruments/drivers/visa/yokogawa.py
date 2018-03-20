@@ -100,7 +100,7 @@ class YokogawaGS200(VisaInstrument):
     @voltage_range.setter
     @secure_communication()
     def voltage_range(self, v_range):
-        """Voltage range getter method.
+        """Voltage range setter method.
 
         NB: does not check the current function.
 

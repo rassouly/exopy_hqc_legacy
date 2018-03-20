@@ -87,7 +87,7 @@ class Alazar935x(DllInstrument):
                                   ats.TRIG_ENGINE_J,
                                   ats.TRIG_EXTERNAL,
                                   ats.TRIGGER_SLOPE_POSITIVE,
-                                  150,
+                                  141,
                                   ats.TRIG_ENGINE_K,
                                   ats.TRIG_DISABLE,
                                   ats.TRIGGER_SLOPE_POSITIVE,
@@ -218,7 +218,7 @@ class Alazar935x(DllInstrument):
             # Wait for the buffer at the head of the list of available
             # buffers to be filled by the board.
             buffer = buffers[buffers_completed % len(buffers)]
-            board.waitAsyncBufferComplete(buffer.addr, timeout_ms=15000)
+            board.waitAsyncBufferComplete(buffer.addr, timeout_ms=60000)
             rbuf = np.reshape(buffer.buffer,
                               (records_per_buffer*channel_count,
                                samples_per_record))

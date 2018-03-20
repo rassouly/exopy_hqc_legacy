@@ -151,7 +151,7 @@ class VisaInstrument(BaseInstrument):
         Simply call the `read_values` method of the `Instrument` object
         stored in the attribute `_driver`
         """
-        return self._driver.read_values(format=0)
+        return self._driver.read_values(format)
 
     def ask(self, message):
         """Send the specified message to the instrument and read its answer.

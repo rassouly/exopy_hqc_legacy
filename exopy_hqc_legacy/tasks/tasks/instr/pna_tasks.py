@@ -123,6 +123,9 @@ class PNASetRFPowerInterface(TaskInterface):
         self.channel_driver.power = power
         task.write_in_database('power', power)
 
+        if task.auto_start:
+            task.driver.output = 'On'
+
     def check(self, *args, **kwargs):
         """Ensure the presence of the requested channel.
 
