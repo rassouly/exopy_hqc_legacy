@@ -42,3 +42,10 @@ enamldef RunAWGView(InstrView): view:
             entries_updater << task.list_accessible_database_entries
             tool_tip = EVALUATER_TOOLTIP
 
+    Label: delay:
+        text = 'Delay (s)'
+    QtLineCompleter: delay_val:
+        text := task.delay
+        entries_updater << task.list_accessible_database_entries
+        tool_tip = EVALUATER_TOOLTIP
+
