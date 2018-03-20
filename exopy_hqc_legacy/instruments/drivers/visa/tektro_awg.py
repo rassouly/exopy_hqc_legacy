@@ -523,6 +523,30 @@ class AWG(VisaInstrument):
                    str(goto))
 
     @secure_communication()
+    def set_jump_pos(self, position, jump):
+        """Sets the jump value at position to jump
+
+        """
+        self.write('SEQuence:ELEMent' + str(position) + ':JTARget:TYPE INDex')
+        self.write('SEQuence:ELEMent' + str(position) + ':JTARget:INDex ' +
+                   str(jump))
+
+    @secure_communication()
+    def send_event(self):
+        """Send an event
+
+        """
+        self.write('EVENt:IMM')
+
+    @secure_communication()
+    def ask_sequencer_pos(self):
+        """Ask the current position index of the sequencer
+
+        """
+        pos = self.ask('AWGC:SEQ:POS?')
+        return(pos)
+
+    @secure_communication()
     def set_repeat(self, position, repeat):
         """Sets the loop count for the specified subsequence element.
         The loop count is an integer.
@@ -687,33 +711,37 @@ class AWG(VisaInstrument):
             raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the sampling frequency'''))
 
-    @instrument_property
-    @secure_communication()
-    def running(self):
-        """Run state getter method
-
-        """
-        self.clear_output_buffer()
-        run = self.ask_for_values("AWGC:RST?")[0]
-        if run == 0:
-            return '0 : Instrument has stopped'
-        elif run == 1:
-            return '1 : Instrument is waiting for trigger'
-        elif run == 2:
-            return '2 : Intrument is running'
-        else:
-            raise InstrIOError
-
-    @running.setter
-    @secure_communication()
-    def running(self, value):
+#    @instrument_property
+#    @secure_communication()
+#    def running(self):
+#        """Run state getter method
+#
+#        """
+#        self.clear_output_buffer()
+#
+#        run = self.ask_for_values("AWGC:RST?")[0]
+#        if run == 0:
+#            return '0 : Instrument has stopped'
+#        elif run == 1:
+#            return '1 : Instrument is waiting for trigger'
+#        elif run == 2:
+#            return '2 : Intrument is running'
+#        else:
+#            raise InstrIOError
+#
+#    @running.setter
+#    @secure_communication()
+    def run_awg(self, value, delay=0.0):
         """Run state setter method
 
         """
         self.clear_output_buffer()
         if value in ('RUN', 1, 'True'):
             self.write('AWGC:RUN:IMM')
-            if self.ask_for_values('AWGC:RST?')[0] not in (1, 2):
+            self.write('AWGC:RST?')
+            time.sleep(delay)
+            values = self.read_values(format=2)
+            if values[0] not in (1, 2):
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run state'''))
         elif value in ('STOP', 0, 'False'):
@@ -774,7 +802,14 @@ class AWG(VisaInstrument):
         """Deletes all user-defined waveforms from the currently loaded setup
 
         """
+        nb_waveforms = int(self.ask("WLIST:SIZE?")) - 25 #nb of user defined wf
+        wait_time = 1+int(nb_waveforms/120)
         self.write('WLIST:WAVEFORM:DELETE ALL')
+
+        print('Waiting {}s for {} waveforms to be deleted'.format(wait_time,
+                                                                 nb_waveforms))
+        time.sleep(wait_time)
+
 
     def clear_all_sequences(self):
         """Clear the all sequences played by the AWG.
