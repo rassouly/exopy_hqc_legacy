@@ -392,7 +392,7 @@ enamldef HqcLegacyManifest(PluginManifest):
                                    'exopy_hqc_legacy.Legacy.AnritsuMG3694',
                                    'exopy_hqc_legacy.Legacy.LabBrickLMS103',
                                    'exopy_hqc_legacy.Legacy.RohdeSchwarzSMB100A',
-                                   'exopy_hqc_legacy.Legacy.Anapico']
+                                   'exopy_hqc_legacy.Legacy.Anapico',
                                    'exopy_hqc_legacy.Legacy.RohdeSchwarzHMF2550']
                     metadata = {'loopable': True}
                     Interface:
@@ -439,7 +439,7 @@ enamldef HqcLegacyManifest(PluginManifest):
                                    'exopy_hqc_legacy.Legacy.RohdeSchwarzSMB100A',
                                    'exopy_hqc_legacy.Legacy.ZNB20',
                                    'exopy_hqc_legacy.Legacy.ZVA24',
-                                   'exopy_hqc_legacy.Legacy.Anapico']
+                                   'exopy_hqc_legacy.Legacy.Anapico',
                                    'exopy_hqc_legacy.Legacy.RohdeSchwarzHMF2550']
                     metadata = {'loopable': True}
                     Interface:
