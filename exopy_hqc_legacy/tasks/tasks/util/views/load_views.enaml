@@ -222,3 +222,37 @@ enamldef CSVLoadInterfaceView(Container):
                             ''')
         clicked::
             _CNamesEditor(parent=self, interface=interface).show()
+
+enamldef DATLoadInterfaceView(Container):
+    """View for the DAT interface.
+
+    """
+    #: Reference to the interface.
+    attr interface
+
+    #: Reference to the root view.
+    attr root
+
+    constraints = [hbox(del_lab, del_val, com_lab, com_val, nam, c_n)]
+
+    Label: del_lab:
+        text = 'Delimiter'
+    Field: del_val:
+        text := interface.delimiter
+
+    Label: com_lab:
+        text = 'Comment'
+    Field: com_val:
+        text := interface.comments
+
+    CheckBox: nam:
+        text = 'Names'
+        checked := interface.names
+    ToolButton: c_n:
+        text = '>'
+        tool_tip = cleandoc('''If the file cannot be found during the check,
+                            you should provide the names of the columns which
+                            will be available to allow check to run correctly.
+                            ''')
+        clicked::
+            _CNamesEditor(parent=self, interface=interface).show()
