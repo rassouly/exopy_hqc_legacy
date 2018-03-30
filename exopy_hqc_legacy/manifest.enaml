@@ -474,3 +474,8 @@ enamldef HqcLegacyManifest(PluginManifest):
                     task = 'run_awg:RunAWGTask'
                     view = 'views.run_awg_views:RunAWGView'
                     instruments = ['exopy_hqc_legacy.Legacy.AWG']
+                Task:
+                    task = 'tune_iqmixer_task:TuneIQMixerTask'
+                    view = 'views.tune_iqmixer_view:TuneIQMixerView'
+                    instruments = ['exopy_hqc_legacy.Legacy.AWG',
+                                   'exopy_hqc_legacy.Legacy.YokogawaGS200']
