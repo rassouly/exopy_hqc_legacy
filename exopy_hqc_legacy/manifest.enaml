@@ -478,4 +478,5 @@ enamldef HqcLegacyManifest(PluginManifest):
                     task = 'tune_iqmixer_task:TuneIQMixerTask'
                     view = 'views.tune_iqmixer_view:TuneIQMixerView'
                     instruments = ['exopy_hqc_legacy.Legacy.AWG',
-                                   'exopy_hqc_legacy.Legacy.YokogawaGS200']
+                                   'exopy_hqc_legacy.Legacy.YokogawaGS200',
+                                   'exopy_hqc_legacy.Legacy.RohdeSchwarzSMB100A']
