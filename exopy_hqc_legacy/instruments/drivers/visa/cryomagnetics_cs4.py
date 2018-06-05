@@ -111,7 +111,7 @@ class CS4(VisaInstrument):
             self.field_sweep_rate = rate
         rate = (self.field_sweep_rate if self.heater_state == 'On' else
                 self.fast_sweep_rate)
-        
+
         # Start ramping.
         self.target_field = value
         self.activity = 'To set point'
@@ -172,14 +172,14 @@ class CS4(VisaInstrument):
         (T/min).
 
         """
-        rate = float(self.ask('RATE? 5'))
+        rate = float(self.ask('RATE? 3'))
         return rate * (60 * self.field_current_ratio)
 
     @fast_sweep_rate.setter
     @secure_communication()
     def fast_sweep_rate(self, rate):
         rate /= 60 * self.field_current_ratio
-        self.write('RATE 5 {}'.format(rate))
+        self.write('RATE 3 {}'.format(rate))
 
     @instrument_property
     def target_field(self):
@@ -197,20 +197,6 @@ class CS4(VisaInstrument):
 
         """
         self.write('ULIM {}'.format(target))
-        if self.heater_state == 'Off':
-            self.write('SWEEP UP FAST')
-        else:
-            # need to specify slow in case there was a fast sweep before
-            self.write('SWEEP UP SLOW')
-
-        sleep(wait)
-        niter = 0
-        while abs(self.target_field - target) >= OUT_FLUC:
-            sleep(5)
-            niter += 1
-            if niter > MAXITER:
-                raise InstrIOError(cleandoc('''CS4 didn't set the field
-                                               to {}'''.format(target)))
 
     @instrument_property
     def persistent_field(self):
