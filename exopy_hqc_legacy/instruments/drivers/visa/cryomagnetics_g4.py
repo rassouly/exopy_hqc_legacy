@@ -11,6 +11,8 @@ It is very close to the CS4 one but for a few bugs in the software:
 - even though units is set to T, the fields are returned in kG
 - some instructions need a semicolon at their end to be taken into account
 (namely ULIM and RATE)
+Also the fast sweep rate is stored in range 5 whereas it is stored in range
+3 for the CS4.
 
 """
 from ..driver_tools import (secure_communication,
@@ -65,3 +67,18 @@ class C4G(CS4):
         # converted from T/min to A/s
         rate /= 60 * self.field_current_ratio
         self.write('RATE 0 {};'.format(rate))
+
+    @instrument_property
+    def fast_sweep_rate(self):
+        """Rate at which to ramp the field when the switch heater is off
+        (T/min).
+
+        """
+        rate = float(self.ask('RATE? 5'))
+        return rate * (60 * self.field_current_ratio)
+
+    @fast_sweep_rate.setter
+    @secure_communication()
+    def fast_sweep_rate(self, rate):
+        rate /= 60 * self.field_current_ratio
+        self.write('RATE 5 {};'.format(rate))
