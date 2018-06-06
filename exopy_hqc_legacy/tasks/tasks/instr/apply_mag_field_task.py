@@ -9,6 +9,7 @@
 """Task to apply a magnetic field.
 
 """
+from time import sleep
 import numbers
 
 from atom.api import (Unicode, Float, Bool, set_default)
@@ -82,6 +83,7 @@ class ApplyMagFieldTask(InstrumentTask):
         # turn off heater
         if self.auto_stop_heater:
             driver.heater_state = 'Off'
+            sleep(self.post_switch_wait)
             job = driver.sweep_to_field(0)
             job.wait_for_completion(self.check_for_interruption,
                                     timeout=60, refresh_time=1)
