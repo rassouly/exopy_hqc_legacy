@@ -28,9 +28,6 @@ with enaml.imports():
     from exopy_hqc_legacy.manifest import HqcLegacyManifest
 
 
-pytest_plugins = str('exopy.testing.measurement.fixtures'),
-
-
 def test_update_task():
     """Test updating the informations about a task.
 

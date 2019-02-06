@@ -15,8 +15,6 @@ import enaml
 with enaml.imports():
     from exopy_hqc_legacy.manifest import HqcLegacyManifest
 
-pytest_plugins = str('exopy.testing.tasks.fixtures'),
-
 
 @pytest.yield_fixture
 def task_workbench(task_workbench):

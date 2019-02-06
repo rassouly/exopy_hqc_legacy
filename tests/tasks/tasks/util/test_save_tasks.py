@@ -27,8 +27,6 @@ with enaml.imports():
     from exopy_hqc_legacy.tasks.tasks.util.views.save_views\
         import (SaveView, SaveArrayView, SaveFileView)
 
-pytest_plugins = str('exopy.testing.tasks.fixtures'),
-
 
 class TestSaveTask(object):
 
