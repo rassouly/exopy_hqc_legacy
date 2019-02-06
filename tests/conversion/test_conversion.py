@@ -28,9 +28,6 @@ with enaml.imports():
     from exopy_hqc_legacy.manifest import HqcLegacyManifest
 
 
-pytest_plugins = str('exopy.testing.measurement.fixtures'),
-
-
 def test_update_task():
     """Test updating the informations about a task.
 
@@ -123,7 +120,7 @@ MEASURES_FILES = [
     'Bfield-Gate_IPhA_hysteres.ini',
     'Bfield_IPhA_hysteres.ini',
     'Eps-Bfield_PhA_oneway.ini',
-    pytest.mark.xfail('FastGateCal_PhA.ini'),
+    pytest.param('FastGateCal_PhA.ini', marks=pytest.mark.xfail),
     'Find-Set_fc_avg.ini',
     'Find-Set_fc_Hetero-LockIn.ini',
     'Find-Set_fc_Hetero-LockIn_TestEXG.ini',
@@ -197,9 +194,9 @@ MEASURES_FILES = [
     'SweepEps_PhA.ini',
     'SweepFreq-Gate-Bfield_PhA.ini',
     'SweepFreq-Gate_PhA.ini',
-    pytest.mark.xfail('SweepGate_FastGateTest_IphA.ini'),
+    pytest.param('SweepGate_FastGateTest_IphA.ini', marks=pytest.mark.xfail),
     'SweepGate_FastGateTest_PSG_IphA.ini',
-    pytest.mark.xfail('SweepGate_FastGate_Vg2Vg1_IphA.ini'),
+    pytest.param('SweepGate_FastGate_Vg2Vg1_IphA.ini', marks=pytest.mark.xfail),
     'SweepGate_FreqCav.ini',
     'SweepGate_FreqCav+spectro.ini',
     'SweepGate_IPhA_Hetero-LockIn.ini',
