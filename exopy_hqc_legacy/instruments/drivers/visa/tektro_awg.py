@@ -11,6 +11,7 @@
 """
 import re
 import time
+import random
 import logging
 from textwrap import fill
 from inspect import cleandoc
@@ -507,17 +508,34 @@ class AWG(VisaInstrument):
         self.write('*WAI')
 
     @secure_communication()
-    def send_load_awg_file(self, awg_file, filename='setup'):
+    def send_load_awg_file(self, awg_file, filename='setup', timeout=100):
         """Command to send and load and .awg file into the AWG
                 awg_file = bytearray
-
+                filename = str
+                timeout = float
         """
+        # Add a random int at the the end of the file to make it unique
+        filename += str(random.randint(0, 10000))
         name_str = 'MMEMory:DATA "{}",'.format(filename+'.awg')
-        size_str = ('#' + str(len(str(len(awg_file)))) + str(len(awg_file)))
+        size_str = ('#' + str(len(str(len(awg_file))))
+                    + str(len(awg_file)))
         mes = name_str + size_str + awg_file
         self.write('MMEMory:CDIRectory "/Users/OEM/Documents"')
         self._driver.write_ascii_values(mes)
         self.write('AWGCONTROL:SRESTORE "{}"'.format(filename+'.awg'))
+
+        # Wait for the AWG to finish loading the file
+        start_time = time.clock()
+        current_file = ''
+        while time.clock() - start_time <= timeout and\
+              filename not in current_file:
+            time.sleep(0.5)
+            try:
+                current_file = self.ask('AWGCONTROL:SNAMe?')
+            except VisaIOError:
+                continue
+        if filename not in current_file:
+            raise InstrIOError(cleandoc('''Timeout during AWG file loading'''))
 
     @secure_communication()
     def clear_sequence(self):
