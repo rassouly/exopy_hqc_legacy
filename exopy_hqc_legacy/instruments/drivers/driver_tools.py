@@ -202,7 +202,6 @@ class InstrJob(object):
         while True:
             remaining_time = (timeout -
                               (time.time() - timeout_start))
-            time.sleep(min(abs(refresh_time), abs(remaining_time)))
             if self.condition_callable():
                 return True
             if remaining_time < 0 or break_condition_callable():
