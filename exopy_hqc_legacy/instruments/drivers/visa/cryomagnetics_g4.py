@@ -26,6 +26,7 @@ class C4G(CS4):
     """
 
     @instrument_property
+    @secure_communication()
     def target_field(self):
         """Field that the source will try to reach, in T.
 
@@ -40,12 +41,14 @@ class C4G(CS4):
         # convert target field from T to kG
         self.write('ULIM {};'.format(target * 10))
 
+    @secure_communication()
     def read_output_field(self):
         """Read the current value of the output field.
 
         """
         return float(self.ask('IOUT?').strip('kG')) / 10
 
+    @secure_communication()
     def read_persistent_field(self):
         """Read the current value of the persistent field.
 
@@ -53,6 +56,7 @@ class C4G(CS4):
         return float(self.ask('IMAG?').strip('kG')) / 10
 
     @instrument_property
+    @secure_communication()
     def field_sweep_rate(self):
         """Rate at which to ramp the field (T/min).
 
@@ -69,6 +73,7 @@ class C4G(CS4):
         self.write('RATE 0 {};'.format(rate))
 
     @instrument_property
+    @secure_communication()
     def fast_sweep_rate(self):
         """Rate at which to ramp the field when the switch heater is off
         (T/min).

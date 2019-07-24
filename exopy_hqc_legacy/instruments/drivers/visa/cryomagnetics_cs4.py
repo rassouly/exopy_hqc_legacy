@@ -75,12 +75,14 @@ class CS4(VisaInstrument):
         # set lower limit to lowest value
         self.write('LLIM -7')
 
+    @secure_communication()
     def read_output_field(self):
         """Read the current value of the output field.
 
         """
         return float(self.ask('IOUT?').strip(' T'))
 
+    @secure_communication()
     def read_persistent_field(self):
         """Read the current value of the persistent field.
 
@@ -132,6 +134,7 @@ class CS4(VisaInstrument):
         pass
 
     @instrument_property
+    @secure_communication()
     def heater_state(self):
         """State of the switch heater allowing to inject current into the
         coil.
@@ -151,6 +154,7 @@ class CS4(VisaInstrument):
             sleep(1)
 
     @instrument_property
+    @secure_communication()
     def field_sweep_rate(self):
         """Rate at which to ramp the field (T/min).
 
@@ -167,6 +171,7 @@ class CS4(VisaInstrument):
         self.write('RATE 0 {}'.format(rate))
 
     @instrument_property
+    @secure_communication()
     def fast_sweep_rate(self):
         """Rate at which to ramp the field when the switch heater is off
         (T/min).
@@ -182,6 +187,7 @@ class CS4(VisaInstrument):
         self.write('RATE 3 {}'.format(rate))
 
     @instrument_property
+    @secure_communication()
     def target_field(self):
         """Field that the source will try to reach.
 
@@ -199,6 +205,7 @@ class CS4(VisaInstrument):
         self.write('ULIM {}'.format(target))
 
     @instrument_property
+    @secure_communication()
     def persistent_field(self):
         """Last known value of the magnet field.
 
@@ -206,6 +213,7 @@ class CS4(VisaInstrument):
         return float(self.ask('IMAG?').strip(' T'))
 
     @instrument_property
+    @secure_communication()
     def activity(self):
         """Current activity of the power supply (idle, ramping).
 
