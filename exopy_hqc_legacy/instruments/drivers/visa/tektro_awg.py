@@ -519,9 +519,9 @@ class AWG(VisaInstrument):
         name_str = 'MMEMory:DATA "{}",'.format(filename+'.awg')
         size_str = ('#' + str(len(str(len(awg_file))))
                     + str(len(awg_file)))
-        mes = name_str + size_str + awg_file
+        mes = name_str + size_str
         self.write('MMEMory:CDIRectory "/Users/OEM/Documents"')
-        self._driver.write_ascii_values(mes)
+        self._driver.write_raw(mes.encode('ASCII') + awg_file)
         self.write('AWGCONTROL:SRESTORE "{}"'.format(filename+'.awg'))
 
         # Wait for the AWG to finish loading the file
