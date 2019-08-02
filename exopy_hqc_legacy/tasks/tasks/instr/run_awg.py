@@ -24,27 +24,21 @@ class RunAWGTask(InstrumentTask):
     """
     #: Switch to choose the AWG run mode: on or off
     switch = Unicode('Off').tag(pref=True, feval=validators.SkipLoop())
-    delay = Float(0).tag(pref=True,
-                         feval=validators.SkipLoop(types=numbers.Real))
-
+    delay = Float(0).tag(pref=True)
     database_entries = set_default({'output': 0})
 
     def perform(self, switch=None):
         """Default interface behavior.
 
         """
-        delay = self.format_and_eval_string(self.delay)
         if switch is None:
             switch = self.format_and_eval_string(self.switch)
-
         if switch == 'On' or switch == 1:
-            print('On')
             self.driver.send_event()
             # The delay is required when loading large sequences
             self.driver.run_awg(1, delay=delay)
             self.write_in_database('output', 1)
         elif switch == 'Event':
-            print('Event')
             time.sleep(delay)
             self.driver.send_event()
         elif switch == 'Rearm':
@@ -54,13 +48,10 @@ class RunAWGTask(InstrumentTask):
             while not success:
                 self.driver.send_event()
                 pos = int(self.driver.ask_sequencer_pos())
-                print(pos)
                 if pos == 1:
                     success = True
-                print(success)
             time.sleep(delay)
         else:
-            print('Off')
             time.sleep(delay)
             self.driver.run_awg(0)
             self.write_in_database('output', 0)
