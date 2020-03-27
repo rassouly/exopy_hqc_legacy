@@ -57,4 +57,4 @@ class RunAWGTask(InstrumentTask):
         else:
             logger = logging.getLogger(__name__)
             msg = "Unable to recognize {} running mode"
-            logger.warning(msg.format(switch))
+            logger.warning(msg.format(self.switch))
