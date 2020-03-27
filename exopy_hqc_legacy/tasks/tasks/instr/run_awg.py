@@ -12,7 +12,7 @@
 import logging
 import time
 
-from atom.api import (Float, Unicode, set_default)
+from atom.api import (Float, Str, set_default)
 
 from exopy.tasks.api import InstrumentTask
 
@@ -22,7 +22,7 @@ class RunAWGTask(InstrumentTask):
 
     """
     #: Switch to choose the AWG run mode
-    switch = Unicode('Off').tag(pref=True)
+    switch = Str('Off').tag(pref=True)
 
     #: Delay required to load the sequence
     delay = Float(0).tag(pref=True)

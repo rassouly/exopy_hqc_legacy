@@ -738,15 +738,13 @@ class AWG(VisaInstrument):
         self.clear_output_buffer()
         if value in ('RUN', 1, 'True', True):
             self.write('AWGC:RUN:IMM')
-            self.write('AWGC:RST?')
-            time.sleep(delay)
-            values = self.read_values(format=2)
-            if values[0] not in (1, 2):
+            run_mode = int(self.ask('AWGC:RST?', delay=delay))
+            if run_mode not in (1, 2):
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run state'''))
         elif value in ('STOP', 0, 'False', False):
             self.write('AWGC:STOP:IMM')
-            if self.ask_for_values('AWGC:RST?')[0] != 0:
+            if int(self.ask('AWGC:RST?')) != 0:
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run state'''))
         else:
@@ -761,12 +759,12 @@ class AWG(VisaInstrument):
 
         """
         self.clear_output_buffer()
-        run = self.ask_for_values("AWGC:RST?")[0]
-        if run == 0:
+        running = int(self.ask("AWGC:RST?"))
+        if running == 0:
             return False
-        if run == 1 or run == 2:
+        if running == 1 or running == 2:
             return True
-        raise InstrIOError
+        raise InstrIOError(cleandoc('''Couldn't read the run mode'''))
 
     @instrument_property
     @secure_communication()
@@ -822,11 +820,11 @@ class AWG(VisaInstrument):
             nb_waveforms = int(self.ask("WLIST:SIZE?")) - 25
         except Exception:
             nb_waveforms = 0
-        wait_time = 1+int(nb_waveforms/120)
+        wait_time = 1 + int(nb_waveforms / 120)
         self.write('WLIST:WAVEFORM:DELETE ALL')
 
-        logging.info('Waiting {}s for {} waveforms to be deleted'.format(wait_time,
-                                                                         nb_waveforms))
+        msg = 'Waiting {}s for {} waveforms to be deleted'
+        logging.info(msg.format(wait_time,  nb_waveforms))
         time.sleep(wait_time)
 
     def clear_all_sequences(self):
