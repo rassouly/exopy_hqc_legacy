@@ -54,7 +54,7 @@ class DummyDriver(object):
         self.sequences = {}
         self.defined_channels = [1, 2, 3, 4]
         self.channels = {i: DummyChannel(self, i) for i in range(1, 5)}
-        self.running = False
+        self.set_running(False)
 
     def to_send(self, name, array):
         self.sequences[name] = array

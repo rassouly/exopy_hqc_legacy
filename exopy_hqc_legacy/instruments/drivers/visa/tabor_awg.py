@@ -249,13 +249,13 @@ class TaborAWG(VisaInstrument):
     def running(self):
         """Run state getter method
         """
-        return '2 : Intrument is running'
+        return True
 
-    @running.setter
     @secure_communication()
-    def running(self, value):
+    def set_running(self, value, delay=0):
         """Run state setter method
         """
+        pass
 
 
     @instrument_property

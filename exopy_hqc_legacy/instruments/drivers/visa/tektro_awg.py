@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# Copyright 2015-2018 by ExopyHqcLegacy Authors, see AUTHORS for more details.
+# Copyright 2015-2020 by ExopyHqcLegacy Authors, see AUTHORS for more details.
 #
 # Distributed under the terms of the BSD license.
 #
@@ -507,9 +507,10 @@ class AWG(VisaInstrument):
         self.write('*WAI')
 
     @secure_communication()
-    def send_load_awg_file(self, awg_file, filename='setup'):
+    def send_load_awg_file(self, awg_data, filename='setup'):
         """Command to send and load and .awg file into the AWG
-                awg_file = bytearray
+
+           awg_data = bytearray
 
         """
         name_str = 'MMEMory:DATA "{}",'.format(filename+'.awg')
@@ -729,6 +730,30 @@ class AWG(VisaInstrument):
             raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the sampling frequency'''))
 
+    @secure_communication()
+    def set_running(self, value, delay=0.0):
+        """Run state setter method
+
+        """
+        self.clear_output_buffer()
+        if value in ('RUN', 1, 'True', True):
+            self.write('AWGC:RUN:IMM')
+            self.write('AWGC:RST?')
+            time.sleep(delay)
+            values = self.read_values(format=2)
+            if values[0] not in (1, 2):
+                raise InstrIOError(cleandoc('''Instrument did not set
+                                            correctly the run state'''))
+        elif value in ('STOP', 0, 'False', False):
+            self.write('AWGC:STOP:IMM')
+            if self.ask_for_values('AWGC:RST?')[0] != 0:
+                raise InstrIOError(cleandoc('''Instrument did not set
+                                            correctly the run state'''))
+        else:
+            mess = fill(cleandoc('''The invalid value {} was sent to
+                                 running method''').format(value), 80)
+            raise VisaTypeError(mess)
+
     @instrument_property
     @secure_communication()
     def running(self):
@@ -738,36 +763,10 @@ class AWG(VisaInstrument):
         self.clear_output_buffer()
         run = self.ask_for_values("AWGC:RST?")[0]
         if run == 0:
-            return '0 : Instrument has stopped'
-        elif run == 1:
-            return '1 : Instrument is waiting for trigger'
-        elif run == 2:
-            return '2 : Intrument is running'
-        else:
-            raise InstrIOError
-
-    @running.setter
-    @secure_communication()
-    def running(self, value):
-        """Run state setter method
-
-        """
-        self.clear_output_buffer()
-        if value in ('RUN', 1, 'True'):
-            self.write('AWGC:RUN:IMM')
-            values = self.query('AWGC:RST?', format=2, delay=self.delay)
-            if values[0] not in (1, 2):
-                raise InstrIOError(cleandoc('''Instrument did not set
-                                            correctly the run state'''))
-        elif value in ('STOP', 0, 'False'):
-            self.write('AWGC:STOP:IMM')
-            if self.ask_for_values('AWGC:RST?')[0] != 0:
-                raise InstrIOError(cleandoc('''Instrument did not set
-                                            correctly the run state'''))
-        else:
-            mess = fill(cleandoc('''The invalid value {} was sent to
-                                 running method''').format(value), 80)
-            raise VisaTypeError(mess)
+            return False
+        if run == 1 or run == 2:
+            return True
+        raise InstrIOError
 
     @instrument_property
     @secure_communication()
@@ -819,6 +818,7 @@ class AWG(VisaInstrument):
         """
         try:
             # Number of user defined waveforms
+            # 25 is the number of default waveforms
             nb_waveforms = int(self.ask("WLIST:SIZE?")) - 25
         except Exception:
             nb_waveforms = 0

@@ -11,13 +11,12 @@
 """
 from enaml.stdlib.fields import FloatField
 from enaml.core.api import Conditional
-from enaml.widgets.api import (GroupBox, Label, Field, ObjectCombo, CheckBox)
+from enaml.widgets.api import (Label, Field)
 from enaml.layout.api import factory
 
 from textwrap import fill
 
-from exopy.tasks.api import InstrTaskView, EVALUATER_TOOLTIP
-from exopy.utils.widgets.qt_completers import QtLineCompleter
+from exopy.tasks.api import InstrTaskView
 from exopy_hqc_legacy.utils.layouts import auto_grid_layout
 from ...base_instr_view import InstrView
 
@@ -36,11 +35,10 @@ enamldef RunAWGView(InstrView): view:
         condition << not in_loop
         Label:
             text = 'Output'
-        QtLineCompleter:
+        Field:
             hug_width = 'ignore'
             text := task.switch
-            entries_updater << task.list_accessible_database_entries
-            tool_tip = 'Should be On, Off or Event'
+            tool_tip = 'Should be On, Off, Event or Rearm'
 
     Label: delay:
         text = 'Delay (s)'
