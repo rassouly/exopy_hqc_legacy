@@ -62,6 +62,8 @@ class DummyDriver(object):
     def get_channel(self, ch_id):
         return self.channels[ch_id]
 
+    def set_running(self, value, delay=None):
+        self.running = value
 
 class TestAWGContext(object):
     """Test the AWG5014 context capabilities.
