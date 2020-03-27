@@ -233,7 +233,7 @@ class AWG5014Context(BaseContext):
             for ch_id in sequences:
                 ch = driver.get_channel(ch_id)
                 ch.output_state = 'ON'
-            driver.running = True
+            driver.set_running(True)
 
         return True, infos, {}
 
