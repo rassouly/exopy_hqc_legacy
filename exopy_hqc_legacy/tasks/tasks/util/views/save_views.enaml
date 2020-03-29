@@ -240,9 +240,10 @@ enamldef SaveFileHDF5View(BaseTaskView):
 
             title = 'File'
             constraints = [hbox(name, header,
-                                grid([compression_lab, dtype_lab, lines_lab],
-                                     [compression_val, dtype_val, lines_val])),
-                            align('v_center', name, header)]
+                                grid([compression_lab, dtype_lab, swmr_lab, lines_lab],
+                                     [compression_val, dtype_val, swmr_val, lines_val])),
+                            align('v_center', name, header),
+                            align('v_center', dtype_val, swmr_val)]
 
             QtLineCompleter: name:
                 text := task.filename
@@ -267,6 +268,13 @@ enamldef SaveFileHDF5View(BaseTaskView):
             ObjectCombo: dtype_val:
                 items = list(task.get_member('datatype').items)
                 selected := task.datatype
+            Label: swmr_lab:
+                text = 'SWMR mode'
+            CheckBox: swmr_val:
+                checked := task.swmr
+                tool_tip = fill(cleandoc('''Enable if you don't plan on
+                                            using an outdated version of
+                                            HDF5 to read your data.'''))
             Label: lines_lab:
                 text = 'Approximate number of calls'
             Field: lines_val:

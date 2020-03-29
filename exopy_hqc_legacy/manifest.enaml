@@ -325,6 +325,9 @@ enamldef HqcLegacyManifest(PluginManifest):
                     Interface:
                         interface = 'load_tasks:CSVLoadInterface'
                         views = ['views.load_views:CSVLoadInterfaceView']
+                    Interface:
+                        interface = 'load_tasks:H5PYLoadInterface'
+                        views = ['views.load_views:H5PYLoadInterfaceView']
                 Task:
                     task = 'save_tasks:SaveTask'
                     view = 'views.save_views:SaveView'

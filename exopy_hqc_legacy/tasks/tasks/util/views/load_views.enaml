@@ -11,6 +11,7 @@
 """
 import traceback
 from inspect import cleandoc
+from textwrap import fill
 
 from atom.api import (Typed, Value, List, Str, Dict, Tuple, set_default)
 from enaml.widgets.api import (GroupBox, PushButton, Container, Label, Field,
@@ -222,3 +223,21 @@ enamldef CSVLoadInterfaceView(Container):
                             ''')
         clicked::
             _CNamesEditor(parent=self, interface=interface).show()
+
+
+enamldef H5PYLoadInterfaceView(Container):
+    """View for the H5PY interface.
+
+    """
+    #: Reference to the interface.
+    attr interface
+
+    #: Reference to the root view.
+    attr root
+
+    CheckBox:
+        text = 'SWMR mode'
+        checked := interface.swmr
+        tool_tip = fill(cleandoc('''Enable if you are trying to
+                                    load an HDF5 that was created
+                                    with SWMR activated.'''))

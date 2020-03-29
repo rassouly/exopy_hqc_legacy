@@ -530,6 +530,9 @@ class SaveFileHDF5Task(SimpleTask):
     #: This helps h5py to chunk the file appropriately
     calls_estimation = Unicode('1').tag(pref=True, feval=VAL_REAL)
 
+    #: Flag indicating whether or not the data should be saved in swmr mode
+    swmr = Bool(True).tag(pref=True)
+
     #: Flag indicating whether or not initialisation has been performed.
     initialized = Bool(False)
 
@@ -552,7 +555,11 @@ class SaveFileHDF5Task(SimpleTask):
             filename = self.format_string(self.filename)
             full_path = os.path.join(full_folder_path, filename)
             try:
-                self.file_object = _HDF5File(full_path, 'w')
+                if self.swmr:
+                    # Not backwards compatible
+                    self.file_object = _HDF5File(full_path, 'w', libver='latest')
+                else:
+                    self.file_object = _HDF5File(full_path, 'w')
             except IOError:
                 log = logging.getLogger()
                 msg = "In {}, failed to open the specified file."
@@ -586,6 +593,8 @@ class SaveFileHDF5Task(SimpleTask):
                                      self.datatype, self.compression)
             f.attrs['header'] = self.format_string(self.header)
             f.attrs['count_calls'] = 0
+            if self.swmr:
+                f.swmr_mode = True
             f.flush()
 
             self.initialized = True
