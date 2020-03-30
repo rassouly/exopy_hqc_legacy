@@ -63,6 +63,9 @@ enamldef SetDcVoltageView(InstrView): view:
     FloatField: delta_val:
         resist_width = 'ignore'
         value := task.safe_delta
+        tool_tip = fill("Largest allowed voltage difference between the "
+                        "current output and the target output. A value of "
+                        "0 means that there is no maximum difference.")
 
     Label: delay:
         text = 'Delay (s)'

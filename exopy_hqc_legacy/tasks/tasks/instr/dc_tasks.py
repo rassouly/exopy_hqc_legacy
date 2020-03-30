@@ -35,7 +35,7 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
     #: Largest allowed voltage
     safe_max = Float(0.0).tag(pref=True)
 
-    #: Largest allowed delta compared to current voltage
+    #: Largest allowed delta compared to current voltage. 0 = ignored
     safe_delta = Float(0.0).tag(pref=True)
 
     #: Time to wait between changes of the output of the instr.

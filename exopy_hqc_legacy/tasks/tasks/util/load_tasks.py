@@ -148,17 +148,22 @@ class CSVLoadInterface(TaskInterface):
 class H5PYLoadInterface(TaskInterface):
     """Interface used to load .h5 files.
 
+    The task supports the Single Writter Multiple
+    Readers mode which allows read-only access while the file is still
+    being written by another  task without any race conditions.
+
     """
     #: Class attr used in the UI.
     file_formats = ['H5PY']
 
-    #: Flag indicating whether or not the HDF5 file support swmr
+    #: Whether or not the HDF5 file supports SWMR
     swmr = Bool(True).tag(pref=True)
 
     def perform(self):
         """Load a file stored in h5py format.
 
         Can also handle a file currently opened by a SaveFileHDF5Task.
+        For more reliability, both tasks should use the SWMR mode.
         """
         task = self.task
         folder = task.format_string(task.folder)
