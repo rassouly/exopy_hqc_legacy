@@ -43,7 +43,7 @@ setup(
     package_data={'': ['*.enaml']},
     python_requires='>=3.5',
     setup_requires=['setuptools'],
-    install_requires=['exopy', 'pyvisa', 'h5py', 'numpy', 'pyclibrary'],
+    install_requires=['exopy', 'pyvisa', 'h5py>=2.5.0', 'numpy', 'pyclibrary'],
     entry_points={
         'gui_scripts':
         'hqcmeas_to_exopy = exopy_hqc_legacy.conversion.__main__:main',

@@ -33,6 +33,7 @@ enamldef SetDcVoltageView(InstrView): view:
     constraints = [factory(auto_grid_layout),
                    (step.width == step_val.width) | 'weak',
                    (step_val.width == safe_val.width),
+                   (step_val.width == delta_val.width),
                    (step_val.width == delay_val.width)]
 
     Conditional:
@@ -56,6 +57,15 @@ enamldef SetDcVoltageView(InstrView): view:
     FloatField: safe_val:
         resist_width = 'ignore'
         value := task.safe_max
+
+    Label: delta:
+        text = 'Safe Delta (V)'
+    FloatField: delta_val:
+        resist_width = 'ignore'
+        value := task.safe_delta
+        tool_tip = fill("Largest allowed voltage difference between the "
+                        "current output and the target output. A value of "
+                        "0 means that there is no maximum difference.")
 
     Label: delay:
         text = 'Delay (s)'

@@ -325,6 +325,9 @@ enamldef HqcLegacyManifest(PluginManifest):
                     Interface:
                         interface = 'load_tasks:CSVLoadInterface'
                         views = ['views.load_views:CSVLoadInterfaceView']
+                    Interface:
+                        interface = 'load_tasks:H5PYLoadInterface'
+                        views = ['views.load_views:H5PYLoadInterfaceView']
                 Task:
                     task = 'save_tasks:SaveTask'
                     view = 'views.save_views:SaveView'
@@ -371,7 +374,9 @@ enamldef HqcLegacyManifest(PluginManifest):
                     task = 'meas_dc_tasks:MeasDCVoltageTask'
                     view = 'views.meas_dc_views:MeasDCVoltView'
                     instruments = ['exopy_hqc_legacy.Legacy.Keithley2000',
-                                   'exopy_hqc_legacy.Legacy.Agilent34410A']
+                                   'exopy_hqc_legacy.Legacy.Agilent34410A',
+                                   'exopy_hqc_legacy.Legacy.Yokogawa7651',
+                                   'exopy_hqc_legacy.Legacy.YokogawaGS200']
                 Task:
                     task = 'rf_tasks:SetRFFrequencyTask'
                     view = 'views.rf_views:RFFrequencyView'

@@ -12,6 +12,7 @@
 import os
 
 import numpy as np
+import h5py
 from atom.api import (Bool, Unicode, List, set_default)
 from past.builtins import basestring
 
@@ -142,3 +143,59 @@ class CSVLoadInterface(TaskInterface):
         """
         if new:
             self.task.write_in_database('array', _make_array(new))
+
+
+class H5PYLoadInterface(TaskInterface):
+    """Interface used to load .h5 files.
+
+    The task supports the Single Writter Multiple
+    Readers mode which allows read-only access while the file is still
+    being written by another  task without any race conditions.
+
+    """
+    #: Class attr used in the UI.
+    file_formats = ['H5PY']
+
+    #: Whether or not the HDF5 file supports SWMR
+    swmr = Bool(True).tag(pref=True)
+
+    def perform(self):
+        """Load a file stored in h5py format.
+
+        Can also handle a file currently opened by a SaveFileHDF5Task.
+        For more reliability, both tasks should use the SWMR mode.
+        """
+        task = self.task
+        folder = task.format_string(task.folder)
+        filename = task.format_string(task.filename)
+        full_path = os.path.join(folder, filename)
+
+        with h5py.File(full_path,'r', swmr=self.swmr) as f:
+            data_dict = {}
+            # If the file is still opened by a saveFileHDF5Task,
+            # we need to truncate the data
+            if 'count_calls' in f.attrs:
+                count_calls = f.attrs['count_calls']
+                for key in f:
+                    data_dict[key] = np.array(f[key][:count_calls])
+
+        task.write_in_database('array', data_dict)
+
+    def check(self, *args, **kwargs):
+        """Try to find the names of the keys
+
+        """
+        try:
+            full_folder_path = task.format_string(task.folder)
+            filename = task.format_string(task.filename)
+        except Exception:
+            return True, {}
+
+        full_path = os.path.join(full_folder_path, filename)
+
+        if os.path.isfile(full_path):
+            with h5py.File(full_path,'r', swmr=self.swmr) as f:
+                self.task.write_in_database('array',
+                                            {k: np.ones(5) for k in f})
+
+        return True, {}
