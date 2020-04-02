@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# Copyright 2015-2018 by ExopyHqcLegacy Authors, see AUTHORS for more details.
+# Copyright 2015-2020 by ExopyHqcLegacy Authors, see AUTHORS for more details.
 #
 # Distributed under the terms of the BSD license.
 #
@@ -131,12 +131,26 @@ class TestSetDCVoltageTask(object):
         assert not test
         assert len(traceback) == 1
 
+    def test_volt_function(self):
+        """Make sure that the driver compares function with 'VOLT'
+
+        """
+        c = self.root.run_time[PROFILES]['Test1']['connections']
+        c['C'] = {'voltage': [0.0], 'function': 'CURR', 'owner': [None]}
+
+        self.task.target_value = '0.05'
+        self.root.prepare()
+
+        with pytest.raises(ValueError) as e:
+            self.task.perform()
+        assert "not configured" in str(e.value)
+
     def test_smooth_set_stopping(self):
         """Test stopping in the middle of a smooth stepping.
 
         """
         c = self.root.run_time[PROFILES]['Test1']['connections']
-        c['C'] = {'voltage': [0.0], 'funtion': ['VOLT'], 'owner': [None]}
+        c['C'] = {'voltage': [0.0], 'function': 'VOLT', 'owner': [None]}
 
         self.root.prepare()
         self.root.should_stop.set()
@@ -154,7 +168,7 @@ class TestSetDCVoltageTask(object):
         self.task.target_value = '0.05'
 
         c = self.root.run_time[PROFILES]['Test1']['connections']
-        c['C'] = {'voltage': [0.0], 'funtion': ['VOLT'], 'owner': [None]}
+        c['C'] = {'voltage': [0.0], 'function': 'VOLT', 'owner': [None]}
 
         self.root.prepare()
 
@@ -174,7 +188,7 @@ class TestSetDCVoltageTask(object):
         self.task.target_value = '1.0'
 
         c = self.root.run_time[PROFILES]['Test1']['connections']
-        c['C'] = {'voltage': [0.0], 'funtion': ['VOLT'], 'owner': [None]}
+        c['C'] = {'voltage': [0.0], 'function': 'VOLT', 'owner': [None]}
         s = self.root.run_time[PROFILES]['Test1']['settings']
         s['S'] = {'get_channel': lambda x, i: x}
 
@@ -195,6 +209,18 @@ def test_set_dc_voltage_view(exopy_qtbot, root_view, task_workbench):
 
 @pytest.mark.ui
 def test_set_dc_voltage_view2(exopy_qtbot, root_view, task_workbench):
+    """Test MultiChannelVoltageSourceInterface views.
+
+    """
+    task = SetDCVoltageTask(name='Test')
+    interface = MultiChannelVoltageSourceInterface(task=task)
+    task.interface = interface
+    root_view.task.add_child_task(0, task)
+    show_and_close_widget(exopy_qtbot, SetDcVoltageView(task=task, root=root_view))
+
+
+@pytest.mark.ui
+def test_set_dc_voltage_view3(exopy_qtbot, root_view, task_workbench):
     """Test SetDCVoltageView widget inside of a LoopTask.
 
     """
