@@ -4,8 +4,7 @@ ExopyHqcLegacy Changelog
 0.2.0 - unreleased
 ------------------
 
-Nothing yet
-
+- fix passing average value when retrying data retrieval on AQD14 driver
 
 0.1.0 - 15/02/2018
 ------------------
