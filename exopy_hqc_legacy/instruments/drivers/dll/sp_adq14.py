@@ -149,7 +149,7 @@ class SPADQ14(DllInstrument):
         self._dll.SetTriggerEdge(self._cu_id, self._id, 2, 1)
 
     def get_traces(self, channels, duration, delay, records_per_capture,
-                   retry=True, average=False):
+                   retry=1, average=False):
         """Acquire the average signal on both channels.
 
         Parameters
@@ -167,8 +167,8 @@ class SPADQ14(DllInstrument):
         records_per_capture : int
             Number of records to acquire (per channel)
 
-        retry : bool, optional
-            Should acquisition be tried again if data recuperation fails.
+        retry : int, optional
+            Number of time to retry acquisition if data recuperation fails.
 
         average : bool, optional
             Should traces be averaged.
@@ -248,7 +248,7 @@ class SPADQ14(DllInstrument):
                 self.configure_board()
                 if retry:
                     return self.get_traces(channels, duration, delay,
-                                           records_per_capture, False)
+                                           records_per_capture, retry-1, average)
                 else:
                     msg = 'Failed to retrieve data from ADQ14'
                     raise RuntimeError(msg)
