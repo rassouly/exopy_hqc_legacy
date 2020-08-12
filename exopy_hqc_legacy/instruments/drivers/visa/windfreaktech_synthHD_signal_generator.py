@@ -66,10 +66,9 @@ class SynthHD(VisaInstrument):
         """Selected channel.
 
         """
-        self.write('C?')
-        output = self.read()
+        output = self.query('C?')
         if output:
-            channel = output[0]
+            channel = int(output)
             return channel
         else:
             mes = 'Instrument did not return its channel'
@@ -81,9 +80,8 @@ class SynthHD(VisaInstrument):
         """Channel setter method.
 
         """
-        self.write('C'+format(value))
-        self.write('C?')
-        output = self.read()
+        self.write('C{}'.format(value))
+        output = self.query('C?')
         if output:
             if int(output) != int(value):
                 mes = 'Instrument did not set the channel correctly'
@@ -98,10 +96,9 @@ class SynthHD(VisaInstrument):
         """Frequency of the output signal.
 
         """
-        self.write('f?')
-        freq = self.read()
+        freq = self.query('f?')
         if freq:
-            return freq
+            return float(freq)
         else:
             mes = 'Instrument did not return the frequency'
             raise InstrIOError(mes)
@@ -115,9 +112,8 @@ class SynthHD(VisaInstrument):
         unit = self.frequency_unit
         valueMHz = value*CONVERSION_FACTORS[unit]['MHz']
         valueMHz_format = '{:.4f}'.format(valueMHz)
-        self.write('f'+str(valueMHz_format))
-        self.write('f?')  # asks for frequency of current channel
-        result = float(self.read())  # returns frequency in MHz
+        self.write('f{}'.format(valueMHz_format))
+        result = float(self.query('f?'))  # asks for frequency of current channel in MHz
         if abs(result - valueMHz) > 1e-12:
             mes = 'Instrument did not set correctly the frequency'
             raise InstrIOError(mes)
@@ -129,10 +125,9 @@ class SynthHD(VisaInstrument):
         """Power of the output signal.
 
         """
-        self.write('W?')
-        power = self.read()
-        if power is not None:
-            return power
+        power = self.query('W?')
+        if power:
+            return float(power)
         else:
             mes = 'Instrument did not return the power'
             raise InstrIOError(mes)
@@ -143,9 +138,8 @@ class SynthHD(VisaInstrument):
         """Power setter method.
 
         """
-        self.write('W'+str('{:.4f}'.format(value)))
-        self.write('W?')
-        result = float(self.read())
+        self.write('W{:.4f}'.format(value))
+        result = float(self.query('W?'))
         if abs(result - value) > 10**-12:
             raise InstrIOError('Instrument did not set correctly the power')
         self.check_calibration()
@@ -156,10 +150,9 @@ class SynthHD(VisaInstrument):
         """Output state.
 
         """
-        self.write('E?r?')
-        outputE = self.read()
-        outputr = self.read()
-        if outputE is not None and outputr is not None:
+        outputE = self.query('E?')
+        outputr = self.query('r?')
+        if outputE and outputr:
             outputE = outputE[0]
             outputr = outputr[0]
             if outputE == '1' and outputr == '1':
@@ -207,14 +200,12 @@ class SynthHD(VisaInstrument):
         InstrIOError: raised if the source is not calibrated or phase locked.
 
         """
-        self.write('V')
-        output = self.read()
-        if not int(output[0]):
+        result = self.query('V')
+        if not result or not int(result):
             mes = 'SynthHD did not calibrate freq or power properly'
             raise InstrIOError(mes)
         if self.output:
-            self.write('p')
-            output = self.read()
-            if not int(output[0]):
+            pll_status = self.query('p')
+            if not pll_status or not int(pll_status):
                 mes = 'SynthHD did not phase lock'
                 raise InstrIOError(mes)

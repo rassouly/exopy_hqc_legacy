@@ -63,8 +63,7 @@ class TaborAWGChannel(BaseInstrument):
         """
         with self.secure():
             self._AWG.write('INST {}'.format(self._channel))
-            output = self._AWG.ask('OUTP?'
-                                             )
+            output = self._AWG.query('OUTP?')
             if output == 'ON':
                 return 'ON'
             elif output == 'OFF':
@@ -88,16 +87,14 @@ class TaborAWGChannel(BaseInstrument):
                 self._AWG.write('INST {}'.format(self._channel))
                 self._AWG.write('SOUR:FUNC:MODE USER')
                 self._AWG.write('OUTP ON')
-                if self._AWG.ask('OUTP?'
-                                            ) != 'ON':
+                if self._AWG.query('OUTP?') != 'ON':
                     raise InstrIOError(cleandoc('''Instrument did not set
                                                 correctly the output'''))
             elif off.match(value) or value == 0:
                 self._AWG.write('INST {}'.format(self._channel))
                 self._AWG.write('SOUR:FUNC:MODE USER')
                 self._AWG.write('OUTP OFF')
-                if self._AWG.ask('OUTP?'
-                                            ) != 'OFF':
+                if self._AWG.query('OUTP?') != 'OFF':
                     raise InstrIOError(cleandoc('''Instrument did not set
                                                 correctly the output'''))
             else:
@@ -158,7 +155,7 @@ class TaborAWG(VisaInstrument):
     def oscillator_reference_external(self):
         """oscillator reference external getter method
         """
-        ore = self.ask("SOUR:ROSC:SOUR?")
+        ore = self.query("SOUR:ROSC:SOUR?")
         if ore == 'EXT':
             return 'True'
         elif ore == 'INT':
@@ -173,13 +170,13 @@ class TaborAWG(VisaInstrument):
         """
         if value in ('EXT', 1, 'True'):
             self.write('SOUR:ROSC:SOUR EXT')
-            if self.ask('SOUR:ROSC:SOUR?') != 'EXT':
+            if self.query('SOUR:ROSC:SOUR?') != 'EXT':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the oscillator
                                             reference'''))
         elif value in ('INT', 0, 'False'):
             self.write('SOUR:ROSC:SOUR INT')
-            if self.ask('SOUR:ROSC:SOUR?') != 'INT':
+            if self.query('SOUR:ROSC:SOUR?') != 'INT':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the oscillator
                                             reference'''))
@@ -193,10 +190,10 @@ class TaborAWG(VisaInstrument):
     @secure_communication()
     def clock_source(self):
         """clock source getter method
-        """       
-        
-        cle = self.ask("FREQ:RAST:SOUR?")
-        if cle is not None:
+        """
+
+        cle = self.query("FREQ:RAST:SOUR?")
+        if cle:
             return cle
         else:
             raise InstrIOError
@@ -208,12 +205,12 @@ class TaborAWG(VisaInstrument):
         """
         if value in ('EXT', 1, 'True'):
             self.write(':FREQ:RAST:SOUR EXT')
-            if self.ask(':FREQ:RAST:SOUR?') != 'EXT':
+            if self.query(':FREQ:RAST:SOUR?') != 'EXT':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the clock source'''))
         elif value in ('INT', 0, 'False'):
             self.write(':FREQ:RAST:SOUR INT')
-            if self.ask(':FREQ:RAST:SOUR?') != 'INT':
+            if self.query(':FREQ:RAST:SOUR?') != 'INT':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the clock source'''))
         else:
@@ -227,9 +224,9 @@ class TaborAWG(VisaInstrument):
     def sampling_frequency(self):
         """sampling frequency getter method
         """
-        sampl_freq = self.ask_for_values("FREQ:RAST?")[0]
-        if sampl_freq is not None:
-            return sampl_freq
+        sampl_freq = self.query("FREQ:RAST?")
+        if sampl_freq:
+            return float(sampl_freq)
         else:
             raise InstrIOError
 
@@ -239,7 +236,7 @@ class TaborAWG(VisaInstrument):
         """sampling frequency setter method
         """
         self.write("FREQ:RAST {}".format(value))
-        result = self.ask_for_values("FREQ:RAST?")[0]
+        result = float(self.query("FREQ:RAST?"))
         if abs(result - value) > 10**-12:
             raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the sampling frequency'''))
@@ -263,8 +260,8 @@ class TaborAWG(VisaInstrument):
     def run_mode(self):
         """Run mode getter method
         """
-        run_cont = self.ask("INIT:CONT?")
-        run_gat=self.ask("INIT:GATE?")
+        run_cont = self.query("INIT:CONT?")
+        run_gat=self.query("INIT:GATE?")
         if run_cont is not None:
             if run_cont == 'ON':
                 return 'Continuous'
@@ -272,7 +269,6 @@ class TaborAWG(VisaInstrument):
                 return 'Gated'
             else:
                 return 'Triggered'
-            
         else:
             raise InstrIOError
 
@@ -283,25 +279,25 @@ class TaborAWG(VisaInstrument):
         """
         if value in ('CONT', 'CONTINUOUS', 'continuous'):
             self.write('INIT:CONT ON')
-            if self.ask('INIT:CONT?') != 'ON':
+            if self.query('INIT:CONT?') != 'ON':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run mode'''))
         elif value in ('TRIG', 'TRIGGERED', 'triggered'):
             self.write('INIT:CONT OFF')
             self.write('INIT:GATE OFF')
-            if self.ask('INIT:CONT?') != 'OFF':
+            if self.query('INIT:CONT?') != 'OFF':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run mode'''))
-            elif self.ask('INIT:GATE?') != 'OFF':
+            elif self.query('INIT:GATE?') != 'OFF':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run mode'''))
         elif value in ('GAT', 'GATED', 'gated'):
             self.write('INIT:CONT OFF')
             self.write('INIT:GATE ON')
-            if self.ask('INIT:CONT?') != 'OFF':
+            if self.query('INIT:CONT?') != 'OFF':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run mode'''))
-            elif self.ask('INIT:GATE?') != 'ON':
+            elif self.query('INIT:GATE?') != 'ON':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run mode'''))
         else:

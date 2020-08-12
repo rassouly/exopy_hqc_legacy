@@ -56,9 +56,9 @@ class YokogawaGS200(VisaInstrument):
         """Voltage getter method. NB: does not check the current function.
 
         """
-        voltage = self.ask_for_values(":SOURce:LEVel?")[0]
-        if voltage is not None:
-            return voltage
+        voltage = self.query(":SOURce:LEVel?")
+        if voltage:
+            return float(voltage)
         else:
             raise InstrIOError('Instrument did not return the voltage')
 
@@ -79,9 +79,9 @@ class YokogawaGS200(VisaInstrument):
 
         """
         self.write(":SOURce:LEVel {}".format(set_point))
-        value = self.ask_for_values('SOURce:LEVel?')[0]
+        value = self.query('SOURce:LEVel?')
         # to avoid floating point rouding
-        if abs(value - round(set_point, 9)) > 10**-9:
+        if abs(float(value) - round(set_point, 9)) > 10**-9:
             raise InstrIOError('Instrument did not set correctly the voltage')
 
     @instrument_property
@@ -92,7 +92,7 @@ class YokogawaGS200(VisaInstrument):
         NB: does not check the current function.
 
         """
-        v_range = self.ask(":SOURce:RANGe?")
+        v_range = self.query(":SOURce:RANGe?")
         if v_range is not None:
             if v_range == '10E-3':
                 return '10 mV'
@@ -129,7 +129,7 @@ class YokogawaGS200(VisaInstrument):
 
         if visa_range:
             self.write(":SOURce:RANGe {}".format(visa_range))
-            check = self.ask(":SOURce:RANGe?")
+            check = self.query(":SOURce:RANGe?")
             if check != visa_range:
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                     the range'''))
@@ -142,9 +142,9 @@ class YokogawaGS200(VisaInstrument):
         NB: does not check the current function.
 
         """
-        current = self.ask_for_values(":SOURce:LEVel?")[0]
-        if current is not None:
-            return current
+        current = self.query(":SOURce:LEVel?")
+        if current:
+            return float(current)
         else:
             raise InstrIOError('Instrument did not return the current')
 
@@ -157,9 +157,9 @@ class YokogawaGS200(VisaInstrument):
 
         """
         self.write(":SOURce:LEVel {}".format(set_point))
-        value = self.ask_for_values('SOURce:LEVel?')[0]
+        value = self.query('SOURce:LEVel?')
         # to avoid floating point rouding
-        if abs(value - round(set_point, 9)) > 10**-9:
+        if abs(float(value) - round(set_point, 9)) > 10**-9:
             raise InstrIOError('Instrument did not set correctly the current')
 
     @instrument_property
@@ -170,7 +170,7 @@ class YokogawaGS200(VisaInstrument):
         NB: does not check the current function.
 
         """
-        c_range = self.ask(":SOURce:RANGe?")
+        c_range = self.query(":SOURce:RANGe?")
         if c_range is not None:
             if c_range == '1E-3':
                 return '1 mA'
@@ -203,7 +203,7 @@ class YokogawaGS200(VisaInstrument):
 
         if visa_range:
             self.write(":SOURce:RANGe {}".format(visa_range))
-            check = self.ask(":SOURce:RANGe?")
+            check = self.query(":SOURce:RANGe?")
             if check != visa_range:
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                     the range'''))
@@ -214,8 +214,8 @@ class YokogawaGS200(VisaInstrument):
         """Function getter method
 
         """
-        value = self.ask('SOURce:FUNCtion?')
-        if value is not None:
+        value = self.query('SOURce:FUNCtion?')
+        if value:
             return value
         else:
             raise InstrIOError('Instrument did not return the function')
@@ -231,13 +231,13 @@ class YokogawaGS200(VisaInstrument):
         if self.voltage == 0 and self.output is False:
             if volt.match(mode):
                 self.write(':SOURce:FUNCtion VOLT')
-                value = self.ask('SOURce:FUNCtion?')
+                value = self.query('SOURce:FUNCtion?')
                 if value != 'VOLT':
                     raise InstrIOError('Instrument did not set correctly the'
                                        'mode')
             elif curr.match(mode):
                 self.write(':SOURce:FUNCtion CURR')
-                value = self.ask('SOURce:FUNCtion?')
+                value = self.query('SOURce:FUNCtion?')
                 if value != 'CURR':
                     raise InstrIOError('Instrument did not set correctly the'
                                        'mode')
@@ -257,9 +257,9 @@ class YokogawaGS200(VisaInstrument):
         """Output getter method
 
         """
-        value = self.ask_for_values(':OUTPUT?')
-        if value is not None:
-            return bool(value[0])
+        value = self.query(':OUTPUT?')
+        if value:
+            return bool(int(value))
         else:
             raise InstrIOError('Instrument did not return the output state')
 
@@ -277,12 +277,12 @@ class YokogawaGS200(VisaInstrument):
         if self.voltage == 0:
             if on.match(value) or value == 1:
                 self.write(':OUTPUT ON')
-                if self.ask(':OUTPUT?') != '1':
+                if self.query(':OUTPUT?') != '1':
                     raise InstrIOError(cleandoc('''Instrument did not set
                                                 correctly the output'''))
             elif off.match(value) or value == 0:
                 self.write(':OUTPUT OFF')
-                if self.ask(':OUTPUT?') != '0':
+                if self.query(':OUTPUT?') != '0':
                     raise InstrIOError(cleandoc('''Instrument did not set
                                                 correctly the output'''))
             else:
@@ -337,7 +337,7 @@ class Yokogawa7651(VisaInstrument):
         """Voltage getter method.
 
         """
-        data = self.ask("OD")
+        data = self.query("OD")
         voltage = float(data[4::])
         if voltage is not None:
             return voltage
@@ -362,7 +362,7 @@ class Yokogawa7651(VisaInstrument):
 
         """
         self.write("S{:+E}E".format(set_point))
-        data = self.ask("OD")
+        data = self.query("OD")
         value = float(data[4::])
         # to avoid floating point rouding
         if abs(value - round(set_point, 9)) > 10**-9:
@@ -374,7 +374,7 @@ class Yokogawa7651(VisaInstrument):
         """Function getter method.
 
         """
-        data = self.ask('OD')
+        data = self.query('OD')
         if data[3] == 'V':
             return 'VOLT'
         elif data[3] == 'A':
@@ -399,12 +399,12 @@ class Yokogawa7651(VisaInstrument):
             self.read()
             self.read()
             self.write('F1{}E'.format(current_range))
-            value = self.ask('OD')
+            value = self.query('OD')
             if value[3] != 'V':
                 raise InstrIOError('Instrument did not set correctly the mode')
         elif curr.match(mode):
             self.write('F5E')
-            value = self.ask('OD')
+            value = self.query('OD')
             if value[3] != 'A':
                 raise InstrIOError('Instrument did not set correctly the mode')
         else:
@@ -418,7 +418,7 @@ class Yokogawa7651(VisaInstrument):
         """Output getter method.
 
         """
-        mess = self.ask('OC')[5::]
+        mess = self.query('OC')[5::]
         value = ('{0:08b}'.format(int(mess)))[3]
         if value == '0':
             return 'OFF'
@@ -437,13 +437,13 @@ class Yokogawa7651(VisaInstrument):
         off = re.compile('off', re.IGNORECASE)
         if on.match(value) or value == 1:
             self.write('O1E')
-            mess = self.ask('OC')[5::]  # Instr return STS1=m we want m
+            mess = self.query('OC')[5::]  # Instr return STS1=m we want m
             if ('{0:08b}'.format(int(mess)))[3] != '1':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                             the output'''))
         elif off.match(value) or value == 0:
             self.write('O0E')
-            mess = self.ask('OC')[5::]  # Instr return STS1=m we want m
+            mess = self.query('OC')[5::]  # Instr return STS1=m we want m
             if('{0:08b}'.format(int(mess)))[3] != '0':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                             the output'''))

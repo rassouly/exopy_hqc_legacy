@@ -60,8 +60,8 @@ class LeCroyChannel(BaseInstrument):
         with self.secure():
             # check if the channel studied is not a trace channel
             if len(self._channel) == 1:
-                result = self._LeCroy64Xi.ask('C{}:VDIV?'
-                                              .format(self._channel))
+                result = self._LeCroy64Xi.query('C{}:VDIV?'
+                                                .format(self._channel))
                 result = result.replace('C{}:VDIV '.format(self._channel), '')
                 return result
             else:
@@ -86,8 +86,8 @@ class LeCroyChannel(BaseInstrument):
             if len(self._channel) == 1:
                 self._LeCroy64Xi.write('C{}:VDIV {}'
                                        .format(self._channel, value))
-                result = self._LeCroy64Xi.ask('C{}:VDIV?'
-                                              .format(self._channel))
+                result = self._LeCroy64Xi.query('C{}:VDIV?'
+                                                .format(self._channel))
                 result = result.replace('C{}:VDIV '.format(self._channel), '')
                 result = result.replace('V', '')
                 result = float(result)
@@ -122,7 +122,7 @@ class LeCroyChannel(BaseInstrument):
         with self.secure():
             # check if the channel studied is not a trace channel
             if len(self._channel) == 1:
-                result = self._LeCroy64Xi.ask('C{}:OFST?'
+                result = self._LeCroy64Xi.query('C{}:OFST?'
                                               .format(self._channel))
                 result = result.replace('C{}:OFST '.format(self._channel), '')
                 result = result.replace('V', '')
@@ -149,7 +149,7 @@ class LeCroyChannel(BaseInstrument):
             if len(self._channel) == 1:
                 self._LeCroy64Xi.write('C{}:OFST {}'
                                        .format(self._channel, value))
-                result = self._LeCroy64Xi.ask('C{}:OFST?'
+                result = self._LeCroy64Xi.query('C{}:OFST?'
                                               .format(self._channel))
                 result = result.replace('C{}:OFST '.format(self._channel), '')
                 result = result.replace('V', '')
@@ -186,9 +186,9 @@ class LeCroyChannel(BaseInstrument):
             # check if the channel studied is not a trace channel
             if len(self._channel) == 1:
                 cmd = 'VBS? "return=app.Acquisition.C{}.Out.Result.Sweeps"'
-                result = instr.ask_for_values(cmd.format(self._channel))
+                result = instr.query(cmd.format(self._channel))
                 if result:
-                    return result[0]
+                    return float(result)
                 else:
                     raise InstrIOError('LeCraoy failed to return sweep')
             else:
@@ -243,13 +243,13 @@ class LeCroyChannel(BaseInstrument):
         '''
         if hires in ('True', 'Yes'):
             self._LeCroy64Xi.write('CFMT DEF9,WORD,BIN')
-            result = self._LeCroy64Xi.ask('CFMT?')
+            result = self._LeCroy64Xi.query('CFMT?')
             if result != 'CFMT DEF9,WORD,BIN':
                 mes = 'Instrument did not set the WORD mode'
                 raise InstrIOError(mes)
         elif hires in ('No', 'False'):
             self._LeCroy64Xi.write('CFMT DEF9,BYTE,BIN')
-            result = self._LeCroy64Xi.ask('CFMT?')
+            result = self._LeCroy64Xi.query('CFMT?')
             if result != 'CFMT DEF9,BYTE,BIN':
                 mes = 'Instrument did not set the BYTE mode'
                 raise InstrIOError(mes)
@@ -258,9 +258,9 @@ class LeCroyChannel(BaseInstrument):
             raise InstrIOError(mes)
 
         if len(self._channel) == 1:
-            databyte = bytearray(self._LeCroy64Xi.ask('C{}:WF?'.format(self._channel)))
+            databyte = bytearray(self._LeCroy64Xi.query('C{}:WF?'.format(self._channel)))
         else:
-            databyte = bytearray(self._LeCroy64Xi.ask('{}:WF?'.format(self._channel)))
+            databyte = bytearray(self._LeCroy64Xi.query('{}:WF?'.format(self._channel)))
 
         databyte = databyte[self.descriptor_start:]
         self.data['COMM_TYPE'] = struct.unpack('<b', databyte[32:33])  # /COMM_TYPE: enum ; chosen by remote command COMM_FORMAT
@@ -516,13 +516,13 @@ class LeCroyChannel(BaseInstrument):
         '''
         if hires in ('True', 'Yes'):
             self._LeCroy64Xi.write('CFMT DEF9,WORD,BIN')
-            result = self._LeCroy64Xi.ask('CFMT?')
+            result = self._LeCroy64Xi.query('CFMT?')
             if result != 'CFMT DEF9,WORD,BIN':
                 mes = 'Instrument did not set the WORD mode'
                 raise InstrIOError(mes)
         elif hires in ('No', 'False'):
             self._LeCroy64Xi.write('CFMT DEF9,BYTE,BIN')
-            result = self._LeCroy64Xi.ask('CFMT?')
+            result = self._LeCroy64Xi.query('CFMT?')
             if result != 'CFMT DEF9,BYTE,BIN':
                 mes = 'Instrument did not set the BYTE mode'
                 raise InstrIOError(mes)
@@ -531,9 +531,9 @@ class LeCroyChannel(BaseInstrument):
             raise InstrIOError(mes)
 
         if len(self._channel) == 1:
-            databyte = bytearray(self._LeCroy64Xi.ask('C{}:WF?'.format(self._channel)))
+            databyte = bytearray(self._LeCroy64Xi.query('C{}:WF?'.format(self._channel)))
         else:
-            databyte = bytearray(self._LeCroy64Xi.ask('{}:WF?'.format(self._channel)))
+            databyte = bytearray(self._LeCroy64Xi.query('{}:WF?'.format(self._channel)))
 
         databyte = databyte[self.descriptor_start:]
 
@@ -800,7 +800,7 @@ class LeCroy64Xi(VisaInstrument):
         ''' Method to get the trigger mode
 
         '''
-        mode = self.ask('TRMD?')
+        mode = self.query('TRMD?')
         if mode is not None:
             mode = mode.replace('TRMD ', '')
             return mode
@@ -817,7 +817,7 @@ class LeCroy64Xi(VisaInstrument):
         {'AUTO','NORM','SINGLE','STOP'}
         '''
         self.write('TRMD {}'.format(value))
-        result = self.ask('TRMD?')
+        result = self.query('TRMD?')
         result = result.replace('TRMD ', '')
         if result != value:
             raise InstrIOError(cleandoc('''Instrument did not set correctly
@@ -841,7 +841,7 @@ class LeCroy64Xi(VisaInstrument):
         ''' Method to know if the instrument is in auto calibrate mode
 
         '''
-        answer = self.ask('ACAL?')
+        answer = self.query('ACAL?')
         if answer is not None:
             answer = answer.replace('ACAL ', '')
             return answer
@@ -859,14 +859,14 @@ class LeCroy64Xi(VisaInstrument):
         '''
         if value in ('ON', 'Yes'):
             self.write('ACAL ON')
-            result = self.ask('ACAL?')
+            result = self.query('ACAL?')
             result = result.replace('ACAL ', '')
             if result != 'ON':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                             the auto calibrate mode'''))
         elif value in ('OFF', 'No'):
             self.write('ACAL OFF')
-            result = self.ask('ACAL?')
+            result = self.query('ACAL?')
             result = result.replace('ACAL ', '')
             if result != 'OFF':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
@@ -886,7 +886,7 @@ class LeCroy64Xi(VisaInstrument):
         Output:
         value (str) : Timebase in S
         '''
-        result = self.ask('TDIV?')
+        result = self.query('TDIV?')
         result = result.replace('TDIV ', '')
         if result is not None:
             return result
@@ -909,7 +909,7 @@ class LeCroy64Xi(VisaInstrument):
         '''
 
         self.write('TDIV {}'.format(value))
-        result = self.ask('TDIV?')
+        result = self.query('TDIV?')
         result = result.replace('TDIV ', '')
         result = result.replace('S', '')
         result = float(result)
@@ -937,7 +937,7 @@ class LeCroy64Xi(VisaInstrument):
         result(float) : maximum memory size in Samples
         '''
 
-        result = self.ask('MSIZ?')
+        result = self.query('MSIZ?')
         result = result.replace('MSIZ ', '')
         result = result.replace(' SAMPLE', '')
         return float(result)
@@ -952,7 +952,7 @@ class LeCroy64Xi(VisaInstrument):
         None
         '''
         self.write('MSIZ {}'.format(msize))
-        result = self.ask('MSIZ?')
+        result = self.query('MSIZ?')
         result = result.replace('MSIZ ', '')
         result = float(result.replace(' SAMPLE', ''))
         if result != float(msize):
@@ -1002,5 +1002,3 @@ class LeCroy64Xi(VisaInstrument):
         None
         '''
         self.write('CLSW')
-
-DRIVERS = {'LeCroy64Xi': LeCroy64Xi}

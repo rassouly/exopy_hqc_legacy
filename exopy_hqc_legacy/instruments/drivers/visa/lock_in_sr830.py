@@ -62,11 +62,11 @@ class LockInSR830(VisaInstrument):
         independent values if the instrument is queried too often.
 
         """
-        value = self.ask_for_values('OUTP?1')
+        value = self.query('OUTP?1')
         if not value:
             raise InstrIOError('The command did not complete correctly')
         else:
-            return value[0]
+            return float(value)
 
     @secure_communication()
     def read_y(self):
@@ -77,11 +77,11 @@ class LockInSR830(VisaInstrument):
         independent values if the instrument is queried too often.
 
         """
-        value = self.ask_for_values('OUTP?2')
+        value = self.query('OUTP?2')
         if not value:
             raise InstrIOError('The command did not complete correctly')
         else:
-            return value[0]
+            return float(value)
 
     @secure_communication()
     def read_xy(self):
@@ -92,7 +92,7 @@ class LockInSR830(VisaInstrument):
         independent values if the instrument is queried too often.
 
         """
-        values = self.ask_for_values('SNAP?1,2')
+        values = self.query_ascii_values('SNAP?1,2')
         if not values:
             raise InstrIOError('The command did not complete correctly')
         else:
@@ -107,11 +107,11 @@ class LockInSR830(VisaInstrument):
         independent values if the instrument is queried too often.
 
         """
-        value = self.ask_for_values('OUTP?3')
+        value = self.query('OUTP?3')
         if not value:
             return InstrIOError('The command did not complete correctly')
         else:
-            return value[0]
+            return float(value)
 
     @secure_communication()
     def read_phase(self):
@@ -122,11 +122,11 @@ class LockInSR830(VisaInstrument):
         independent values if the instrument is queried too often.
 
         """
-        value = self.ask_for_values('OUTP?4')
+        value = self.query('OUTP?4')
         if not value:
             raise InstrIOError('The command did not complete correctly')
         else:
-            return value[0]
+            return float(value)
 
     @secure_communication()
     def read_amp_and_phase(self):
@@ -137,7 +137,7 @@ class LockInSR830(VisaInstrument):
         independent values if the instrument is queried too often.
 
         """
-        values = self.ask_for_values('SNAP?3,4')
+        values = self.query_ascii_values('SNAP?3,4')
         if not values:
             raise InstrIOError('The command did not complete correctly')
         else:

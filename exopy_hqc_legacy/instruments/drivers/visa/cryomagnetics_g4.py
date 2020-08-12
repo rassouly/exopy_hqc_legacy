@@ -47,14 +47,14 @@ class C4G(CS4):
         """Read the current value of the output field.
 
         """
-        return float(self.ask('IOUT?').strip(' kG')) / 10
+        return float(self.query('IOUT?').strip(' kG')) / 10
 
     @secure_communication()
     def read_persistent_field(self):
         """Read the current value of the persistent field.
 
         """
-        return float(self.ask('IMAG?').strip(' kG')) / 10
+        return float(self.query('IMAG?').strip(' kG')) / 10
 
     @instrument_property
     @secure_communication()
@@ -63,7 +63,7 @@ class C4G(CS4):
 
         """
         # in T
-        return float(self.ask('ULIM?').strip(' kG')) / 10
+        return float(self.query('ULIM?').strip(' kG')) / 10
 
     @target_field.setter
     @secure_communication()
@@ -90,7 +90,7 @@ class C4G(CS4):
         (T/min).
 
         """
-        rate = float(self.ask('RATE? 5'))
+        rate = float(self.query('RATE? 5'))
         return rate * (60 * self.field_current_ratio)
 
     @fast_sweep_rate.setter

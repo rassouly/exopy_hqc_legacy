@@ -13,13 +13,6 @@ import logging
 from inspect import cleandoc
 import numpy as np
 
-try:
-    from visa import ascii, single, double
-except ImportError:
-    ascii = 2
-    single = 1
-    double = 3
-
 from visa import VisaIOError, constants
 
 from ..driver_tools import (BaseInstrument, InstrIOError, InstrError,
@@ -90,13 +83,13 @@ class AgilentPNAChannel(BaseInstrument):
 
         data_request = 'CALCulate{}:DATA? FDATA'.format(self._channel)
         if self._pna.data_format == 'REAL,32':
-            data = self._pna.ask_for_values(data_request, single)
+            data = self._pna.query_binary_values(data_request, 'f')
 
         elif self._pna.data_format == 'REAL,64':
-            data = self._pna.ask_for_values(data_request, double)
+            data = self._pna.query_binary_values(data_request, 'd')
 
         else:
-            data = self._pna.ask_for_values(data_request, ascii)
+            data = self._pna.query_ascii_values(data_request, ascii)
 
         if data:
             return np.array(data)
@@ -127,13 +120,13 @@ class AgilentPNAChannel(BaseInstrument):
 
         data_request = 'CALCulate{}:DATA? SDATA'.format(self._channel)
         if self._pna.data_format == 'REAL,32':
-            data = self._pna.ask_for_values(data_request, single)
+            data = self._pna.query_binary_values(data_request, 'f')
 
         elif self._pna.data_format == 'REAL,64':
-            data = self._pna.ask_for_values(data_request, double)
+            data = self._pna.query_binary_values(data_request, 'd')
 
         else:
-            data = self._pna.ask_for_values(data_request, ascii)
+            data = self._pna.query_ascii_values(data_request)
 
         if not meas_name:
             meas_name = self.selected_measure
@@ -175,7 +168,7 @@ class AgilentPNAChannel(BaseInstrument):
 
             while True:
                 try:
-                    done = self._pna.ask_for_values('*OPC?')[0]
+                    done = int(self._pna.query('*OPC?'))
                     break
                 except VisaIOError as e:
                     # Getting an timeout here simply means that the
@@ -193,7 +186,7 @@ class AgilentPNAChannel(BaseInstrument):
         """
         """
         request = 'CALCulate{}:PARameter:CATalog:EXTended?'
-        meas = self._pna.ask(request.format(self._channel))
+        meas = self._pna.query(request.format(self._channel))
 
         if meas:
             if 'NO CATALOG' in meas:
@@ -212,7 +205,7 @@ class AgilentPNAChannel(BaseInstrument):
         """
         """
         catalog_request = 'CALCulate{}:PARameter:CATalog:EXTended?'
-        measures = self._pna.ask(catalog_request.format(self._channel))
+        measures = self._pna.query(catalog_request.format(self._channel))
 
         if meas_name not in measures:
             param = meas_name.split(':')[1]
@@ -222,7 +215,7 @@ class AgilentPNAChannel(BaseInstrument):
                                                meas_name,
                                                param))
 
-            meas = self._pna.ask(catalog_request.format(self._channel))
+            meas = self._pna.query(catalog_request.format(self._channel))
             if meas:
                 if meas_name not in meas:
                     mess = cleandoc('''The Pna did not create the
@@ -237,7 +230,7 @@ class AgilentPNAChannel(BaseInstrument):
         self._pna.write(
             "CALCulate{}:PARameter:DELete '{}'".format(self._channel,
                                                        meas_name))
-        meas = self._pna.ask('CALCulate{}:PARameter:CATalog:EXTended?'.format(
+        meas = self._pna.query('CALCulate{}:PARameter:CATalog:EXTended?'.format(
                              self._channel))
         if meas:
             if meas_name in meas:
@@ -267,7 +260,7 @@ class AgilentPNAChannel(BaseInstrument):
 
         self._pna.write('CALCulate{}:FORMat {}'.format(self._channel,
                                                        meas_format))
-        res = self._pna.ask('CALCulate{}:FORMat?'.format(self._channel))
+        res = self._pna.query('CALCulate{}:FORMat?'.format(self._channel))
         if meas_name and selected_meas:
             self.selected_measure = selected_meas
         else:
@@ -287,7 +280,7 @@ class AgilentPNAChannel(BaseInstrument):
         self._pna.write("DISPlay:WINDow{}:TRACe{}:FEED '{}'".format(window_num,
                         trace_num, meas_name))
 
-        traces = self._pna.ask('DISPlay:WINDow{}:CATalog?'.format(window_num))
+        traces = self._pna.query('DISPlay:WINDow{}:CATalog?'.format(window_num))
         if str(trace_num) not in traces:
             raise InstrIOError(cleandoc('''The Pna did not bind the meas {}
                 to window {}'''.format(meas_name, window_num)))
@@ -335,10 +328,9 @@ class AgilentPNAChannel(BaseInstrument):
     def frequency(self):
         """Frequency getter method
         """
-        freq = self._pna.ask_for_values('SENS{}:FREQuency:CENTer?'.format(
-                                        self._channel))
+        freq = self._pna.query('SENS{}:FREQuency:CENTer?'.format(self._channel))
         if freq:
-            return freq[0]
+            return float(freq)
         else:
             raise InstrIOError(cleandoc('''Agilent PNA did not return the
                     channel {} frequency'''.format(self._channel)))
@@ -350,10 +342,9 @@ class AgilentPNAChannel(BaseInstrument):
         """
         self._pna.write('SENS{}:FREQuency:CENTer {}'.format(self._channel,
                                                             value))
-        result = self._pna.ask_for_values('SENS{}:FREQuency:CENTer?'.format(
-                                          self._channel))
+        result = self._pna.query('SENS{}:FREQuency:CENTer?'.format(self._channel))
         if result:
-            if abs(result[0] - value)/value > 10**-12:
+            if abs(float(result) - value)/value > 10**-12:
                 raise InstrIOError(cleandoc('''PNA did not set correctly the
                     channel {} frequency'''.format(self._channel)))
         else:
@@ -368,10 +359,9 @@ class AgilentPNAChannel(BaseInstrument):
         WARNING: this command will not work if the trace selection has not been
         made by the software beforehand
         """
-        trace_nb = self._pna.ask_for_values('CALC{}:PAR:MNUM?'.format(
-            self._channel))
+        trace_nb = self._pna.query('CALC{}:PAR:MNUM?'.format(self._channel))
         if trace_nb:
-            return trace_nb[0]
+            return int(trace_nb)
         else:
             raise InstrIOError(cleandoc('''Agilent PNA did not return the
                     trace number on channel {} '''.format(self._channel)))
@@ -382,10 +372,9 @@ class AgilentPNAChannel(BaseInstrument):
         """Current trace number setter method
         """
         self._pna.write('CALC{}:PAR:MNUM {}'.format(self._channel, value))
-        result = self._pna.ask_for_values('CALC{}:PAR:MNUM?'.format(
-                                          self._channel))
+        result = self._pna.query('CALC{}:PAR:MNUM?'.format(self._channel))
         if result:
-            if abs(result[0] - value)/value > 10**-12:
+            if abs(float(result) - value)/value > 10**-12:
                 msg = 'PNA could not set the trace number {} on channel {}'
                 raise InstrIOError(msg.format(value, self._channel))
         else:
@@ -401,22 +390,22 @@ class AgilentPNAChannel(BaseInstrument):
         sweep_type = self.sweep_type
         sweep_points = self.sweep_points
         if sweep_type == 'LIN':
-            sweep_start = self._pna.ask_for_values(
-                'SENSe{}:FREQuency:STARt?'.format(self._channel))[0]*1e-9
-            sweep_stop = self._pna.ask_for_values(
-                'SENSe{}:FREQuency:STOP?'.format(self._channel))[0]*1e-9
+            sweep_start = float(self._pna.query(
+                'SENSe{}:FREQuency:STARt?'.format(self._channel)))*1e-9
+            sweep_stop = float(self._pna.query(
+                'SENSe{}:FREQuency:STOP?'.format(self._channel)))*1e-9
             return np.linspace(sweep_start, sweep_stop, sweep_points)
         elif sweep_type == 'POW':
-            sweep_start = self._pna.ask_for_values('SOURce{}:POWer:STARt?'
-                                                   .format(self._channel))[0]
-            sweep_stop = self._pna.ask_for_values('SOURce{}:POWer:STOP?'
-                                                  .format(self._channel))[0]
+            sweep_start = float(self._pna.query('SOURce{}:POWer:STARt?'
+                                                .format(self._channel)))
+            sweep_stop = float(self._pna.query('SOURce{}:POWer:STOP?'
+                                               .format(self._channel)))
             return np.linspace(sweep_start, sweep_stop, sweep_points)
         elif sweep_type == 'LOG':
-            sweep_start = self._pna.ask_for_values('SENSe{}:FREQuency:STARt?'
-                                                   .format(self._channel))[0]
-            sweep_stop = self._pna.ask_for_values('SENSe{}:FREQuency:STOP?'
-                                                  .format(self._channel))[0]
+            sweep_start = float(self._pna.query('SENSe{}:FREQuency:STARt?'
+                                                .format(self._channel)))
+            sweep_stop = float(self._pna.query('SENSe{}:FREQuency:STOP?'
+                                               .format(self._channel)))
             return np.logspace(sweep_start*1e-9, sweep_stop*1e-9, sweep_points)
         else:
             raise InstrIOError(cleandoc('''Sweep type of PNA not yet
@@ -427,11 +416,10 @@ class AgilentPNAChannel(BaseInstrument):
     def power(self):
         """Power getter method
         """
-        power = self._pna.ask_for_values('SOUR{}:POWer{}:AMPL?'.format(
-                                         self._channel,
-                                         self.port))
+        power = self._pna.query('SOUR{}:POWer{}:AMPL?'.format(self._channel,
+                                                              self.port))
         if power:
-            return power[0]
+            return float(power)
         else:
             raise InstrIOError(cleandoc('''Agilent PNA did not return the
                     channel {} power for port {}'''.format(self._channel,
@@ -445,11 +433,10 @@ class AgilentPNAChannel(BaseInstrument):
         self._pna.write('SOUR{}:POWer{}:AMPL {}'.format(self._channel,
                                                         self.port,
                                                         value))
-        result = self._pna.ask_for_values('SOUR{}:POWer{}:AMPL?'.format(
-                                          self._channel,
-                                          self.port))
+        result = self._pna.query('SOUR{}:POWer{}:AMPL?'.format(self._channel,
+                                                               self.port))
         if result:
-            if abs(result[0] > value) > 10**-12:
+            if abs(float(result) > value) > 10**-12:
                 raise InstrIOError(cleandoc('''PNA did not set correctly the
                     channel {} power for port {}'''.format(self._channel,
                                                            self.port)))
@@ -466,7 +453,7 @@ class AgilentPNAChannel(BaseInstrument):
         WARNING: this command will not work if the trace selection has not been
         made by the software beforehand
         """
-        meas = self._pna.ask('CALC{}:PARameter:SELect?'.format(self._channel))
+        meas = self._pna.query('CALC{}:PARameter:SELect?'.format(self._channel))
         if meas:
             return meas[1:-1]
         else:
@@ -481,7 +468,7 @@ class AgilentPNAChannel(BaseInstrument):
         self._pna.write("CALC{}:PARameter:SELect '{}'".format(self._channel,
                                                               value))
         mess = 'CALC{}:PARameter:SELect?'.format(self._channel)
-        result = self._pna.ask(mess)
+        result = self._pna.query(mess)
         if result:
             if result[1:-1] != value:
                 raise InstrIOError(cleandoc('''PNA did not set correctly the
@@ -492,8 +479,7 @@ class AgilentPNAChannel(BaseInstrument):
     def if_bandwidth(self):
         """
         """
-        if_bw = self._pna.ask_for_values('SENSe{}:BANDwidth?'.format(
-                                         self._channel))
+        if_bw = self._pna.query('SENSe{}:BANDwidth?'.format(self._channel))
         if if_bw:
             return if_bw[0]
         else:
@@ -506,10 +492,9 @@ class AgilentPNAChannel(BaseInstrument):
         """
         """
         self._pna.write('SENSe{}:BANDwidth {}'.format(self._channel, value))
-        result = self._pna.ask_for_values('SENSe{}:BANDwidth?'.format(
-                                          self._channel))
+        result = self._pna.query('SENSe{}:BANDwidth?'.format(self._channel))
         if result:
-            if abs(result[0] > value) > 10**-12:
+            if abs(float(result) > value) > 10**-12:
                 raise InstrIOError(cleandoc('''PNA did not set correctly the
                     channel {} IF bandwidth'''.format(self._channel)))
         else:
@@ -521,7 +506,7 @@ class AgilentPNAChannel(BaseInstrument):
     def sweep_mode(self):
         """
         """
-        mode = self._pna.ask('SENSe{}:SWEep:MODE?'.format(self._channel))
+        mode = self._pna.query('SENSe{}:SWEep:MODE?'.format(self._channel))
         if mode:
             return mode
         else:
@@ -534,7 +519,7 @@ class AgilentPNAChannel(BaseInstrument):
         """
         """
         self._pna.write('SENSe{}:SWEep:MODE {}'.format(self._channel, value))
-        result = self._pna.ask('SENSe{}:SWEep:MODE?'.format(self._channel))
+        result = self._pna.query('SENSe{}:SWEep:MODE?'.format(self._channel))
 
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''PNA did not set correctly the
@@ -545,7 +530,7 @@ class AgilentPNAChannel(BaseInstrument):
     def sweep_type(self):
         """
         """
-        sweep_type = self._pna.ask('SENSe{}:SWEep:Type?'.format(self._channel))
+        sweep_type = self._pna.query('SENSe{}:SWEep:Type?'.format(self._channel))
         if sweep_type:
             return sweep_type
         else:
@@ -558,7 +543,7 @@ class AgilentPNAChannel(BaseInstrument):
         """
         """
         self._pna.write('SENSe{}:SWEep:TYPE {}'.format(self._channel, value))
-        result = self._pna.ask('SENSe{}:SWEep:TYPE?'.format(self._channel))
+        result = self._pna.query('SENSe{}:SWEep:TYPE?'.format(self._channel))
 
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''PNA did not set correctly the
@@ -569,10 +554,10 @@ class AgilentPNAChannel(BaseInstrument):
     def sweep_points(self):
         """
         """
-        points = self._pna.ask_for_values('SENSe{}:SWEep:POINts?'.format(
+        points = self._pna.query('SENSe{}:SWEep:POINts?'.format(
                                           self._channel))
         if points:
-            return int(points[0])
+            return int(points)
         else:
             raise InstrIOError(cleandoc('''Agilent PNA did not return the
                     channel {} sweep point number'''.format(self._channel)))
@@ -583,10 +568,10 @@ class AgilentPNAChannel(BaseInstrument):
         """
         """
         self._pna.write('SENSe{}:SWEep:POINts {}'.format(self._channel, value))
-        result = self._pna.ask_for_values('SENSe{}:SWEep:POINts?'.format(
+        result = self._pna.query('SENSe{}:SWEep:POINts?'.format(
                                           self._channel))
         if result:
-            if result[0] != value:
+            if int(result) != value:
                 raise InstrIOError(cleandoc('''PNA did not set correctly the
                     channel {} sweep point number'''.format(self._channel)))
         else:
@@ -598,10 +583,9 @@ class AgilentPNAChannel(BaseInstrument):
     def sweep_time(self):
         """Sweep time in seconds
         """
-        time = self._pna.ask_for_values('sense{}:sweep:time?'.format(
-            self._channel))
+        time = self._pna.query('sense{}:sweep:time?'.format(self._channel))
         if time:
-            return time[0]
+            return float(time)
         else:
             raise InstrIOError(cleandoc('''Agilent PNA did not return the
                     channel {} sweep point number'''.format(self._channel)))
@@ -618,9 +602,9 @@ class AgilentPNAChannel(BaseInstrument):
     def average_state(self):
         """
         """
-        state = self._pna.ask('SENSe{}:AVERage:STATe?'.format(self._channel))
+        state = self._pna.query('SENSe{}:AVERage:STATe?'.format(self._channel))
         if state:
-            return bool(state)
+            return bool(int(state))
         else:
             raise InstrIOError(cleandoc('''Agilent PNA did not return the
                     channel {} average state'''.format(self._channel)))
@@ -632,9 +616,9 @@ class AgilentPNAChannel(BaseInstrument):
         """
         self._pna.write('SENSe{}:AVERage:STATe {}'.format(self._channel,
                         value))
-        result = self._pna.ask('SENSe{}:AVERage:STATe?'.format(self._channel))
+        result = self._pna.query('SENSe{}:AVERage:STATe?'.format(self._channel))
 
-        if bool(result) != value:
+        if bool(int(result)) != value:
             raise InstrIOError(cleandoc('''PNA did not set correctly the
                 channel {} average state'''.format(self._channel)))
 
@@ -643,10 +627,9 @@ class AgilentPNAChannel(BaseInstrument):
     def average_count(self):
         """
         """
-        count = self._pna.ask_for_values('SENSe{}:AVERage:COUNt?'.format(
-                                         self._channel))
+        count = self._pna.query('SENSe{}:AVERage:COUNt?'.format(self._channel))
         if count:
-            return count[0]
+            return int(count)
         else:
             raise InstrIOError(cleandoc('''Agilent PNA did not return the
                     channel {} average count'''.format(self._channel)))
@@ -661,10 +644,9 @@ class AgilentPNAChannel(BaseInstrument):
                         value))
         self._pna.write('SENSe{}:SWE:GRO:COUNt {}'.format(self._channel,
                         value))
-        result = self._pna.ask_for_values('SENSe{}:AVERage:COUNt?'.format(
-                                          self._channel))
+        result = self._pna.query('SENSe{}:AVERage:COUNt?'.format( self._channel))
         if result:
-            if result[0] == value:
+            if int(result) == value:
                 raise InstrIOError(cleandoc('''PNA did not set correctly the
                     channel {} average count'''.format(self._channel)))
         else:
@@ -676,7 +658,7 @@ class AgilentPNAChannel(BaseInstrument):
     def average_mode(self):
         """
         """
-        mode = self._pna.ask('SENSe{}:AVERage:MODE?'.format(self._channel))
+        mode = self._pna.query('SENSe{}:AVERage:MODE?'.format(self._channel))
         if mode:
             return mode
         else:
@@ -689,7 +671,7 @@ class AgilentPNAChannel(BaseInstrument):
         """
         """
         self._pna.write('SENSe{}:AVERage:MODE {}'.format(self._channel, value))
-        result = self._pna.ask('SENSe{}:AVERage:MODE?'.format(self._channel))
+        result = self._pna.query('SENSe{}:AVERage:MODE?'.format(self._channel))
 
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''PNA did not set correctly the
@@ -700,10 +682,9 @@ class AgilentPNAChannel(BaseInstrument):
     def electrical_delay(self):
         """electrical delay for the selected trace in ns
         """
-        mode = self._pna.ask_for_values('CALC{}:CORR:EDEL:TIME?'.format(
-                                                    self._channel))
+        mode = self._pna.query('CALC{}:CORR:EDEL:TIME?'.format(self._channel))
         if mode:
-            return mode[0]*1000000000.0
+            return float(mode)*1000000000.0
         else:
             raise InstrIOError(cleandoc('''Agilent PNA did not return the
                     channel {} electrical delay'''.format(self._channel)))
@@ -758,14 +739,14 @@ class AgilentPNA(VisaInstrument):
     def clear_traces_from_window(self, window_num):
         """
         """
-        traces = self.ask('DISPlay:WINDow{}:CATalog?'.format(window_num))
+        traces = self.query('DISPlay:WINDow{}:CATalog?'.format(window_num))
         if 'EMPTY' not in traces:
             for trace in traces[1:-1].split(','):
                 mess = 'DISPlay:WINDow{}:TRACe{}:DELete'.format(window_num,
                                                                 int(trace))
                 self.write(mess)
 
-            traces = self.ask('DISPlay:WINDow{}:CATalog?'.format(window_num))
+            traces = self.query('DISPlay:WINDow{}:CATalog?'.format(window_num))
             if 'EMPTY' not in traces:
                 raise InstrIOError(cleandoc('''Agilent PNA did not clear all
                     traces from window {}'''.format(window_num)))
@@ -784,7 +765,7 @@ class AgilentPNA(VisaInstrument):
     def check_operation_completion(self):
         """
         """
-        bites = self.ask('*ESR?')
+        bites = self.query('*ESR?')
         status_byte = ('{0:08b}'.format(int(bites)))[::-1]
         return bool(int(status_byte[0]))
 
@@ -796,7 +777,7 @@ class AgilentPNA(VisaInstrument):
             self.write('SENSe{}:SWEep:MODE HOLD'.format(channel))
 
         for channel in self.defined_channels:
-            result = self.ask('SENSe{}:SWEep:MODE?'.format(channel))
+            result = self.query('SENSe{}:SWEep:MODE?'.format(channel))
 
             if result != 'HOLD':
                 raise InstrIOError(cleandoc('''PNA did not set correctly the
@@ -815,7 +796,7 @@ class AgilentPNA(VisaInstrument):
     def defined_channels(self):
         """
         """
-        channels = self.ask('SYSTem:CHANnels:CATalog?')
+        channels = self.query('SYSTem:CHANnels:CATalog?')
         if channels:
             defined_channels = [int(channel)
                                 for channel in channels[1:-1].split(',')]
@@ -829,7 +810,7 @@ class AgilentPNA(VisaInstrument):
     def windows(self):
         """
         """
-        windows = self.ask('SYSTem:WINDows:CATalog?')
+        windows = self.query('SYSTem:WINDows:CATalog?')
         if windows:
             aux = [int(channel) for channel in windows[1:-1].split(',')]
             return aux
@@ -842,7 +823,7 @@ class AgilentPNA(VisaInstrument):
     def trigger_scope(self):
         """
         """
-        scope = self.ask('TRIGger:SEQuence:SCOPe?')
+        scope = self.query('TRIGger:SEQuence:SCOPe?')
         if scope:
             return scope
         else:
@@ -855,7 +836,7 @@ class AgilentPNA(VisaInstrument):
         """
         """
         self.write('TRIGger:SEQuence:SCOPe {}'.format(value))
-        result = self.ask('TRIGger:SEQuence:SCOPe?')
+        result = self.query('TRIGger:SEQuence:SCOPe?')
 
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''PNA did not set correctly the
@@ -866,7 +847,7 @@ class AgilentPNA(VisaInstrument):
     def trigger_source(self):
         """
         """
-        scope = self.ask('TRIGger:SEQuence:SOURce?')
+        scope = self.query('TRIGger:SEQuence:SOURce?')
         if scope:
             return scope
         else:
@@ -879,7 +860,7 @@ class AgilentPNA(VisaInstrument):
         """
         """
         self.write('TRIGger:SEQuence:SOURce {}'.format(value))
-        result = self.ask('TRIGger:SEQuence:SOURce?')
+        result = self.query('TRIGger:SEQuence:SOURce?')
 
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''PNA did not set correctly the
@@ -890,7 +871,7 @@ class AgilentPNA(VisaInstrument):
     def data_format(self):
         """
         """
-        data_format = self.ask('FORMAT:DATA?')
+        data_format = self.query('FORMAT:DATA?')
         if data_format:
             return data_format
         else:
@@ -903,7 +884,7 @@ class AgilentPNA(VisaInstrument):
         """
         """
         self.write('FORMAT:DATA {}'.format(value))
-        result = self.ask('FORMAT:DATA?')
+        result = self.query('FORMAT:DATA?')
 
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''PNA did not set correctly the

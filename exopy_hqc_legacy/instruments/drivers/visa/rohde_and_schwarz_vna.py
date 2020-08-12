@@ -15,13 +15,6 @@ import numpy as np
 import re
 from textwrap import fill
 
-try:
-    from visa import ascii, single, double
-except ImportError:
-    ascii = 2
-    single = 1
-    double = 3
-
 from ..driver_tools import (BaseInstrument, InstrIOError, InstrError,
                             secure_communication, instrument_property)
 from ..visa_tools import VisaInstrument
@@ -94,13 +87,13 @@ class ZNB20Channel(BaseInstrument):
 
         data_request = 'CALCulate{}:DATA? FDATA'.format(self._channel)
         if self._pna.data_format == 'REAL,32':
-            data = self._pna.ask_for_values(data_request, single)
+            data = self._pna.query_binary_values(data_request, 'f')
 
         elif self._pna.data_format == 'REAL,64':
-            data = self._pna.ask_for_values(data_request, double)
+            data = self._pna.query_binary_values(data_request, 'd')
 
         else:
-            data = self._pna.ask_for_values(data_request, ascii)
+            data = self._pna.query_ascii_values(data_request)
 
         if data:
             return np.array(data)
@@ -132,13 +125,13 @@ class ZNB20Channel(BaseInstrument):
 
         data_request = 'CALCulate{}:DATA? SDATA'.format(self._channel)
         if self._pna.data_format == 'REAL,32':
-            data = self._pna.ask_for_values(data_request, single)
+            data = self._pna.query_binary_values(data_request, 'f')
 
         elif self._pna.data_format == 'REAL,64':
-            data = self._pna.ask_for_values(data_request, double)
+            data = self._pna.query_binary_values(data_request, 'd')
 
         else:
-            data = self._pna.ask_for_values(data_request, ascii)
+            data = self._pna.query_ascii_values(data_request)
 
         if not meas_name:
             meas_name = self.selected_measure
@@ -180,7 +173,7 @@ class ZNB20Channel(BaseInstrument):
         for i in range(0, int(self.average_count)):
             while True:
                 try:
-                    done = self._pna.ask_for_values('*OPC?')[0]
+                    done = self._pna.query('*OPC?')
                     break
                 except Exception:
                     self._pna.timeout = self._pna.timeout*2
@@ -198,7 +191,7 @@ class ZNB20Channel(BaseInstrument):
         """
         """
         request = 'CALCulate{}:PARameter:CATalog:SENDed?'
-        meas = self._pna.ask(request.format(self._channel))
+        meas = self._pna.query(request.format(self._channel))
 
         if meas:
             if meas == "''":
@@ -224,7 +217,7 @@ class ZNB20Channel(BaseInstrument):
                                            meas_name.replace(':', '_'),
                                            param))
 
-        meas = self._pna.ask(catalog_request.format(self._channel))
+        meas = self._pna.query(catalog_request.format(self._channel))
         if meas:
             if param not in meas:
                 mess = cleandoc('''The Pna did not create the
@@ -237,11 +230,11 @@ class ZNB20Channel(BaseInstrument):
     def delete_meas(self, meas_name):
         """
         """
-        self._pna.write(
-            "CALCulate{}:PARameter:DELete '{}'".format(self._channel,
-                                                       meas_name))
-        meas = self._pna.ask('CALCulate{}:PARameter:CATalog:SENDed?'.format(
-                             self._channel))
+        msg = "CALCulate{}:PARameter:DELete '{}'"
+        self._pna.write(msg.format(self._channel, meas_name))
+
+        msg = 'CALCulate{}:PARameter:CATalog:SENDed?'
+        meas = self._pna.query(msg.format(self._channel))
         if meas:
             if meas_name in meas:
                 raise InstrIOError(cleandoc('''The Pna did not delete the meas
@@ -269,7 +262,7 @@ class ZNB20Channel(BaseInstrument):
             self.selected_measure = meas_name
         self._pna.write('CALCulate{}:FORMat {}'.format(self._channel,
                                                        meas_format))
-        res = self._pna.ask('CALCulate{}:FORMat?'.format(self._channel))
+        res = self._pna.query('CALCulate{}:FORMat?'.format(self._channel))
         if meas_name and selected_meas:
             self.selected_measure = selected_meas
         else:
@@ -289,8 +282,8 @@ class ZNB20Channel(BaseInstrument):
         self._pna.write("DISPlay:WINDow{}:TRACe{}:EFEed '{}'".
                         format(window_num, 1, meas_name.replace(':', '_')))
 
-        traces = self._pna.ask('DISPlay:WINDow{}:TRACe1:CATalog?'.
-                               format(window_num))
+        traces = self._pna.query('DISPlay:WINDow{}:TRACe1:CATalog?'.
+                                 format(window_num))
         if str(meas_name.replace(':', '_')) not in traces:
             raise InstrIOError(cleandoc('''The Pna did not bind the meas {}
                 to window {}'''.format(meas_name, window_num)))
@@ -343,10 +336,9 @@ class ZNB20Channel(BaseInstrument):
     def frequency(self):
         """Frequency getter method
         """
-        freq = self._pna.ask_for_values('SENS{}:FREQuency:CENTer?'.format(
-                                        self._channel))
+        freq = self._pna.query('SENS{}:FREQuency:CENTer?'.format(self._channel))
         if freq:
-            return freq[0]
+            return float(freq)
         else:
             raise InstrIOError(cleandoc('''ZNB20 did not return the
                     channel {} frequency'''.format(self._channel)))
@@ -358,10 +350,9 @@ class ZNB20Channel(BaseInstrument):
         """
         self._pna.write('SENS{}:FREQuency:CENTer {}'.format(self._channel,
                                                             value))
-        result = self._pna.ask_for_values('SENS{}:FREQuency:CENTer?'.format(
-                                          self._channel))
+        result = self._pna.query('SENS{}:FREQuency:CENTer?'.format(self._channel))
         if result:
-            if abs(result[0] - value)/value > 10**-12:
+            if abs(float(result) - value)/value > 10**-12:
                 raise InstrIOError(cleandoc('''ZNB20 did not set correctly the
                     channel {} frequency'''.format(self._channel)))
         else:
@@ -376,10 +367,9 @@ class ZNB20Channel(BaseInstrument):
         WARNING: this command will not work if the trace selection has not been
         made by the software beforehand
         """
-        trace_nb = self._pna.ask_for_values('CALC{}:PAR:MNUM?'.format(
-            self._channel))
+        trace_nb = self._pna.query('CALC{}:PAR:MNUM?'.format(self._channel))
         if trace_nb:
-            return trace_nb[0]
+            return float(trace_nb)
         else:
             raise InstrIOError(cleandoc('''ZNB20 did not return the
                     trace number on channel {} '''.format(self._channel)))
@@ -390,10 +380,9 @@ class ZNB20Channel(BaseInstrument):
         """Current trace number setter method
         """
         self._pna.write('CALC{}:PAR:MNUM {}'.format(self._channel, value))
-        result = self._pna.ask_for_values('CALC{}:PAR:MNUM?'.format(
-                                          self._channel))
+        result = self._pna.query('CALC{}:PAR:MNUM?'.format(self._channel))
         if result:
-            if abs(result[0] - value)/value > 10**-12:
+            if abs(float(result) - value)/value > 10**-12:
                 raise InstrIOError(cleandoc('''ZNB20 could not set the
                     trace number {} on channel {}'''.format(value,
                                                             self._channel)))
@@ -411,24 +400,22 @@ class ZNB20Channel(BaseInstrument):
         sweep_type = self.sweep_type
         sweep_points = self.sweep_points
         if sweep_type == 'LIN':
-            sweep_start = self._pna.ask_for_values(
-                'SENSe{}:FREQuency:STARt?'.format(self._channel))[0]*1e-9
-            sweep_stop = self._pna.ask_for_values(
-                'SENSe{}:FREQuency:STOP?'.format(self._channel))[0]*1e-9
+            sweep_start = float(self._pna.query(
+                'SENSe{}:FREQuency:STARt?'.format(self._channel)))*1e-9
+            sweep_stop = float(self._pna.query(
+                'SENSe{}:FREQuency:STOP?'.format(self._channel)))*1e-9
             return np.linspace(sweep_start, sweep_stop, sweep_points)
         elif sweep_type == 'POW':
-            sweep_start = self._pna.ask_for_values('SOURce{}:POWer:STARt?'
-                                                   .format(self._channel))[0]
-            sweep_stop = self._pna.ask_for_values('SOURce{}:POWer:STOP?'
-                                                  .format(self._channel))[0]
+            sweep_start = float(self._pna.query('SOURce{}:POWer:STARt?'
+                                                .format(self._channel)))
+            sweep_stop = float(self._pna.query('SOURce{}:POWer:STOP?'
+                                               .format(self._channel)))
             return np.linspace(sweep_start, sweep_stop, sweep_points)
         elif sweep_type == 'LOG':
-            sweep_start = self._pna.ask_for_values(
-                            'SENSe{}:FREQuency:STARt?'
-                            .format(self._channel))[0]*1e-9
-            sweep_stop = self._pna.ask_for_values(
-                            'SENSe{}:FREQuency:STOP?'
-                            .format(self._channel))[0]*1e-9
+            sweep_start = float(self._pna.query('SENSe{}:FREQuency:STARt?'
+                                                .format(self._channel)))*1e-9
+            sweep_stop = float(self._pna.query('SENSe{}:FREQuency:STOP?'
+                                               .format(self._channel)))*1e-9
             return np.logspace(sweep_start, sweep_stop, sweep_points)
         else:
             raise InstrIOError(cleandoc('''Sweep type of ZNB20 not yet
@@ -439,11 +426,10 @@ class ZNB20Channel(BaseInstrument):
     def power(self):
         """Power getter method
         """
-        power = self._pna.ask_for_values('SOUR{}:POWer{}:AMPL?'.format(
-                                         self._channel,
-                                         self.port))
+        power = self._pna.query('SOUR{}:POWer{}:AMPL?'.format(self._channel,
+                                                              self.port))
         if power:
-            return power[0]
+            return float(power)
         else:
             raise InstrIOError(cleandoc('''ZNB20 did not return the
                     channel {} power for port {}'''.format(self._channel,
@@ -457,11 +443,10 @@ class ZNB20Channel(BaseInstrument):
         self._pna.write('SOUR{}:POWer{}:AMPL {}'.format(self._channel,
                                                         self.port,
                                                         value))
-        result = self._pna.ask_for_values('SOUR{}:POWer{}:AMPL?'.format(
-                                          self._channel,
-                                          self.port))
+        result = self._pna.query('SOUR{}:POWer{}:AMPL?'.format(self._channel,
+                                                               self.port))
         if result:
-            if abs(result[0] > value) > 10**-12:
+            if abs(float(result) > value) > 10**-12:
                 raise InstrIOError(cleandoc('''ZNB20 did not set correctly the
                     channel {} power for port {}'''.format(self._channel,
                                                            self.port)))
@@ -478,7 +463,7 @@ class ZNB20Channel(BaseInstrument):
         WARNING: this command will not work if the trace selection has not been
         made by the software beforehand
         """
-        meas = self._pna.ask('CALC{}:PARameter:SELect?'.format(self._channel))
+        meas = self._pna.query('CALC{}:PARameter:SELect?'.format(self._channel))
         if meas:
             return meas[1:-1]
         else:
@@ -494,7 +479,7 @@ class ZNB20Channel(BaseInstrument):
         mess0 = "CALC{}:PARameter:SELect '{}'".format(self._channel, value)
         self._pna.write(mess0)
         mess = 'CALC{}:PARameter:SELect?'.format(self._channel)
-        result = self._pna.ask(mess)
+        result = self._pna.query(mess)
         if result:
             if result[1:-1] != value:
                 raise InstrIOError(cleandoc('''ZNB20 did not set correctly the
@@ -505,10 +490,9 @@ class ZNB20Channel(BaseInstrument):
     def if_bandwidth(self):
         """
         """
-        if_bw = self._pna.ask_for_values('SENSe{}:BANDwidth?'.format(
-                                         self._channel))
+        if_bw = self._pna.query('SENSe{}:BANDwidth?'.format(self._channel))
         if if_bw:
-            return if_bw[0]
+            return float(if_bw)
         else:
             raise InstrIOError(cleandoc('''ZNB20 did not return the
                     channel {} IF bandwidth'''.format(self._channel)))
@@ -519,10 +503,9 @@ class ZNB20Channel(BaseInstrument):
         """
         """
         self._pna.write('SENSe{}:BANDwidth {}'.format(self._channel, value))
-        result = self._pna.ask_for_values('SENSe{}:BANDwidth?'.format(
-                                          self._channel))
+        result = self._pna.query('SENSe{}:BANDwidth?'.format(self._channel))
         if result:
-            if abs(result[0] > value) > 10**-12:
+            if abs(float(result) > value) > 10**-12:
                 raise InstrIOError(cleandoc('''ZNB20 did not set correctly the
                     channel {} IF bandwidth'''.format(self._channel)))
         else:
@@ -534,7 +517,7 @@ class ZNB20Channel(BaseInstrument):
     def sweep_mode(self):
         """
         """
-        mode = self._pna.ask('SENSe{}:SWEep:MODE?'.format(self._channel))
+        mode = self._pna.query('SENSe{}:SWEep:MODE?'.format(self._channel))
         if mode:
             return mode
         else:
@@ -547,7 +530,7 @@ class ZNB20Channel(BaseInstrument):
         """
         """
         self._pna.write('SENSe{}:SWEep:MODE {}'.format(self._channel, value))
-        result = self._pna.ask('SENSe{}:SWEep:MODE?'.format(self._channel))
+        result = self._pna.query('SENSe{}:SWEep:MODE?'.format(self._channel))
 
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''ZNB20 did not set correctly the
@@ -558,7 +541,7 @@ class ZNB20Channel(BaseInstrument):
     def sweep_type(self):
         """
         """
-        sweep_type = self._pna.ask('SENSe{}:SWEep:Type?'.format(self._channel))
+        sweep_type = self._pna.query('SENSe{}:SWEep:Type?'.format(self._channel))
         if sweep_type:
             return sweep_type
         else:
@@ -571,7 +554,7 @@ class ZNB20Channel(BaseInstrument):
         """
         """
         self._pna.write('SENSe{}:SWEep:TYPE {}'.format(self._channel, value))
-        result = self._pna.ask('SENSe{}:SWEep:TYPE?'.format(self._channel))
+        result = self._pna.query('SENSe{}:SWEep:TYPE?'.format(self._channel))
 
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''ZNB20 did not set correctly the
@@ -582,10 +565,9 @@ class ZNB20Channel(BaseInstrument):
     def sweep_points(self):
         """
         """
-        points = self._pna.ask_for_values('SENSe{}:SWEep:POINts?'.format(
-                                          self._channel))
+        points = self._pna.query('SENSe{}:SWEep:POINts?'.format(self._channel))
         if points:
-            return points[0]
+            return int(points)
         else:
             raise InstrIOError(cleandoc('''ZNB20 did not return the
                     channel {} sweep point number'''.format(self._channel)))
@@ -596,10 +578,9 @@ class ZNB20Channel(BaseInstrument):
         """
         """
         self._pna.write('SENSe{}:SWEep:POINts {}'.format(self._channel, value))
-        result = self._pna.ask_for_values('SENSe{}:SWEep:POINts?'.format(
-                                          self._channel))
+        result = self._pna.query('SENSe{}:SWEep:POINts?'.format(self._channel))
         if result:
-            if result[0] != value:
+            if int(result) != value:
                 raise InstrIOError(cleandoc('''ZNB20 not set correctly the
                     channel {} sweep point number'''.format(self._channel)))
         else:
@@ -611,10 +592,9 @@ class ZNB20Channel(BaseInstrument):
     def sweep_time(self):
         """Sweep time in seconds
         """
-        time = self._pna.ask_for_values('sense{}:sweep:time?'.format(
-            self._channel))
+        time = self._pna.query('sense{}:sweep:time?'.format(self._channel))
         if time:
-            return time[0]
+            return float(time)
         else:
             raise InstrIOError(cleandoc('''ZNB20 did not return the
                     channel {} sweep point number'''.format(self._channel)))
@@ -631,9 +611,9 @@ class ZNB20Channel(BaseInstrument):
     def average_state(self):
         """
         """
-        state = self._pna.ask('SENSe{}:AVERage:STATe?'.format(self._channel))
+        state = self._pna.query('SENSe{}:AVERage:STATe?'.format(self._channel))
         if state:
-            return bool(state)
+            return bool(int(state))
         else:
             raise InstrIOError(cleandoc('''ZNB20 did not return the
                     channel {} average state'''.format(self._channel)))
@@ -645,9 +625,9 @@ class ZNB20Channel(BaseInstrument):
         """
         self._pna.write('SENSe{}:AVERage:STATe {}'.format(self._channel,
                         value))
-        result = self._pna.ask('SENSe{}:AVERage:STATe?'.format(self._channel))
+        result = self._pna.query('SENSe{}:AVERage:STATe?'.format(self._channel))
 
-        if bool(result) != value:
+        if bool(int(result)) != value:
             raise InstrIOError(cleandoc('''ZNB20 did not set correctly the
                 channel {} average state'''.format(self._channel)))
 
@@ -656,10 +636,9 @@ class ZNB20Channel(BaseInstrument):
     def average_count(self):
         """
         """
-        count = self._pna.ask_for_values('SENSe{}:AVERage:COUNt?'.format(
-                                         self._channel))
+        count = self._pna.query('SENSe{}:AVERage:COUNt?'.format(self._channel))
         if count:
-            return count[0]
+            return int(count)
         else:
             raise InstrIOError(cleandoc('''ZNB20 did not return the
                     channel {} average count'''.format(self._channel)))
@@ -674,10 +653,9 @@ class ZNB20Channel(BaseInstrument):
                         value))
         self._pna.write('SENSe{}:SWE:GRO:COUNt {}'.format(self._channel,
                         value))
-        result = self._pna.ask_for_values('SENSe{}:AVERage:COUNt?'.format(
-                                          self._channel))
+        result = self._pna.query('SENSe{}:AVERage:COUNt?'.format(self._channel))
         if result:
-            if result[0] == value:
+            if float(result) == value:
                 raise InstrIOError(cleandoc('''ZNB20 did not set correctly the
                     channel {} average count'''.format(self._channel)))
         else:
@@ -689,7 +667,7 @@ class ZNB20Channel(BaseInstrument):
     def average_mode(self):
         """
         """
-        mode = self._pna.ask('SENSe{}:AVERage:MODE?'.format(self._channel))
+        mode = self._pna.query('SENSe{}:AVERage:MODE?'.format(self._channel))
         if mode:
             return mode
         else:
@@ -702,7 +680,7 @@ class ZNB20Channel(BaseInstrument):
         """
         """
         self._pna.write('SENSe{}:AVERage:MODE {}'.format(self._channel, value))
-        result = self._pna.ask('SENSe{}:AVERage:MODE?'.format(self._channel))
+        result = self._pna.query('SENSe{}:AVERage:MODE?'.format(self._channel))
 
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''ZNB20 did not set correctly the
@@ -713,10 +691,9 @@ class ZNB20Channel(BaseInstrument):
     def electrical_delay(self):
         """electrical delay for the selected trace in ns
         """
-        mode = self._pna.ask_for_values('CORRection:EDELay{}?'.format(
-                                                    self._channel))
+        mode = self._pna.query('CORRection:EDELay{}?'.format(self._channel))
         if mode:
-            return mode[0]*1000000000.0
+            return float(mode)*1000000000.0
         else:
             raise InstrIOError(cleandoc('''ZNB20 did not return the
                     channel {} electrical delay'''.format(self._channel)))
@@ -727,8 +704,7 @@ class ZNB20Channel(BaseInstrument):
         """
         electrical delay for the selected trace in ns
         """
-        self._pna.write('CORRection:EDELay{} {}NS'.format(self._channel,
-                                                          value))
+        self._pna.write('CORRection:EDELay{} {}NS'.format(self._channel,  value))
 
 
 class ZNB20(VisaInstrument):
@@ -772,8 +748,8 @@ class ZNB20(VisaInstrument):
     def clear_traces_from_window(self, window_num):
         """
         """
-        traces_list = self.ask('DISPlay:WINDow{}:TRACe:CATalog?'.
-                               format(window_num))[1:-1].split(',')
+        traces_list = self.query('DISPlay:WINDow{}:TRACe:CATalog?'.
+                                 format(window_num))[1:-1].split(',')
         traces = [int(traces_list[2*ii])
                   for ii in range(int(len(traces_list)/2))]
         if len(traces) > 0:
@@ -781,8 +757,8 @@ class ZNB20(VisaInstrument):
                 mess = 'DISPlay:WINDow{}:TRACe{}:DELete'.format(window_num,
                                                                 int(trace))
                 self.write(mess)
-            traces_list = self.ask('DISPlay:WINDow{}:TRACe:CATalog?'.
-                                   format(window_num))[1:-1].split(',')
+            traces_list = self.query('DISPlay:WINDow{}:TRACe:CATalog?'.
+                                     format(window_num))[1:-1].split(',')
             traces = [int(traces_list[2*ii])
                       for ii in range(int(len(traces_list)/2))]
             if len(traces) > 0:
@@ -804,7 +780,7 @@ class ZNB20(VisaInstrument):
     def check_operation_completion(self):
         """
         """
-        return bool(int(self.ask('*OPC?')))
+        return bool(int(self.query('*OPC?')))
 
     @secure_communication()
     def set_all_chanel_to_hold(self):
@@ -815,7 +791,7 @@ class ZNB20(VisaInstrument):
             # TODO: find correct syntax to ask for sweep control state
 # =============================================================================
 #         for channel in self.defined_channels:
-#             result = self.ask('SENSe{}:SWEep:MODE?'.format(channel))
+#             result = self.query('SENSe{}:SWEep:MODE?'.format(channel))
 #             if result != 'HOLD':
 #                 raise InstrIOError(cleandoc('''ZNB20 did not set correctly
 #                     the channel {} sweep mode while setting all
@@ -836,7 +812,7 @@ class ZNB20(VisaInstrument):
     def defined_channels(self):
         """
         """
-        channels = self.ask('CONFigure:CHANnel:CATalog?')
+        channels = self.query('CONFigure:CHANnel:CATalog?')
         if channels:
             channels_number_list = channels[1:-2].split(',')
             n_channels = int(len(channels_number_list)/2)
@@ -850,7 +826,7 @@ class ZNB20(VisaInstrument):
     @instrument_property
     @secure_communication()
     def get_all_trace_names(self):
-        tracelist_raw = self.ask('CONFigure:TRACe:CATalog?')
+        tracelist_raw = self.query('CONFigure:TRACe:CATalog?')
         tracelist = tracelist_raw[1:-1].split(',')
         tracelist = np.reshape(tracelist, (int(len(tracelist)/2), 2))
         tracelist = tracelist[:, 1]
@@ -861,7 +837,7 @@ class ZNB20(VisaInstrument):
     def windows(self):
         """
         """
-        windows = self.ask('DISPlay:CATalog?')
+        windows = self.query('DISPlay:CATalog?')
         if windows:
             windows_number_list = windows[1:-2].split(',')
             aux = [int(windows_number_list[2*ii])
@@ -878,7 +854,7 @@ class ZNB20(VisaInstrument):
         """
         """
         channel = self.defined_channels[0]
-        scope = self.ask('INITiate'+format(channel)+':SCOPe?')
+        scope = self.query('INITiate'+format(channel)+':SCOPe?')
         if scope:
             if scope == 'SINGle' or scope == 'SING':
                 scope = 'CURRent'
@@ -897,7 +873,7 @@ class ZNB20(VisaInstrument):
             value = 'SINGle'
         channel = self.defined_channels[0]
         self.write('INITiate'+format(channel)+':SCOPe {}'.format(value))
-        result = self.ask('INITiate'+format(channel)+':SCOPe?')
+        result = self.query('INITiate'+format(channel)+':SCOPe?')
 
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''ZNB20 did not set correctly the
@@ -908,7 +884,7 @@ class ZNB20(VisaInstrument):
     def trigger_source(self):
         """
         """
-        scope = self.ask('TRIGger:SEQuence:SOURce?')
+        scope = self.query('TRIGger:SEQuence:SOURce?')
         if scope:
             return scope
         else:
@@ -924,7 +900,7 @@ class ZNB20(VisaInstrument):
         # INITiate will start the measurement
         value = 'IMM'
         self.write('TRIGger:SEQuence:SOURce {}'.format(value))
-        result = self.ask('TRIGger:SEQuence:SOURce?')
+        result = self.query('TRIGger:SEQuence:SOURce?')
 
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''ZNB20 did not set correctly the
@@ -935,7 +911,7 @@ class ZNB20(VisaInstrument):
     def data_format(self):
         """
         """
-        data_format = self.ask('FORMAT:DATA?')
+        data_format = self.query('FORMAT:DATA?')
         if data_format:
             return data_format
         else:
@@ -948,7 +924,7 @@ class ZNB20(VisaInstrument):
         """
         """
         self.write('FORMAT:DATA {}'.format(value))
-        result = self.ask('FORMAT:DATA?')
+        result = self.query('FORMAT:DATA?')
 
         if result.lower() != value.lower()[:len(result)]:
             raise InstrIOError(cleandoc('''ZNB20 did not set correctly the
@@ -960,9 +936,9 @@ class ZNB20(VisaInstrument):
         """Output state of the source.
 
         """
-        output = self.ask_for_values(':OUTP?')
-        if output is not None:
-            return bool(output[0])
+        output = self.query(':OUTP?')
+        if output:
+            return bool(int(output))
         else:
             mes = 'ZNB signal generator did not return its output'
             raise InstrIOError(mes)
@@ -977,12 +953,12 @@ class ZNB20(VisaInstrument):
         off = re.compile('off', re.IGNORECASE)
         if on.match(value) or value == 1:
             self.write(':OUTPUT ON')
-            if self.ask(':OUTPUT?') != '1':
+            if self.query(':OUTPUT?') != '1':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the output'''))
         elif off.match(value) or value == 0:
             self.write(':OUTPUT OFF')
-            if self.ask(':OUTPUT?') != '0':
+            if self.query(':OUTPUT?') != '0':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the output'''))
         else:

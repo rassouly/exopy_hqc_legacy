@@ -169,12 +169,12 @@ class IPS12010(VisaInstrument):
 
         """
         if mode == 'AMPS':
-            result = self.ask('M8')
+            result = self.query('M8')
             if result.startswith('?'):
                 raise InstrIOError(cleandoc('''IPS120-10 did not set the
                     heater mode to {}'''.format(mode)))
         elif mode == 'TESLA':
-            result = self.ask('M9')
+            result = self.query('M9')
             if result.startswith('?'):
                 raise InstrIOError(cleandoc('''IPS120-10 did not set the
                     heater mode to {}'''.format(mode)))
@@ -210,7 +210,7 @@ class IPS12010(VisaInstrument):
         """
         par = _PARAMETER_DICT.get(parameter, None)
         if par:
-            return self.ask('R{}'.format(par))[1:]
+            return self.query('R{}'.format(par))[1:]
         else:
             raise ValueError(cleandoc(''' Invalid parameter {} sent to
                 IPS120-10 read_parameter method'''.format(parameter)))
@@ -246,12 +246,12 @@ class IPS12010(VisaInstrument):
 
         """
         if state == 'ON':
-            result = self.ask('H1')
+            result = self.query('H1')
             if result.startswith('?'):
                 raise InstrIOError(cleandoc('''IPS120-10 did not set the
                     heater state to {}'''.format(state)))
         elif state == 'OFF':
-            result = self.ask('H0')
+            result = self.query('H0')
             if result.startswith('?'):
                 raise InstrIOError(cleandoc('''IPS120-10 did not set the
                     heater state to {}'''.format(state)))
@@ -281,7 +281,7 @@ class IPS12010(VisaInstrument):
         """
         value = _CONTROL_DICT.get(control, None)
         if value:
-            result = self.ask('C{}'.format(value))
+            result = self.query('C{}'.format(value))
             if result.startswith('?'):
                 raise InstrIOError(cleandoc('''IPS120-10 did not set the
                     control to {}'''.format(control)))
@@ -306,7 +306,7 @@ class IPS12010(VisaInstrument):
         """
         par = _ACTIVITY_DICT.get(value, None)
         if par:
-            result = self.ask('A{}'.format(par))
+            result = self.query('A{}'.format(par))
             if result.startswith('?'):
                 raise InstrIOError(cleandoc('''IPS120-10 did not set the
                     activity to {}'''.format(value)))
@@ -327,7 +327,7 @@ class IPS12010(VisaInstrument):
         """Current the source tries to reach when going to set point.
 
         """
-        result = self.ask("I{}".format(target))
+        result = self.query("I{}".format(target))
         if result.startswith('?'):
             raise InstrIOError(cleandoc('''IPS120-10 did not set the
                     target current to {}'''.format(target)))
@@ -346,7 +346,7 @@ class IPS12010(VisaInstrument):
 
         """
         # amps/min
-        result = self.ask("S{}".format(rate))
+        result = self.query("S{}".format(rate))
         if result.startswith('?'):
             raise InstrIOError(cleandoc('''IPS120-10 did not set the
                     rate field to {}'''.format(rate)))
@@ -364,7 +364,7 @@ class IPS12010(VisaInstrument):
         """Field the source tries to reach when going to set point.
 
         """
-        result = self.ask("J{}".format(target))
+        result = self.query("J{}".format(target))
         if result.startswith('?'):
             raise InstrIOError(cleandoc('''IPS120-10 did not set the
                     target field to {}'''.format(target)))
@@ -383,7 +383,7 @@ class IPS12010(VisaInstrument):
 
         """
         # tesla/min
-        result = self.ask("T{}".format(rate))
+        result = self.query("T{}".format(rate))
         if result.startswith('?'):
             raise InstrIOError(cleandoc('''IPS120-10 did not set the
                     rate field to {}'''.format(rate)))
@@ -402,7 +402,7 @@ class IPS12010(VisaInstrument):
 
         """
         # tesla/min
-        result = self.ask("T{}".format(rate))
+        result = self.query("T{}".format(rate))
         if result.startswith('?'):
             raise InstrIOError(cleandoc('''IPS120-10 did not set the
                     rate field to {}'''.format(rate)))
@@ -412,7 +412,7 @@ class IPS12010(VisaInstrument):
         """Get the status of the instrument.
 
         """
-        status = self.ask('X')
+        status = self.query('X')
         if status:
             return status.strip()
         else:
