@@ -20,6 +20,8 @@ except ImportError:
     single = 1
     double = 3
 
+from visa import VisaIOError, constants
+
 from ..driver_tools import (BaseInstrument, InstrIOError, InstrError,
                             secure_communication, instrument_property)
 from ..visa_tools import VisaInstrument
@@ -162,7 +164,6 @@ class AgilentPNAChannel(BaseInstrument):
         self._pna.trigger_source = 'Immediate'
         self.sweep_mode = 'Hold'
         self._pna.clear_averaging()
-        self._pna.timeout = 10
 
         if aver_count:
             self.average_count = aver_count
@@ -176,12 +177,12 @@ class AgilentPNAChannel(BaseInstrument):
                 try:
                     done = self._pna.ask_for_values('*OPC?')[0]
                     break
-                except Exception:
-                    self._pna.timeout = self._pna.timeout*2
-                    logger = logging.getLogger(__name__)
-                    msg = cleandoc('''PNA timeout increased to {} s
-                        This will make the PNA diplay 420 error w/o issue''')
-                    logger.info(msg.format(self._pna.timeout))
+                except VisaIOError as e:
+                    # Getting an timeout here simply means that the
+                    # PNA isn't done averaging
+                    if e.error_code == constants.StatusCode.error_timeout:
+                        continue
+                    raise
 
             if done != 1:
                 raise InstrError(cleandoc('''Agilent PNA did could  not perform
@@ -738,6 +739,7 @@ class AgilentPNA(VisaInstrument):
         super(AgilentPNA, self).open_connection(**para)
         self.write_termination = '\n'
         self.read_termination = '\n'
+        self.timeout = 10000 # 10s should be plenty
 
     def get_channel(self, num):
         """
