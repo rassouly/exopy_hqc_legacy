@@ -410,7 +410,7 @@ class AgilentPSA(VisaInstrument):
         if self.mode == 'WAV':
             sweep = self.query('SENS:WAV:SWEEP:TIME?')
             if sweep:
-                return float(swee)
+                return float(sweep)
             else:
                 raise InstrIOError(cleandoc('''Agilent PSA did not return the
                     sweep time'''))
