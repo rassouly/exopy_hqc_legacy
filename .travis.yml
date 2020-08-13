@@ -1,17 +1,15 @@
 # References https://gist.github.com/dan-blanchard/7045057
 # and https://docs.travis-ci.com/user/trusty-ci-environment/
 
-sudo: false
-dist: trusty
-
 branches:
   only:
     - master
 
 matrix:
   include:
-    - env: PYTHON=3.5 CONDA_PY=35
     - env: PYTHON=3.6 CONDA_PY=36
+    - env: PYTHON=3.7 CONDA_PY=37
+    - env: PYTHON=3.8 CONDA_PY=38
 
 before_install:
 
@@ -24,6 +22,7 @@ before_install:
   # Setup environment
   - travis_retry conda update --yes conda
   - conda config --set always_yes yes
+  - conda config --append channels conda-forge
   - conda config --append channels exopy
   - conda install conda-build anaconda-client -q
   - conda info -a
@@ -39,7 +38,9 @@ before_install:
   - export CONDA_BLD_PATH=$(pwd)
 
   # Install exopy dependencies
-  - $CONDA_INSTALL pyqt numpy exopy h5py exopy_pulses pyclibrary pyvisa
+  - $CONDA_INSTALL pyqt numpy h5py pyclibrary pyvisa
+  - $PIP_INSTALL git+https://github.com/Exopy/exopy.git#egg=exopy
+  - $PIP_INSTALL git+https://github.com/Exopy/exopy_pulses.git#egg=exopy_pulses
 
   # Intall test tools
   - $CONDA_INSTALL pytest

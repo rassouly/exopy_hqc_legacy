@@ -12,7 +12,7 @@
 import time
 import numbers
 
-from atom.api import (Float, Value, Unicode, Int, set_default, Tuple)
+from atom.api import (Float, Value, Str, Int, set_default, Tuple)
 
 from exopy.tasks.api import (InstrumentTask, TaskInterface,
                             InterfaceableTaskMixin, validators)
@@ -26,8 +26,7 @@ class SetDCVoltageTask(InterfaceableTaskMixin, InstrumentTask):
 
     """
     #: Target value for the source (dynamically evaluated)
-    target_value = Unicode().tag(pref=True,
-                                 feval=validators.SkipLoop(types=numbers.Real))
+    target_value = Str().tag(pref=True, feval=validators.SkipLoop(types=numbers.Real))
 
     #: Largest allowed step when changing the output of the instr.
     back_step = Float().tag(pref=True)
@@ -181,8 +180,7 @@ class SetDCCurrentTask(InterfaceableTaskMixin, InstrumentTask):
 
     """
     #: Target value for the source (dynamically evaluated)
-    target_value = Unicode().tag(pref=True,
-                                 feval=validators.SkipLoop(types=numbers.Real))
+    target_value = Str().tag(pref=True, feval=validators.SkipLoop(types=numbers.Real))
 
     #: Largest allowed step when changing the output of the instr.
     back_step = Float().tag(pref=True)
@@ -273,7 +271,7 @@ class SetDCFunctionTask(InterfaceableTaskMixin, InstrumentTask):
 
     """
     #: Target value for the source (dynamically evaluated)
-    switch = Unicode('VOLT').tag(pref=True, feval=validators.SkipLoop())
+    switch = Str('VOLT').tag(pref=True, feval=validators.SkipLoop())
 
     database_entries = set_default({'function': 'VOLT'})
 
@@ -298,7 +296,7 @@ class SetDCOutputTask(InterfaceableTaskMixin, InstrumentTask):
 
     """
     #: Target value for the source output
-    switch = Unicode('OFF').tag(pref=True, feval=validators.SkipLoop())
+    switch = Str('OFF').tag(pref=True, feval=validators.SkipLoop())
 
     database_entries = set_default({'output': 'OFF'})
 
