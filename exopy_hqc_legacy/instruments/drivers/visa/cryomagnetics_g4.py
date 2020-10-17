@@ -83,7 +83,7 @@ class C4G(CS4):
 
         """
         # converted from A/s to T/min
-        rate = float(self.ask('RATE? 0'))
+        rate = float(self.query('RATE? 0'))
         return rate * (60 * self.field_current_ratio)
 
     @field_sweep_rate.setter
