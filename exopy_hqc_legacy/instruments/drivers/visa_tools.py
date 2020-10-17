@@ -71,8 +71,9 @@ class VisaInstrument(BaseInstrument):
     write(mess)
     read()
     read_values()
-    ask(mess)
-    ask_for_values()
+    query()
+    query_ascii_values()
+    query_binary_values()
     clear()
     trigger()
     read_raw()
@@ -152,27 +153,6 @@ class VisaInstrument(BaseInstrument):
         stored in the attribute `_driver`
         """
         return self._driver.read_values(format=0)
-
-    def ask(self, message):
-        """Send the specified message to the instrument and read its answer.
-
-        Simple alias for query
-        """
-        return self._driver.query(message)
-
-    def ask_for_values(self, message, format=2):
-        """Send the specified message to the instrument and convert its answer
-        to values.
-
-        DEPRECATED
-
-        By default assume the values are returned as ascii.
-
-        Simply call the `ask_for_values` method of the `Instrument` object
-        stored in the attribute `_driver`
-
-        """
-        return self._driver.ask_for_values(message, format)
 
     def read_ascii_values(self, converter='f', separator=','):
         """Read one line of the instrument's buffer and convert to values.
