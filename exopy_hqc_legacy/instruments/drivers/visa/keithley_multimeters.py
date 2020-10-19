@@ -69,7 +69,7 @@ class Keithley2000(VisaInstrument):
         """Function setter
 
         """
-        value = self.ask('FUNCtion?')
+        value = self.query('FUNCtion?')
         if value:
             return value
         else:
@@ -80,7 +80,7 @@ class Keithley2000(VisaInstrument):
     def function(self, value):
         self.write('FUNCtion "{}"'.format(value))
         # The Keithley returns "VOLT:DC" needs to remove the quotes
-        if not(self.ask('FUNCtion?')[1:-1].lower() == value.lower()):
+        if not(self.query('FUNCtion?')[1:-1].lower() == value.lower()):
             raise InstrIOError('Keithley2000: Failed to set function')
 
     @secure_communication()
@@ -96,9 +96,9 @@ class Keithley2000(VisaInstrument):
         if self.function != 'VOLT:DC':
             self.function = 'VOLT:DC'
 
-        value = self.ask_for_values('FETCh?')
+        value = self.query('FETCh?')
         if value:
-            return value[0]
+            return float(value)
         else:
             raise InstrIOError('Keithley2000: DC voltage measure failed')
 
@@ -115,9 +115,9 @@ class Keithley2000(VisaInstrument):
         if self.function != 'VOLT:AC':
             self.function = 'VOLT:AC'
 
-        value = self.ask_for_values('FETCh?')
+        value = self.query('FETCh?')
         if value:
-            return value[0]
+            return float(value)
         else:
             raise InstrIOError('Keithley2000: AC voltage measure failed')
 
@@ -135,9 +135,9 @@ class Keithley2000(VisaInstrument):
         if self.function != 'RES':
             self.function = 'RES'
 
-        value = self.ask_for_values('FETCh?')
+        value = self.query('FETCh?')
         if value:
-            return value[0]
+            return float(value)
         else:
             raise InstrIOError('Keithley2000: Resistance measure failed')
 
@@ -154,9 +154,9 @@ class Keithley2000(VisaInstrument):
         if self.function != 'CURR:DC':
             self.function = 'CURR:DC'
 
-        value = self.ask_for_values('FETCh?')
+        value = self.query('FETCh?')
         if value:
-            return value[0]
+            return float(value)
         else:
             raise InstrIOError('Keithley2000: DC current measure failed')
 
@@ -173,9 +173,9 @@ class Keithley2000(VisaInstrument):
         if self.function != 'CURR:AC':
             self.function = 'CURR:AC'
 
-        value = self.ask_for_values('FETCh?')
+        value = self.query('FETCh?')
         if value:
-            return value[0]
+            return float(value)
         else:
             raise InstrIOError('Keithley2000: AC current measure failed')
 
@@ -187,6 +187,6 @@ class Keithley2000(VisaInstrument):
         corrupted and should be cleared.
 
         """
-        val = ('{0:08b}'.format(int(self.ask('*ESR'))))[::-1]
+        val = ('{0:08b}'.format(int(self.query('*ESR'))))[::-1]
         if val:
             return val[6]

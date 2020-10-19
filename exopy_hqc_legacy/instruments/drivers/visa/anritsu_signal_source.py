@@ -56,8 +56,9 @@ class AnritsuMG3694(VisaInstrument):
     def frequency(self):
         """Frequency getter method
         """
-        freq = self.ask_for_values('FREQ?')[0]
+        freq = self.query('FREQ?')
         if freq:
+            freq = float(freq)
             if self.frequency_unit == 'GHz':
                 return freq/1e9
             elif self.frequency_unit == 'MHz':
@@ -67,7 +68,7 @@ class AnritsuMG3694(VisaInstrument):
             else:
                 return freq
         else:
-            raise InstrIOError(''' ''')
+            raise InstrIOError('Anritsu did not return its frequency')
 
     @frequency.setter
     @secure_communication()
@@ -76,28 +77,31 @@ class AnritsuMG3694(VisaInstrument):
         """
         unit = self.frequency_unit
         self.write('FREQ {}{}'.format(value, unit))
-        result = self.ask_for_values('FREQ?')
+        result = self.query('FREQ?')
         if result:
+            result = float(result)
             if unit == 'GHz':
-                result[0] /= 1e9
+                result /= 1e9
             elif unit == 'MHz':
-                result[0] /= 1e6
+                result /= 1e6
             elif unit == 'kHz':
-                result[0] /= 1e3
-            if abs(result[0] - value) > 10**-12:
+                result /= 1e3
+            if abs(result - value) > 10**-12:
                 mes = 'Instrument did not set correctly the frequency'
                 raise InstrIOError(mes)
+        else:
+            raise InstrIOError('Anritsu did not return its frequency')
 
     @instrument_property
     @secure_communication()
     def power(self):
         """Power getter method
         """
-        power = self.ask_for_values(':POW?')[0]
-        if power is not None:
-            return power
+        power = self.query(':POW?')
+        if power:
+            return float(power)
         else:
-            raise InstrIOError
+            raise InstrIOError('Anritsu did not return its power')
 
     @power.setter
     @secure_communication()
@@ -105,19 +109,22 @@ class AnritsuMG3694(VisaInstrument):
         """Power setter method
         """
         self.write('POW {}'.format(value))
-        result = self.ask_for_values('POW?')[0]
-        if abs(result - value) > 10**-12:
-            raise InstrIOError('Instrument did not set correctly the power')
+        result = self.query('POW?')
+        if result:
+            if abs(float(result) - value) > 10**-12:
+                raise InstrIOError('Instrument did not set correctly the power')
+        else:
+            raise InstrIOError('Anritsu did not return its power')
 
     @instrument_property
     @secure_communication()
     def output(self):
         """Output getter method
         """
-        output = self.ask_for_values('OUTP?')[0]
-        if output == 1:
+        output = self.query('OUTP?')
+        if output == '1':
             return 'ON'
-        elif output == 0:
+        elif output == '0':
             return 'OFF'
         else:
             mes = 'Anritsu signal source did not return its output'
@@ -134,12 +141,12 @@ class AnritsuMG3694(VisaInstrument):
         if on.match(value) or value == 1:
 
             self.write('OUTP 1')
-            if self.ask_for_values('OUTP?')[0] != 1:
+            if self.query('OUTP?') != '1':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the output'''))
         elif off.match(value) or value == 0:
             self.write('OUTP 0')
-            if self.ask_for_values('OUTP?')[0] != 0:
+            if self.query('OUTP?')[0] != '0':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the output'''))
         else:

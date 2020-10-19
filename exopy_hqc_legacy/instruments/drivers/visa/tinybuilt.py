@@ -68,10 +68,10 @@ class TinyBiltChannel(BaseInstrument):
         """
 
         with self.secure():
-            output = self._TB.ask_for_values(self._header + 'OUTP?')[0]
-            if output == 1:
+            output = self._TB.query(self._header + 'OUTP?')
+            if output == '1':
                 return 'ON'
-            elif output == 0:
+            elif output == '0':
                 return 'OFF'
             else:
                 mes = 'TinyBilt did not return its output'
@@ -88,12 +88,12 @@ class TinyBiltChannel(BaseInstrument):
             off = re.compile('off', re.IGNORECASE)
             if value == 1 or on.match(str(value)):
                 self._TB.write(self._header + 'OUTP1')
-                if self._TB.ask_for_values(self._header + 'OUTP?')[0] != 1:
+                if self._TB.query(self._header + 'OUTP?') != '1':
                     raise InstrIOError(cleandoc('''Instrument did not set
                                                 correctly the output'''))
             elif value == 0 or off.match(str(value)):
                 self._TB.write(self._header + 'OUTP0')
-                if self._TB.ask_for_values(self._header + 'OUTP?')[0] != 0:
+                if self._TB.query(self._header + 'OUTP?') != '0':
                     raise InstrIOError(cleandoc('''Instrument did not set
                                                 correctly the output'''))
             else:
@@ -109,9 +109,9 @@ class TinyBiltChannel(BaseInstrument):
         big range = 12V and small range = 1.2V
         """
         with self.secure():
-            voltage = self._TB.ask_for_values(self._header + 'volt:rang?')[0]
-            if voltage is not None:
-                return voltage
+            voltage = self._TB.query(self._header + 'volt:rang?')
+            if voltage:
+                return float(voltage)
             else:
                 raise InstrIOError
 
@@ -123,21 +123,21 @@ class TinyBiltChannel(BaseInstrument):
         TinyBilt need to be turned off to change the voltage range
         """
         with self.secure():
-            outp = self._TB.ask_for_values(self._header + 'OUTP?')[0]
+            outp = self._TB.query(self._header + 'OUTP?')
             if outp == 1:
                 raise InstrIOError(cleandoc('''TinyBilt need to be turned
                                                  off to change the voltage
                                                 range'''))
             if value in ('True', 1):
                 self._TB.write(self._header + 'volt:rang 12')
-                result = self._TB.ask_for_values(self._header + 'volt:rang?')[0]
-                if abs(result - 12) > 10**-12:
+                result = self._TB.query(self._header + 'volt:rang?')
+                if abs(float(result) - 12) > 10**-12:
                     mess = 'Instrument did not set correctly the range voltage'
                     raise InstrIOError(mess)
             elif value in ('False', 0):
                 self._TB.write(self._header + 'volt:rang 1.2')
-                result = self._TB.ask_for_values(self._header + 'volt:rang?')[0]
-                if abs(result - 1.2) > 10**-12:
+                result = self._TB.query(self._header + 'volt:rang?')
+                if abs(float(result) - 1.2) > 10**-12:
                     raise InstrIOError(cleandoc('''Instrument did not set
                                                 correctly the range
                                                 voltage'''))
@@ -152,9 +152,9 @@ class TinyBiltChannel(BaseInstrument):
         """max voltage getter method
         """
         with self.secure():
-            maxV = self._TB.ask_for_values(self._header + 'volt:sat:pos?')[0]
-            if maxV is not None:
-                return maxV
+            maxV = self._TB.query(self._header + 'volt:sat:pos?')
+            if maxV:
+                return float(maxV)
             else:
                 raise InstrIOError
 
@@ -165,8 +165,8 @@ class TinyBiltChannel(BaseInstrument):
         """
         with self.secure():
             self._TB.write(self._header + 'volt:sat:pos {}'.format(value))
-            maxiV = self._TB.ask_for_values(self._header + 'volt:sat:pos?')[0]
-            if abs(maxiV - value) > 10**-12:
+            maxiV = self._TB.query(self._header + 'volt:sat:pos?')
+            if abs(float(maxiV) - value) > 10**-12:
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the maximum
                                             voltage'''))
@@ -177,9 +177,9 @@ class TinyBiltChannel(BaseInstrument):
         """min voltage getter method
         """
         with self.secure():
-            minV = self._TB.ask_for_values(self._header + 'volt:sat:neg?')[0]
-            if minV is not None:
-                return minV
+            minV = self._TB.query(self._header + 'volt:sat:neg?')
+            if minV:
+                return float(minV)
             else:
                 raise InstrIOError
 
@@ -190,8 +190,8 @@ class TinyBiltChannel(BaseInstrument):
         """
         with self.secure():
             self._TB.write(self._header + 'volt:sat:neg {}'.format(value))
-            miniV = self._TB.ask_for_values(self._header + 'volt:sat:neg?')[0]
-            if abs(miniV - value) > 10**-12:
+            miniV = self._TB.query(self._header + 'volt:sat:neg?')
+            if abs(float(miniV) - value) > 10**-12:
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the minimum
                                             voltage'''))
@@ -202,9 +202,9 @@ class TinyBiltChannel(BaseInstrument):
         """output value getter method
         """
         with self.secure():
-            outp_val = self._TB.ask_for_values(self._header + 'Volt?')[0]
-            if outp_val is not None:
-                return outp_val
+            outp_val = self._TB.query(self._header + 'Volt?')
+            if outp_val:
+                return float(outp_val)
             else:
                 raise InstrIOError
 
@@ -217,7 +217,7 @@ class TinyBiltChannel(BaseInstrument):
         with self.secure():
             self._TB.write(self._header + 'Volt {}'.format(value))
             self._TB.write(self._header + 'trig:input:init')
-            result = round(self._TB.ask_for_values(self._header + 'Volt?')[0], 5)
+            result = round(float(self._TB.query(self._header + 'Volt?')), 5)
             if abs(result - value) > 1e-12:
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the output
@@ -230,8 +230,8 @@ class TinyBiltChannel(BaseInstrument):
             with time of time_step between each step
         """
         with self.secure():
-            present_voltage = round(self._TB.ask_for_values
-                                    (self._header + 'Volt?')[0], 5)
+            present_voltage = round(float(self._TB.query
+                                          (self._header + 'Volt?')), 5)
             while abs(round(present_voltage - volt_destination,
                             5)) >= volt_step:
                 time.sleep(time_step)
@@ -288,7 +288,7 @@ class TinyBilt(VisaInstrument):
         """defined_channels is a list of tuple with format (module_number,
                                                                 channel_number)
         """
-        modules = self.ask('I:L?')
+        modules = self.query('I:L?')
         if modules:
             defined_modules = np.array([s.split(',')
                                             for s in modules.split(';')],

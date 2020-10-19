@@ -64,7 +64,7 @@ class AWGChannel(BaseInstrument):
         """
         self._AWG.clear_output_buffer()
         try:
-            current_length = int(self._AWG.ask("SEQuence:LENGth?"))
+            current_length = int(self._AWG.query("SEQuence:LENGth?"))
         except Exception:
             log = logging.getLogger(__name__)
             msg = 'Could not read current_length, assuming 0'
@@ -72,11 +72,11 @@ class AWGChannel(BaseInstrument):
             current_length = 0
         if position > current_length:
             self._AWG.write("SEQuence:LENGth {}".format(position))
-        self._AWG.ask('*ESR?')
+        self._AWG.query('*ESR?')
         msg = 'SEQuence:ELEMent{}:WAVeform{} "{}"'
         self._AWG.write(msg.format(position, self._channel, name))
         # ESR bit 5 signal a command error
-        assert int(self._AWG.ask('*ESR?')) & 2**5 == 0, 'Command failed'
+        assert int(self._AWG.query('*ESR?')) & 2**5 == 0, 'Command failed'
 
     @contextmanager
     def secure(self):
@@ -101,11 +101,10 @@ class AWGChannel(BaseInstrument):
 
         """
         with self.secure():
-            output = self._AWG.ask_for_values('OUTP{}:STAT?'
-                                              .format(self._channel))[0]
-            if output == 1:
+            output = self._AWG.query('OUTP{}:STAT?'.format(self._channel))
+            if output == '1':
                 return 'ON'
-            elif output == 0:
+            elif output == '0':
                 return 'OFF'
             else:
                 mes = cleandoc('AWG channel {} did not return its output'
@@ -124,14 +123,12 @@ class AWGChannel(BaseInstrument):
             if on.match(value) or value == 1:
 
                 self._AWG.write('OUTP{}:STAT ON'.format(self._channel))
-                if self._AWG.ask_for_values('OUTP{}:STAT?'
-                                            .format(self._channel))[0] != 1:
+                if self._AWG.query('OUTP{}:STAT?'.format(self._channel)) != '1':
                     raise InstrIOError(cleandoc('''Instrument did not set
                                                 correctly the output'''))
             elif off.match(value) or value == 0:
                 self._AWG.write('OUTP{}:STAT OFF'.format(self._channel))
-                if self._AWG.ask_for_values('OUTP{}:STAT?'
-                                            .format(self._channel))[0] != 0:
+                if self._AWG.query('OUTP{}:STAT?'.format(self._channel)) != '0':
                     raise InstrIOError(cleandoc('''Instrument did not set
                                                 correctly the output'''))
             else:
@@ -146,10 +143,10 @@ class AWGChannel(BaseInstrument):
 
         """
         with self.secure():
-            m1_HV = self._AWG.ask_for_values("SOURce{}:MARK1:VOLTage:HIGH?"
-                                             .format(self._channel))[0]
-            if m1_HV is not None:
-                return m1_HV
+            m1_HV = self._AWG.query("SOURce{}:MARK1:VOLTage:HIGH?"
+                                    .format(self._channel))
+            if m1_HV:
+                return float(m1_HV)
             else:
                 raise InstrIOError
 
@@ -162,8 +159,8 @@ class AWGChannel(BaseInstrument):
         with self.secure():
             self._AWG.write("SOURce{}:MARK1:VOLTage:HIGH {}"
                             .format(self._channel, value))
-            result = self._AWG.ask_for_values("SOURce{}:MARK1:VOLTage:HIGH?"
-                                              .format(self._channel))[0]
+            result = float(self._AWG.query("SOURce{}:MARK1:VOLTage:HIGH?"
+                                           .format(self._channel)))
             if abs(result - value) > 10**-12:
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the marker1 high
@@ -176,10 +173,10 @@ class AWGChannel(BaseInstrument):
 
         """
         with self.secure():
-            m2_HV = self._AWG.ask_for_values("SOURce{}:MARK2:VOLTage:HIGH?"
-                                             .format(self._channel))[0]
-            if m2_HV is not None:
-                return m2_HV
+            m2_HV = float(self._AWG.query("SOURce{}:MARK2:VOLTage:HIGH?"
+                                          .format(self._channel)))
+            if m2_HV:
+                return float(m2_HV)
             else:
                 raise InstrIOError
 
@@ -192,8 +189,8 @@ class AWGChannel(BaseInstrument):
         with self.secure():
             self._AWG.write("SOURce{}:MARK2:VOLTage:HIGH {}"
                             .format(self._channel, value))
-            result = self._AWG.ask_for_values("SOURce{}:MARK2:VOLTage:HIGH?"
-                                              .format(self._channel))[0]
+            result = float(self._AWG.query("SOURce{}:MARK2:VOLTage:HIGH?"
+                                           .format(self._channel)))
             if abs(result - value) > 10**-12:
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the marker2 high
@@ -206,10 +203,10 @@ class AWGChannel(BaseInstrument):
 
         """
         with self.secure():
-            m1_LV = self._AWG.ask_for_values("SOURce{}:MARK1:VOLTage:LOW?"
-                                             .format(self._channel))[0]
-            if m1_LV is not None:
-                return m1_LV
+            m1_LV = self._AWG.query("SOURce{}:MARK1:VOLTage:LOW?"
+                                    .format(self._channel))
+            if m1_LV:
+                return float(m1_LV)
             else:
                 raise InstrIOError
 
@@ -222,8 +219,8 @@ class AWGChannel(BaseInstrument):
         with self.secure():
             self._AWG.write("SOURce{}:MARK1:VOLTage:LOW {}"
                             .format(self._channel, value))
-            result = self._AWG.ask_for_values("SOURce{}:MARK1:VOLTage:LOW?"
-                                              .format(self._channel))[0]
+            result = float(self._AWG.query("SOURce{}:MARK1:VOLTage:LOW?"
+                                           .format(self._channel)))
             if abs(result - value) > 10**-12:
                 raise InstrIOError(cleandoc('''AWG channel {} did not set
                                             correctly the marker1 low
@@ -236,10 +233,10 @@ class AWGChannel(BaseInstrument):
 
         """
         with self.secure():
-            m2_LV = self._AWG.ask_for_values("SOURce{}:MARK2:VOLTage:LOW?"
-                                             .format(self._channel))[0]
-            if m2_LV is not None:
-                return m2_LV
+            m2_LV = self._AWG.query("SOURce{}:MARK2:VOLTage:LOW?"
+                                             .format(self._channel))
+            if m2_LV:
+                return float(m2_LV)
             else:
                 raise InstrIOError
 
@@ -252,8 +249,8 @@ class AWGChannel(BaseInstrument):
         with self.secure():
             self._AWG.write("SOURce{}:MARK2:VOLTage:LOW {}"
                             .format(self._channel, value))
-            result = self._AWG.ask_for_values("SOURce{}:MARK2:VOLTage:LOW?"
-                                              .format(self._channel))[0]
+            result = float(self._AWG.query("SOURce{}:MARK2:VOLTage:LOW?"
+                                           .format(self._channel)))
             if abs(result - value) > 10**-12:
                 raise InstrIOError(cleandoc('''AWG channel {} did not set
                                             correctly the marker2 low
@@ -266,10 +263,9 @@ class AWGChannel(BaseInstrument):
 
         """
         with self.secure():
-            m1_delay = self._AWG.ask_for_values("SOURce{}:MARK1:DEL?"
-                                                .format(self._channel))[0]
-            if m1_delay is not None:
-                return m1_delay
+            m1_delay = self._AWG.query("SOURce{}:MARK1:DEL?".format(self._channel))
+            if m1_delay:
+                return float(m1_delay)
             else:
                 raise InstrIOError
 
@@ -282,8 +278,8 @@ class AWGChannel(BaseInstrument):
         with self.secure():
             self._AWG.write("SOURce{}:MARK1:DEL {}"
                             .format(self._channel, value))
-            result = self._AWG.ask_for_values("SOURce{}:MARK1:DEL?"
-                                              .format(self._channel))[0]
+            result = float(self._AWG.query("SOURce{}:MARK1:DEL?"
+                                           .format(self._channel)))
             if abs(result - value) > 10**-12:
                 raise InstrIOError(cleandoc('''AWG channel {} did not set
                                             correctly the marker1 delay
@@ -296,10 +292,9 @@ class AWGChannel(BaseInstrument):
 
         """
         with self.secure():
-            m2_delay = self._AWG.ask_for_values("SOURce{}:MARK2:DEL?"
-                                                .format(self._channel))[0]
-            if m2_delay is not None:
-                return m2_delay
+            m2_delay = self._AWG.query("SOURce{}:MARK2:DEL?".format(self._channel))
+            if m2_delay:
+                return float(m2_delay)
             else:
                 raise InstrIOError
 
@@ -312,8 +307,8 @@ class AWGChannel(BaseInstrument):
         with self.secure():
             self._AWG.write("SOURce{}:MARK2:DEL {}"
                             .format(self._channel, value))
-            result = self._AWG.ask_for_values("SOURce{}:MARK2:DEL?"
-                                              .format(self._channel))[0]
+            result = float(self._AWG.query("SOURce{}:MARK2:DEL?"
+                                           .format(self._channel)))
             if abs(result - value) > 10**-12:
                 raise InstrIOError(cleandoc('''AWG channel {} did not set
                                             correctly the marker2 delay
@@ -326,10 +321,9 @@ class AWGChannel(BaseInstrument):
 
         """
         with self.secure():
-            dela = self._AWG.ask_for_values("SOURce{}:DEL:ADJ?"
-                                            .format(self._channel))[0]
-            if dela is not None:
-                return dela
+            dela = self._AWG.query("SOURce{}:DEL:ADJ?".format(self._channel))
+            if dela:
+                return float(dela)
             else:
                 raise InstrIOError
 
@@ -342,8 +336,8 @@ class AWGChannel(BaseInstrument):
         with self.secure():
             self._AWG.write("SOURce{}:DEL:ADJ {}"
                             .format(self._channel, value))
-            result = self._AWG.ask_for_values("SOURce{}:DEL:ADJ?"
-                                              .format(self._channel))[0]
+            result = float(self._AWG.query("SOURce{}:DEL:ADJ?"
+                                           .format(self._channel)))
             if abs(result - value) > 10**-12:
                 raise InstrIOError(cleandoc('''AWG channel {} did not set
                                             correctly the delay'''
@@ -357,9 +351,9 @@ class AWGChannel(BaseInstrument):
         """
         with self.secure():
             msg = "SOURce{}:VOLTage:LEVel:IMMediate:OFFSet?"
-            offs = self._AWG.ask_for_values((msg.format(self._channel)))[0]
-            if offs is not None:
-                return offs
+            offs = self._AWG.query((msg.format(self._channel)))
+            if offs:
+                return float(offs)
             else:
                 raise InstrIOError
 
@@ -373,7 +367,7 @@ class AWGChannel(BaseInstrument):
             self._AWG.write("SOURce{}:VOLTage:LEVel:IMMediate:OFFSet {}"
                             .format(self._channel, value))
             cmd = "SOURce{}:VOLTage:LEVel:IMMediate:OFFSet?"
-            result = self._AWG.ask_for_values(cmd.format(self._channel))[0]
+            result = float(self._AWG.query(cmd.format(self._channel)))
             if abs(result - value) > 10**-12:
                 raise InstrIOError(cleandoc('''AWG channel {} did not set
                                             correctly the offset'''
@@ -386,10 +380,9 @@ class AWGChannel(BaseInstrument):
 
         """
         with self.secure():
-            vp = self._AWG.ask_for_values("SOURce{}:VOLTage?"
-                                          .format(self._channel))[0]
-            if vp is not None:
-                return vp
+            vp = self._AWG.query("SOURce{}:VOLTage?".format(self._channel))
+            if vp:
+                return float(vp)
             else:
                 raise InstrIOError
 
@@ -402,8 +395,8 @@ class AWGChannel(BaseInstrument):
         with self.secure():
             self._AWG.write("SOURce{}:VOLTage {}"
                             .format(self._channel, value))
-            result = self._AWG.ask_for_values("SOURce{}:VOLTage?"
-                                              .format(self._channel))[0]
+            result = float(self._AWG.query("SOURce{}:VOLTage?"
+                                           .format(self._channel)))
             if abs(result - value) > 10**-12:
                 raise InstrIOError(cleandoc('''AWG channel {} did not set
                                             correctly the vpp'''
@@ -416,10 +409,9 @@ class AWGChannel(BaseInstrument):
 
         """
         with self.secure():
-            phi = self._AWG.ask_for_values("SOURce{}:PHAS:ADJ?"
-                                           .format(self._channel))[0]
-            if phi is not None:
-                return phi
+            phi = self._AWG.query("SOURce{}:PHAS:ADJ?".format(self._channel))
+            if phi:
+                return float(phi)
             else:
                 raise InstrIOError
 
@@ -432,8 +424,8 @@ class AWGChannel(BaseInstrument):
         with self.secure():
             self._AWG.write("SOURce{}:PHAS:ADJ {}"
                             .format(self._channel, value))
-            result = self._AWG.ask_for_values("SOURce{}:PHAS:ADJ?"
-                                              .format(self._channel))[0]
+            result = float(self._AWG.query("SOURce{}:PHAS:ADJ?"
+                                           .format(self._channel)))
             if abs(result - value) > 10**-12:
                 raise InstrIOError(cleandoc('''AWG channel {} did not set
                                             correctly the phase'''
@@ -544,7 +536,7 @@ class AWG(VisaInstrument):
         """Getter for internal trigger period
 
         """
-        return self.ask("TRIGGER:SEQUENCE:TIMER?")
+        return self.query("TRIGGER:SEQUENCE:TIMER?")
 
     @internal_trigger_period.setter
     @secure_communication()
@@ -560,7 +552,7 @@ class AWG(VisaInstrument):
         """Getter for trigger internal or external
 
         """
-        ore = self.ask("TRIGGER:SEQUENCE:SOURCE?")
+        ore = self.query("TRIGGER:SEQUENCE:SOURCE?")
         if ore == 'INT':
             return 'True'
         elif ore == 'EXT':
@@ -597,7 +589,7 @@ class AWG(VisaInstrument):
         """Oscillator reference external getter method
 
         """
-        ore = self.ask("SOUR:ROSC:SOUR?")
+        ore = self.query("SOUR:ROSC:SOUR?")
         if ore == 'EXT':
             return 'True'
         elif ore == 'INT':
@@ -613,13 +605,13 @@ class AWG(VisaInstrument):
         """
         if value in ('EXT', 1, 'True'):
             self.write('SOUR:ROSC:SOUR EXT')
-            if self.ask('SOUR:ROSC:SOUR?') != 'EXT':
+            if self.query('SOUR:ROSC:SOUR?') != 'EXT':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the oscillator
                                             reference'''))
         elif value in ('INT', 0, 'False'):
             self.write('SOUR:ROSC:SOUR INT')
-            if self.ask('SOUR:ROSC:SOUR?') != 'INT':
+            if self.query('SOUR:ROSC:SOUR?') != 'INT':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the oscillator
                                             reference'''))
@@ -635,7 +627,7 @@ class AWG(VisaInstrument):
         """Clock source getter method
 
         """
-        cle = self.ask("AWGControl:CLOCk:SOURce?")
+        cle = self.query("AWGControl:CLOCk:SOURce?")
         if cle is not None:
             return cle
         else:
@@ -649,12 +641,12 @@ class AWG(VisaInstrument):
         """
         if value in ('EXT', 1, 'True'):
             self.write('AWGControl:CLOCk:SOURce EXT')
-            if self.ask('AWGControl:CLOCk:SOURce?') != 'EXT':
+            if self.query('AWGControl:CLOCk:SOURce?') != 'EXT':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the clock source'''))
         elif value in ('INT', 0, 'False'):
             self.write('AWGControl:CLOCk:SOURce INT')
-            if self.ask('AWGControl:CLOCk:SOURce?') != 'INT':
+            if self.query('AWGControl:CLOCk:SOURce?') != 'INT':
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the clock source'''))
         else:
@@ -669,9 +661,9 @@ class AWG(VisaInstrument):
         """Sampling frequency getter method
 
         """
-        sampl_freq = self.ask_for_values("SOUR:FREQ:CW?")[0]
-        if sampl_freq is not None:
-            return sampl_freq
+        sampl_freq = self.query("SOUR:FREQ:CW?")
+        if sampl_freq:
+            return float(sampl_freq)
         else:
             raise InstrIOError
 
@@ -682,7 +674,7 @@ class AWG(VisaInstrument):
 
         """
         self.write("SOUR:FREQ:CW {}".format(value))
-        result = self.ask_for_values("SOUR:FREQ:CW?")[0]
+        result = float(self.query("SOUR:FREQ:CW?"))
         if abs(result - value) > 10**-12:
             raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the sampling frequency'''))
@@ -694,12 +686,12 @@ class AWG(VisaInstrument):
 
         """
         self.clear_output_buffer()
-        run = self.ask_for_values("AWGC:RST?")[0]
-        if run == 0:
+        run = self.query("AWGC:RST?")
+        if run == '0':
             return '0 : Instrument has stopped'
-        elif run == 1:
+        elif run == '1':
             return '1 : Instrument is waiting for trigger'
-        elif run == 2:
+        elif run == '2':
             return '2 : Intrument is running'
         else:
             raise InstrIOError
@@ -713,12 +705,12 @@ class AWG(VisaInstrument):
         self.clear_output_buffer()
         if value in ('RUN', 1, 'True'):
             self.write('AWGC:RUN:IMM')
-            if self.ask_for_values('AWGC:RST?')[0] not in (1, 2):
+            if int(self.query('AWGC:RST?')) not in (1, 2):
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run state'''))
         elif value in ('STOP', 0, 'False'):
             self.write('AWGC:STOP:IMM')
-            if self.ask_for_values('AWGC:RST?')[0] != 0:
+            if int(self.query('AWGC:RST?')) != 0:
                 raise InstrIOError(cleandoc('''Instrument did not set
                                             correctly the run state'''))
         else:
@@ -733,7 +725,7 @@ class AWG(VisaInstrument):
 
         """
         self.clear_output_buffer()
-        run_mode = self.ask("AWGControl:RMODe?")
+        run_mode = self.query("AWGControl:RMODe?")
         if run_mode is not None:
             return run_mode
         else:

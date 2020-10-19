@@ -75,9 +75,9 @@ class Anapico(VisaInstrument):
         """Frequency of the output signal.
 
         """
-        freq = self.ask_for_values('FREQ?')
+        freq = self.query('FREQ?')
         if freq:
-            return freq[0]
+            return float(freq)
         else:
             raise InstrIOError
 
@@ -89,15 +89,16 @@ class Anapico(VisaInstrument):
         """
         unit = self.frequency_unit
         self.write('FREQ {}{}'.format(value, unit))
-        result = self.ask_for_values('FREQ?')
+        result = self.query('FREQ?')
         if result:
+            result = float(result)
             if unit == 'GHz':
-                result[0] /= 1e9
+                result /= 1e9
             elif unit == 'MHz':
-                result[0] /= 1e6
+                result /= 1e6
             elif unit == 'KHz':
-                result[0] /= 1e3
-            if abs(result[0] - value) > 1e-12:
+                result /= 1e3
+            if abs(result - value) > 1e-12:
                 mes = 'Instrument did not set correctly the frequency.'
                 raise InstrIOError(mes)
 
@@ -107,9 +108,9 @@ class Anapico(VisaInstrument):
         """Power of the output signal.
 
         """
-        power = self.ask_for_values('POWER?')[0]
-        if power is not None:
-            return power
+        power = self.query('POWER?')
+        if power:
+            return float(power)
         else:
             raise InstrIOError
 
@@ -120,7 +121,7 @@ class Anapico(VisaInstrument):
 
         """
         self.write('POWER {}'.format(value))
-        result = self.ask_for_values('POWER?')[0]
+        result = float(self.query('POWER?'))
         if abs(result - value) > 1e-4:
             raise InstrIOError('Instrument did not set correctly the power')
 
@@ -130,11 +131,11 @@ class Anapico(VisaInstrument):
         """Output state of the source.
 
         """
-        output = self.ask_for_values(':OUTP?')
-        if output is not None:
-            return bool(output[0])
+        output = self.query(':OUTP?')
+        if output:
+            return bool(int(output))
         else:
-            mes = 'PSG signal generator did not return its output'
+            mes = 'Anapico signal generator did not return its output'
             raise InstrIOError(mes)
 
     @output.setter
@@ -147,12 +148,12 @@ class Anapico(VisaInstrument):
         off = re.compile('off', re.IGNORECASE)
         if on.match(value) or value == 1:
             self.write(':OUTPUT ON')
-            if self.ask(':OUTPUT?') != '1':
+            if self.query(':OUTPUT?') != '1':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the output'''))
         elif off.match(value) or value == 0:
             self.write(':OUTPUT OFF')
-            if self.ask(':OUTPUT?') != '0':
+            if self.query(':OUTPUT?') != '0':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the output'''))
         else:
@@ -166,11 +167,11 @@ class Anapico(VisaInstrument):
         """Pulse modulation getter method
 
         """
-        pm_state = self.ask_for_values('SOURce:PULM:STATE?')
-        if pm_state is not None:
-            return bool(pm_state[0])
+        pm_state = self.query('SOURce:PULM:STATE?')
+        if pm_state:
+            return bool(pm_state)
         else:
-            mes = 'Signal generator did not return its pulse modulation state'
+            mes = 'Anapico signal generator did not return its pulse modulation state'
             raise InstrIOError(mes)
 
     @pm_state.setter
@@ -187,12 +188,12 @@ class Anapico(VisaInstrument):
         off = re.compile('off', re.IGNORECASE)
         if on.match(value) or value == 1:
             self.write('SOURce:PULM:STATE ON')
-            if self.ask('SOURce:PULM:STATE?') != '1':
+            if self.query('SOURce:PULM:STATE?') != '1':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the pulse modulation state'''))
         elif off.match(value) or value == 0:
             self.write('SOURce:PULM:STATE OFF')
-            if self.ask('SOURce:PULM:STATE?') != '0':
+            if self.query('SOURce:PULM:STATE?') != '0':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the pulse modulation state'''))
         else:

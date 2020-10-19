@@ -65,9 +65,9 @@ class AgilentPSG(VisaInstrument):
     def frequency(self):
         """Frequency getter method
         """
-        freq = self.ask_for_values(':FREQuency:FIXed?')
+        freq = self.query(':FREQuency:FIXed?')
         if freq:
-            return freq[0]
+            return float(freq)
         else:
             raise InstrIOError
 
@@ -78,26 +78,29 @@ class AgilentPSG(VisaInstrument):
         """
         unit = self.frequency_unit
         self.write(':FREQuency:FIXed {}{}'.format(value, unit))
-        result = self.ask_for_values(':FREQuency:FIXed?')
+        result = self.query(':FREQuency:FIXed?')
         if result:
+            result = float(result)
             if unit == 'GHz':
-                result[0] /= 10**9
+                result /= 10**9
             elif unit == 'MHz':
-                result[0] /= 10**6
+                result /= 10**6
             elif unit == 'KHz':
-                result[0] /= 10**3
-            if abs(result[0] - value) > 10**-12:
+                result /= 10**3
+            if abs(result - value) > 10**-12:
                 mes = 'Instrument did not set correctly the frequency'
                 raise InstrIOError(mes)
+        else:
+            raise InstrIOError('PSG signal generator did not return its frequency')
 
     @instrument_property
     @secure_communication()
     def power(self):
         """Power getter method
         """
-        power = self.ask_for_values(':POWER?')[0]
-        if power is not None:
-            return power
+        power = self.query(':POWER?')
+        if power:
+            return float(power)
         else:
             raise InstrIOError
 
@@ -107,18 +110,21 @@ class AgilentPSG(VisaInstrument):
         """Power setter method
         """
         self.write(':POWER {}DBM'.format(value))
-        result = self.ask_for_values('POWER?')[0]
-        if abs(result - value) > 10**-12:
-            raise InstrIOError('Instrument did not set correctly the power')
+        result = self.query('POWER?')
+        if result:
+            if abs(float(result) - value) > 10**-12:
+                raise InstrIOError('Instrument did not set correctly the power')
+        else:
+            raise InstrIOError('PSG signal generator did not return its power')
 
     @instrument_property
     @secure_communication()
     def output(self):
         """Output getter method
         """
-        output = self.ask_for_values(':OUTPUT?')
-        if output is not None:
-            return bool(output[0])
+        output = self.query(':OUTPUT?')
+        if output:
+            return bool(int(output))
         else:
             mes = 'PSG signal generator did not return its output'
             raise InstrIOError(mes)
@@ -132,12 +138,12 @@ class AgilentPSG(VisaInstrument):
         off = re.compile('off', re.IGNORECASE)
         if on.match(value) or value == 1:
             self.write(':OUTPUT ON')
-            if self.ask(':OUTPUT?') != '1':
+            if self.query(':OUTPUT?') != '1':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the output'''))
         elif off.match(value) or value == 0:
             self.write(':OUTPUT OFF')
-            if self.ask(':OUTPUT?') != '0':
+            if self.query(':OUTPUT?') != '0':
                 raise InstrIOError(cleandoc('''Instrument did not set correctly
                                         the output'''))
         else:

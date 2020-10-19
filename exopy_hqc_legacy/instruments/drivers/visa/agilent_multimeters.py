@@ -58,10 +58,9 @@ class Agilent34410A(VisaInstrument):
         """Return the DC voltage measured by the instrument
         """
         instruction = "MEASure:VOLTage:DC? {},{}"
-        value = self.ask_for_values(instruction.format(mes_range,
-                                                       mes_resolution))
+        value = self.query(instruction.format(mes_range, mes_resolution))
         if value:
-            return value[0]
+            return float(value)
         else:
             raise InstrIOError('DC voltage measure failed')
 
@@ -70,10 +69,9 @@ class Agilent34410A(VisaInstrument):
         """Return the AC voltage measured by the instrument
         """
         instruction = "MEASure:VOLTage:AC? {},{}"
-        value = self.ask_for_values(instruction.format(mes_range,
-                                                       mes_resolution))
+        value = self.query(instruction.format(mes_range, mes_resolution))
         if value:
-            return value[0]
+            return float(value)
         else:
             raise InstrIOError('AC voltage measure failed')
 
@@ -82,10 +80,10 @@ class Agilent34410A(VisaInstrument):
         """Return the resistance measured by the instrument
         """
         instruction = "MEASure:RESistance? {},{}"
-        value = self.ask_for_values(instruction.format(mes_range,
+        value = self.query(instruction.format(mes_range,
                                                        mes_resolution))
         if value:
-            return value[0]
+            return float(value)
         else:
             raise InstrIOError('Resistance measure failed')
 
@@ -94,10 +92,9 @@ class Agilent34410A(VisaInstrument):
         """Return the DC current measured by the instrument
         """
         instruction = "MEASure:CURRent:DC? {},{}"
-        value = self.ask_for_values(instruction.format(mes_range,
-                                                       mes_resolution))
+        value = self.query(instruction.format(mes_range, mes_resolution))
         if value:
-            return value[0]
+            return float(value)
         else:
             raise InstrIOError('DC current measure failed')
 
@@ -106,9 +103,8 @@ class Agilent34410A(VisaInstrument):
         """Return the AC current measured by the instrument
         """
         instruction = "MEASure:CURRent:AC? {},{}"
-        value = self.ask_for_values(instruction.format(mes_range,
-                                                       mes_resolution))
+        value = self.query(instruction.format(mes_range,  mes_resolution))
         if value:
-            return value[0]
+            return float(value)
         else:
             raise InstrIOError('AC current measure failed')

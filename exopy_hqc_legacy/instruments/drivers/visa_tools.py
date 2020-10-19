@@ -71,8 +71,9 @@ class VisaInstrument(BaseInstrument):
     write(mess)
     read()
     read_values()
-    ask(mess)
-    ask_for_values()
+    query()
+    query_ascii_values()
+    query_binary_values()
     clear()
     trigger()
     read_raw()
@@ -153,25 +154,57 @@ class VisaInstrument(BaseInstrument):
         """
         return self._driver.read_values(format=0)
 
-    def ask(self, message):
+    def read_ascii_values(self, converter='f', separator=','):
+        """Read one line of the instrument's buffer and convert to values.
+
+        DEPRECATED
+
+        Simply call the `read_ascii_values` method of the `Instrument` object
+        stored in the attribute `_driver`
+        """
+        return self._driver.read_ascii_values(converter, separator)
+
+    def read_binary_values(self, datatype='f', is_big_endian=False):
+        """Read one line of the instrument's buffer and convert to values.
+
+        DEPRECATED
+
+        Simply call the `read_binary_values` method of the `Instrument` object
+        stored in the attribute `_driver`
+        """
+        return self._driver.read_binary_values(datatype, is_big_endian)
+
+    def query(self, message):
         """Send the specified message to the instrument and read its answer.
 
-        Simply call the `ask` method of the `Instrument` object stored in
+        Simply call the `query` method of the `Instrument` object stored in
         the attribute `_driver`
         """
         return self._driver.query(message)
 
-    def ask_for_values(self, message, format=2):
+    def query_ascii_values(self, message, converter='f', separator=','):
         """Send the specified message to the instrument and convert its answer
         to values.
 
         By default assume the values are returned as ascii.
 
-        Simply call the `ask_for_values` method of the `Instrument` object
+        Simply call the `query_ascii_values` method of the `Instrument` object
         stored in the attribute `_driver`
 
         """
-        return self._driver.ask_for_values(message, format)
+        return self._driver.query_ascii_values(message, converter, separator)
+
+    def query_binary_values(self, message, datatype='f', is_big_endian=False):
+        """Send the specified message to the instrument and convert its answer
+        to values.
+
+        By default assume the values are returned as ascii.
+
+        Simply call the `query_binary_values` method of the `Instrument` object
+        stored in the attribute `_driver`
+
+        """
+        return self._driver.query_binary_values(message, datatype, is_big_endian)
 
     def clear(self):
         """Resets the device (highly bus dependent).

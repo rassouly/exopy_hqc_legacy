@@ -80,14 +80,14 @@ class CS4(VisaInstrument):
         """Read the current value of the output field.
 
         """
-        return float(self.ask('IOUT?').strip(' T'))
+        return float(self.query('IOUT?').strip(' T'))
 
     @secure_communication()
     def read_persistent_field(self):
         """Read the current value of the persistent field.
 
         """
-        return float(self.ask('IMAG?').strip(' T'))
+        return float(self.query('IMAG?').strip(' T'))
 
     def is_target_reached(self):
         """Check whether the target field has been reached.
@@ -140,7 +140,7 @@ class CS4(VisaInstrument):
         coil.
 
         """
-        heat = self.ask('PSHTR?').strip()
+        heat = self.query('PSHTR?').strip()
         try:
             return _GET_HEATER_DICT[heat]
         except KeyError:
@@ -160,7 +160,7 @@ class CS4(VisaInstrument):
 
         """
         # converted from A/s to T/min
-        rate = float(self.ask('RATE? 0'))
+        rate = float(self.query('RATE? 0'))
         return rate * (60 * self.field_current_ratio)
 
     @field_sweep_rate.setter
@@ -177,7 +177,7 @@ class CS4(VisaInstrument):
         (T/min).
 
         """
-        rate = float(self.ask('RATE? 3'))
+        rate = float(self.query('RATE? 3'))
         return rate * (60 * self.field_current_ratio)
 
     @fast_sweep_rate.setter
@@ -193,7 +193,7 @@ class CS4(VisaInstrument):
 
         """
         # in T
-        return float(self.ask('ULIM?').strip(' T'))
+        return float(self.query('ULIM?').strip(' T'))
 
     @target_field.setter
     @secure_communication()
@@ -210,7 +210,7 @@ class CS4(VisaInstrument):
         """Last known value of the magnet field.
 
         """
-        return float(self.ask('IMAG?').strip(' T'))
+        return float(self.query('IMAG?').strip(' T'))
 
     @instrument_property
     @secure_communication()
@@ -218,7 +218,7 @@ class CS4(VisaInstrument):
         """Current activity of the power supply (idle, ramping).
 
         """
-        return self.ask('SWEEP?').strip()
+        return self.query('SWEEP?').strip()
 
     @activity.setter
     @secure_communication()
