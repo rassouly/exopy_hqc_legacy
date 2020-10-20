@@ -76,6 +76,16 @@ class C4G(CS4):
         # can't reuse CS4 class because a semi-colon is needed
         self.write('ULIM {};'.format(target * 10))
 
+    @instrument_property
+    @secure_communication()
+    def field_sweep_rate(self):
+        """Rate at which to ramp the field (T/min).
+
+        """
+        # converted from A/s to T/min
+        rate = float(self.query('RATE? 0'))
+        return rate * (60 * self.field_current_ratio)
+
     @field_sweep_rate.setter
     @secure_communication()
     def field_sweep_rate(self, rate):
