@@ -291,6 +291,12 @@ enamldef HqcLegacyManifest(PluginManifest):
                         model = 'APSING20G'
                         connections = {'VisaTCPIP': {'resource_class': 'INSTR'}
                                        }
+                    Driver:
+                        driver = 'anapico:AnapicoMulti'
+                        model = 'APUASYN20'
+                        connections = {'VisaTCPIP': {'resource_class': 'INSTR'}
+                                       }
+
             Drivers:
                 path = 'dll'
                 starter = 'exopy_hqc_legacy.starter.dll'
@@ -398,6 +404,11 @@ enamldef HqcLegacyManifest(PluginManifest):
                         views = ['views.synthHD_task_views:ISynthHDChannelLabel',
                                  'views.synthHD_task_views:ISynthHDChannelValue']
                         instruments = ['exopy_hqc_legacy.Legacy.SynthHD']
+                    Interface:
+                        interface = 'anapico_tasks:AnapicoSetChannelInterface'
+                        views = ['views.anapico_task_views:IAnapicoChannelLabel',
+                                 'views.anapico_task_views:IAnapicoChannelValue']
+                        instruments = ['exopy_hqc_legacy.Legacy.AnapicoMulti']
                 Task:
                     task = 'rf_tasks:SetRFPowerTask'
                     view = 'views.rf_views:RFPowerView'
@@ -421,6 +432,11 @@ enamldef HqcLegacyManifest(PluginManifest):
                         views = ['views.synthHD_task_views:ISynthHDChannelLabel',
                                  'views.synthHD_task_views:ISynthHDChannelValue']
                         instruments = ['exopy_hqc_legacy.Legacy.SynthHD']
+                    Interface:
+                        interface = 'anapico_tasks:AnapicoSetChannelInterface'
+                        views = ['views.anapico_task_views:IAnapicoChannelLabel',
+                                 'views.anapico_task_views:IAnapicoChannelValue']
+                        instruments = ['exopy_hqc_legacy.Legacy.AnapicoMulti']                        
                 Task:
                     task = 'rf_tasks:SetRFOnOffTask'
                     view = 'views.rf_views:RFSetOnOffView'
@@ -437,11 +453,21 @@ enamldef HqcLegacyManifest(PluginManifest):
                         views = ['views.synthHD_task_views:ISynthHDChannelLabel',
                                  'views.synthHD_task_views:ISynthHDChannelValue']
                         instruments = ['exopy_hqc_legacy.Legacy.SynthHD']
+                    Interface:
+                        interface = 'anapico_tasks:AnapicoSetChannelInterface'
+                        views = ['views.anapico_task_views:IAnapicoChannelLabel',
+                                 'views.anapico_task_views:IAnapicoChannelValue']
+                        instruments = ['exopy_hqc_legacy.Legacy.AnapicoMulti']                        
                 Task:
                     task = 'rf_tasks:SetPulseModulationTask'
                     view = 'views.rf_views:PulseModulationView'
                     instruments = ['exopy_hqc_legacy.Legacy.RohdeSchwarzSMB100A',
                                    'exopy_hqc_legacy.Legacy.Anapico']
+                    Interface:
+                        interface = 'anapico_tasks:AnapicoSetChannelInterface'
+                        views = ['views.anapico_task_views:IAnapicoChannelLabel',
+                                 'views.anapico_task_views:IAnapicoChannelValue']
+                        instruments = ['exopy_hqc_legacy.Legacy.AnapicoMulti']                                   
                 Task:
                     task = 'pna_tasks:PNASinglePointMeasureTask'
                     view = 'views.pna_task_views:PNASinglePointView'

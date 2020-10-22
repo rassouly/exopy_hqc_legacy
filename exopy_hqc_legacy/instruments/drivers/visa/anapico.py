@@ -200,3 +200,52 @@ class Anapico(VisaInstrument):
             mess = fill(cleandoc('''The invalid value {} was sent to
                         switch_on_off method''').format(value), 80)
             raise VisaTypeError(mess)
+
+
+class AnapicoMulti(Anapico):
+    """
+    Generic driver for multi-channel Anapico Signal Generators,
+    using the VISA library.
+
+    Parameters
+    ----------
+    see the `VisaInstrument` parameters
+
+    Attributes
+    ----------
+    channel: int
+        Channel currently selected
+    frequency_unit : str
+        Frequency unit used by the driver. The default unit is 'GHz'. Other
+        valid units are : 'MHz', 'KHz', 'Hz'
+    frequency : float, instrument_property
+        Fixed frequency of the output signal.
+    power : float, instrument_property
+        Fixed power of the output signal.
+    output : bool, instrument_property
+        State of the output 'ON'(True)/'OFF'(False).
+    """
+
+    @instrument_property
+    @secure_communication()
+    def channel(self):
+        """Currently selected channel
+
+        """
+        channel = self.query('SOURce:SEL?')
+        if channel:
+            return int(channel)
+        else:
+            raise InstrIOError
+
+    @channel.setter
+    @secure_communication()
+    def channel(self, channel):
+        """Current channel setter method
+
+        """
+        self.write('SOURce:SEL {}'.format(channel))
+        result = int(self.query('SOURce:SEL?'))
+        if result and channel != result:
+            msg = 'Instrument could not select channel {}'
+            raise InstrIOError(msg.format(channel))
