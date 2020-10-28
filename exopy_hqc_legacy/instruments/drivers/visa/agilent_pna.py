@@ -85,7 +85,7 @@ class AgilentPNAChannel(BaseInstrument):
         if self._pna.data_format == 'REAL,32':
             data = self._pna.query_binary_values(data_request, 'f')
 
-        elif self._pna.data_format == 'REAL,64':
+        elif self._pna.data_format in ('REAL,64', 'REAL,+64'):
             data = self._pna.query_binary_values(data_request, 'd')
 
         else:
@@ -122,7 +122,7 @@ class AgilentPNAChannel(BaseInstrument):
         if self._pna.data_format == 'REAL,32':
             data = self._pna.query_binary_values(data_request, 'f')
 
-        elif self._pna.data_format == 'REAL,64':
+        elif self._pna.data_format in ('REAL,64', 'REAL,+64'):
             data = self._pna.query_binary_values(data_request, 'd')
 
         else:
