@@ -231,6 +231,14 @@ class VisaInstrument(BaseInstrument):
         """
         return self._driver.read_raw()
 
+    def read_bytes(self, n):
+        """Read a certain amount of bytes from the instrument buffer.
+
+        Simply call the `read_bytes` method of the `Instrument` object stored
+        in the attribute `_driver` 
+        """
+        return self._driver.read_bytes(n)
+
     def _timeout(self):
         return self._driver.timeout
 
