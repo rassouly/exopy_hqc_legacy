@@ -523,7 +523,6 @@ enamldef HqcLegacyManifest(PluginManifest):
                     task = 'dc_tasks:SetDCOutputTask'
                     view = 'views.dc_views:SetDcOutputView'
                     instruments = ['exopy_hqc_legacy.Legacy.YokogawaGS200']
-                    metadata = {'loopable': True}
                 Task:
                     task = 'spdev_tasks:DemodSPTask'
                     view = 'views.spdev_views:DemodSpView'
